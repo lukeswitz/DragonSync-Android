@@ -1,4 +1,3 @@
-// java/com.rootdown.dragonsync/ui/fragments/HistoryFragment.java
 package com.rootdown.dragonsync.ui.fragments;
 
 import android.os.Bundle;
@@ -176,6 +175,6 @@ public class HistoryFragment extends Fragment {
     }
 
 //    private static class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHolder> {
-//        // Implementation details omitted for brevity
+            // TODO this
 //    }
 }

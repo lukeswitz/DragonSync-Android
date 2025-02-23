@@ -54,6 +54,59 @@ public class CoTMessage implements Parcelable {
     private String timestamp;
     private String timestampAccuracy;
 
+    protected CoTMessage(Parcel in) {
+        id = in.readString();
+        caaRegistration = in.readString();
+        uid = in.readString();
+        type = in.readString();
+        lat = in.readString();
+        lon = in.readString();
+        homeLat = in.readString();
+        homeLon = in.readString();
+        speed = in.readString();
+        vspeed = in.readString();
+        alt = in.readString();
+        height = in.readString();
+        pilotLat = in.readString();
+        pilotLon = in.readString();
+        description = in.readString();
+        selfIDText = in.readString();
+        idType = in.readString();
+        protocolVersion = in.readString();
+        mac = in.readString();
+        rssi = in.readInt();
+        manufacturer = in.readString();
+        locationProtocol = in.readString();
+        opStatus = in.readString();
+        heightType = in.readString();
+        ewDirSegment = in.readString();
+        speedMultiplier = in.readString();
+        direction = in.readString();
+        if (in.readByte() == 0) {
+            geodeticAltitude = null;
+        } else {
+            geodeticAltitude = in.readDouble();
+        }
+        verticalAccuracy = in.readString();
+        horizontalAccuracy = in.readString();
+        baroAccuracy = in.readString();
+        speedAccuracy = in.readString();
+        timestamp = in.readString();
+        timestampAccuracy = in.readString();
+    }
+
+    public static final Creator<CoTMessage> CREATOR = new Creator<CoTMessage>() {
+        @Override
+        public CoTMessage createFromParcel(Parcel in) {
+            return new CoTMessage(in);
+        }
+
+        @Override
+        public CoTMessage[] newArray(int size) {
+            return new CoTMessage[size];
+        }
+    };
+
     public String getUid() { return uid; }
     public String getLat() { return lat; }
     public String getLon() { return lon; }
@@ -73,7 +126,45 @@ public class CoTMessage implements Parcelable {
 
     @Override
     public void writeToParcel(@NonNull Parcel dest, int flags) {
-
+        dest.writeString(id);
+        dest.writeString(caaRegistration);
+        dest.writeString(uid);
+        dest.writeString(type);
+        dest.writeString(lat);
+        dest.writeString(lon);
+        dest.writeString(homeLat);
+        dest.writeString(homeLon);
+        dest.writeString(speed);
+        dest.writeString(vspeed);
+        dest.writeString(alt);
+        dest.writeString(height);
+        dest.writeString(pilotLat);
+        dest.writeString(pilotLon);
+        dest.writeString(description);
+        dest.writeString(selfIDText);
+        dest.writeString(idType);
+        dest.writeString(protocolVersion);
+        dest.writeString(mac);
+        dest.writeInt(rssi);
+        dest.writeString(manufacturer);
+        dest.writeString(locationProtocol);
+        dest.writeString(opStatus);
+        dest.writeString(heightType);
+        dest.writeString(ewDirSegment);
+        dest.writeString(speedMultiplier);
+        dest.writeString(direction);
+        if (geodeticAltitude == null) {
+            dest.writeByte((byte) 0);
+        } else {
+            dest.writeByte((byte) 1);
+            dest.writeDouble(geodeticAltitude);
+        }
+        dest.writeString(verticalAccuracy);
+        dest.writeString(horizontalAccuracy);
+        dest.writeString(baroAccuracy);
+        dest.writeString(speedAccuracy);
+        dest.writeString(timestamp);
+        dest.writeString(timestampAccuracy);
     }
 
     public enum UAType {

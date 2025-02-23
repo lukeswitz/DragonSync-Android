@@ -1,4 +1,3 @@
-// java/com.rootdown.dragonsync/utils/Constants.java
 package com.rootdown.dragonsync.utils;
 
 public class Constants {

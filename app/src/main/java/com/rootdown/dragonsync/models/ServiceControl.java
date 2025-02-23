@@ -1,4 +1,3 @@
-// java/com.rootdown.dragonsync/models/ServiceControl.java
 package com.rootdown.dragonsync.models;
 
 import java.util.List;

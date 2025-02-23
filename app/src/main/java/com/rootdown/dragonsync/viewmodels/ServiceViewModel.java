@@ -1,4 +1,3 @@
-// java/com.rootdown.dragonsync/viewmodels/ServiceViewModel.java
 package com.rootdown.dragonsync.viewmodels;
 
 import androidx.lifecycle.LiveData;
@@ -137,13 +136,13 @@ public class ServiceViewModel extends ViewModel {
 
     private ServiceControl parseServiceControl(String name, String category, JSONObject details) {
         // Parse service details and create ServiceControl object
-        // Implementation details omitted for brevity
+    // TODO!
         return null;
     }
 
     private List<ServiceControl.ServiceIssue> parseIssues(JSONArray issuesArray) {
         // Parse issues array and create ServiceIssue objects
-        // Implementation details omitted for brevity
+        // TODO!
         return new ArrayList<>();
     }
 

@@ -1,4 +1,3 @@
-// java/com.rootdown.dragonsync/network/ZMQHandler.java
 package com.rootdown.dragonsync.network;
 
 import android.util.Log;

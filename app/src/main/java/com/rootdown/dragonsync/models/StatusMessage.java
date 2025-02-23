@@ -1,4 +1,3 @@
-// java/com.rootdown.dragonsync/models/StatusMessage.java
 package com.rootdown.dragonsync.models;
 
 import android.location.Location;

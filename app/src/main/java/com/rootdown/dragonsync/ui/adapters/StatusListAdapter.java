@@ -1,4 +1,3 @@
-// java/com.rootdown.dragonsync/ui/adapters/StatusListAdapter.java
 package com.rootdown.dragonsync.ui.adapters;
 
 import android.view.LayoutInflater;

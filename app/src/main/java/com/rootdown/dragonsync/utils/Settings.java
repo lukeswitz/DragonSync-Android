@@ -1,4 +1,3 @@
-// java/com.rootdown.dragonsync/utils/Settings.java
 package com.rootdown.dragonsync.utils;
 
 import android.content.Context;

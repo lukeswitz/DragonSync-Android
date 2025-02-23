@@ -1,4 +1,3 @@
-// java/com.rootdown.dragonsync/ui/fragments/DroneListBottomSheet.java
 package com.rootdown.dragonsync.ui.fragments;
 
 import android.os.Bundle;

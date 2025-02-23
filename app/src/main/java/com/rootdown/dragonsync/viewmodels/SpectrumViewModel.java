@@ -1,4 +1,3 @@
-// java/com.rootdown.dragonsync/viewmodels/SpectrumViewModel.java
 package com.rootdown.dragonsync.viewmodels;
 
 import androidx.lifecycle.LiveData;
