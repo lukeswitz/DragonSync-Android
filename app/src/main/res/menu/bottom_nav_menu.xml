@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_dashboard"
+        android:icon="@android:drawable/ic_menu_view"
+        android:title="DASH" />
+    <item
+        android:id="@+id/nav_drones"
+        android:icon="@android:drawable/ic_menu_mylocation"
+        android:title="DRONES" />
+    <item
+        android:id="@+id/nav_status"
+        android:icon="@android:drawable/ic_menu_info_details"
+        android:title="STATUS" />
+    <item
+        android:id="@+id/nav_settings"
+        android:icon="@android:drawable/ic_menu_preferences"
+        android:title="SETTINGS" />
+    <item
+        android:id="@+id/nav_history"
+        android:icon="@android:drawable/ic_menu_recent_history"
+        android:title="LOG" />
+</menu>
