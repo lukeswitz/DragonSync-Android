@@ -90,6 +90,9 @@ public class MulticastHandler {
 
                 packet.setLength(buffer.length); // Reset the length for next receive
 
+            } catch (java.net.SocketTimeoutException e) {
+                // This is expected due to our timeout setting, just continue
+                continue;
             } catch (IOException e) {
                 if (isRunning.get()) {
                     // Only log if we're still supposed to be running

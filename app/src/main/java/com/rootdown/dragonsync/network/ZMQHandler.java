@@ -102,6 +102,11 @@ public class ZMQHandler {
                             && shouldContinueRunning.get()) {
                         Log.e(TAG, "ZMQ Polling Error: " + e.getMessage());
                     }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    if (shouldContinueRunning.get()) {
+                        Log.e(TAG, "ZMQ polling thread interrupted: " + e.getMessage());
+                    }
                 } catch (Exception e) {
                     if (shouldContinueRunning.get()) {
                         Log.e(TAG, "ZMQ Polling Error: " + e.getMessage());

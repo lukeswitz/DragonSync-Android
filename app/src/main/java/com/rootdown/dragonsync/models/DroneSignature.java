@@ -154,4 +154,7 @@ public class DroneSignature {
         private double startTime;
         private double lastUpdate;
     }
+
+    public class SpoofDetectionResult {
+    }
 }

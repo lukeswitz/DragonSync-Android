@@ -129,12 +129,15 @@
                 <HorizontalScrollView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp">
+                    android:layout_marginTop="16dp"
+                    android:scrollbars="none">
 
                     <LinearLayout
                         android:id="@+id/thresholds_container"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:layout_gravity="center_horizontal"
+                        android:gravity="center"
                         android:orientation="horizontal"/>
                 </HorizontalScrollView>
             </LinearLayout>

@@ -35,6 +35,14 @@ public class NetworkService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (!isRunning) {
             startForeground(NOTIFICATION_ID, createNotification());
+
+            // Check for explicit connection mode
+            if (intent != null && intent.hasExtra("CONNECTION_MODE")) {
+                String modeString = intent.getStringExtra("CONNECTION_MODE");
+                ConnectionMode mode = ConnectionMode.valueOf(modeString);
+                settings.setConnectionMode(mode);
+            }
+
             startNetworkHandlers();
             isRunning = true;
         }
@@ -56,23 +64,32 @@ public class NetworkService extends Service {
 
     private void startZMQHandler() {
         zmqHandler = new ZMQHandler();
+        Log.d(TAG, "ZMQ starting");
         zmqHandler.connect(
                 settings.getZmqHost(),
                 settings.getZmqTelemetryPort(),
                 settings.getZmqStatusPort(),
-                message -> handleMessage(message, true),
-                message -> handleMessage(message, false)
+                message -> {
+                    Log.d(TAG, "ZMQ telemetry received: " + message.substring(0, Math.min(50, message.length())));
+                    handleMessage(message, true);
+                },
+                message -> {
+                    Log.d(TAG, "ZMQ status received: " + message.substring(0, Math.min(50, message.length())));
+                    handleMessage(message, false);
+                }
         );
     }
 
     private void startMulticastHandler() {
         multicastHandler = new MulticastHandler();
+        Log.d(TAG, "Multicast starting");
         multicastHandler.startListening(
                 settings.getMulticastHost(),
                 settings.getMulticastPort(),
                 new MulticastHandler.MessageHandler() {
                     @Override
                     public void onMessage(String message) {
+                        Log.d(TAG, "Multicast message received: " + message.substring(0, Math.min(50, message.length())));
                         handleMessage(message, true);
                     }
 
@@ -134,9 +151,11 @@ public class NetworkService extends Service {
         super.onDestroy();
         if (zmqHandler != null) {
             zmqHandler.disconnect();
+            Log.d(TAG, "ZMQ stopped");
         }
         if (multicastHandler != null) {
             multicastHandler.stopListening();
+            Log.d(TAG, "Multicast stopped");
         }
         isRunning = false;
     }

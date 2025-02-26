@@ -5,6 +5,9 @@ import android.util.Xml;
 import com.rootdown.dragonsync.models.CoTMessage;
 import com.rootdown.dragonsync.models.DroneSignature;
 import com.rootdown.dragonsync.models.StatusMessage;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
 
@@ -151,8 +154,132 @@ public class XMLParser {
     }
 
     private void processMessageContent(String content) {
-        // Process JSON content similar to Swift version
-        // Will implement JSON parsing logic
+        if (content == null || content.isEmpty()) return;
+
+        try {
+            if (content.startsWith("{")) {
+                JSONObject json = new JSONObject(content);
+
+                if (json.has("system_stats")) {
+                    isStatusMessage = true;
+
+                    JSONObject stats = json.getJSONObject("system_stats");
+                    if (stats.has("cpu")) {
+                        cpuUsage = stats.getDouble("cpu");
+                    }
+
+                    statusMessage = new StatusMessage();
+                    if (json.has("serial_number")) {
+                        statusMessage.setSerialNumber(json.getString("serial_number"));
+                    }
+                    if (json.has("timestamp")) {
+                        statusMessage.setTimestamp(json.getDouble("timestamp"));
+                    }
+
+                    // Extract memory stats
+                    if (stats.has("memory")) {
+                        JSONObject memory = stats.getJSONObject("memory");
+                        StatusMessage.SystemStats.MemoryStats memoryStats = new StatusMessage.SystemStats.MemoryStats();
+                        if (memory.has("total")) {
+                            memoryStats.setTotal(memory.getLong("total"));
+                        }
+                        if (memory.has("used")) {
+                            memoryStats.setUsed(memory.getLong("used"));
+                        }
+                        // Set memory stats to system stats
+                    }
+
+                    // Create and populate system stats
+                    StatusMessage.SystemStats systemStats = new StatusMessage.SystemStats();
+                    systemStats.setCpuUsage(cpuUsage);
+                    if (stats.has("temperature")) {
+                        systemStats.setTemperature(stats.getDouble("temperature"));
+                    }
+                    if (stats.has("uptime")) {
+                        systemStats.setUptime(stats.getDouble("uptime"));
+                    }
+
+                    statusMessage.setSystemStats(systemStats);
+                } else if (json.has("drone_id")) {
+                    cotMessage = new CoTMessage();
+
+                    if (json.has("drone_id")) {
+                        cotMessage.setUid(json.getString("drone_id"));
+                    }
+                    if (json.has("lat")) {
+                        cotMessage.setLat(json.getString("lat"));
+                    }
+                    if (json.has("lon")) {
+                        cotMessage.setLon(json.getString("lon"));
+                    }
+                    if (json.has("alt")) {
+                        cotMessage.setAlt(json.getString("alt"));
+                    }
+                    if (json.has("speed")) {
+                        cotMessage.setSpeed(json.getString("speed"));
+                    }
+                    if (json.has("direction")) {
+                        cotMessage.setDirection(json.getString("direction"));
+                    }
+                    if (json.has("rssi")) {
+                        cotMessage.setRssi(json.getInt("rssi"));
+                    }
+                    if (json.has("mac")) {
+                        cotMessage.setMac(json.getString("mac"));
+                    }
+                    if (json.has("description")) {
+                        cotMessage.setDescription(json.getString("description"));
+                    }
+                    if (json.has("pilot_lat")) {
+                        cotMessage.setPilotLat(json.getString("pilot_lat"));
+                    }
+                    if (json.has("pilot_lon")) {
+                        cotMessage.setPilotLon(json.getString("pilot_lon"));
+                    }
+                    if (json.has("height")) {
+                        cotMessage.setHeight(json.getString("height"));
+                    }
+                    if (json.has("timestamp")) {
+                        cotMessage.setTimestamp(json.getString("timestamp"));
+                    }
+
+                    // Extract signal sources if available
+                    if (json.has("signal_sources") && json.get("signal_sources") instanceof JSONArray) {
+                        JSONArray sources = json.getJSONArray("signal_sources");
+                        for (int i = 0; i < sources.length(); i++) {
+                            JSONObject source = sources.getJSONObject(i);
+                            String sourceMac = source.optString("mac", "");
+                            int sourceRssi = source.optInt("rssi", 0);
+                            String sourceType = source.optString("type", "UNKNOWN");
+                            long sourceTimestamp = source.optLong("timestamp", System.currentTimeMillis());
+
+                            CoTMessage.SignalSource.SignalType signalType;
+                            switch (sourceType.toUpperCase()) {
+                                case "BLUETOOTH":
+                                case "BT":
+                                case "BLE":
+                                    signalType = CoTMessage.SignalSource.SignalType.BLUETOOTH;
+                                    break;
+                                case "WIFI":
+                                    signalType = CoTMessage.SignalSource.SignalType.WIFI;
+                                    break;
+                                case "SDR":
+                                    signalType = CoTMessage.SignalSource.SignalType.SDR;
+                                    break;
+                                default:
+                                    signalType = CoTMessage.SignalSource.SignalType.UNKNOWN;
+                            }
+
+                            cotMessage.getSignalSources().add(
+                                    new CoTMessage.SignalSource(sourceMac, sourceRssi, signalType, sourceTimestamp)
+                            );
+                        }
+                    }
+                }
+            }
+        } catch (JSONException e) {
+            Log.e(TAG, "Error parsing JSON message content: " + e.getMessage());
+        }
     }
 
     private void finalizeMessage() {
