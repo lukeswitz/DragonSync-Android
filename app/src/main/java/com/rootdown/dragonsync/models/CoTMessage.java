@@ -102,7 +102,7 @@ public class CoTMessage implements Parcelable {
     private DroneSignature.SpoofDetectionResult spoofingDetails;
     private String index;
     private String runtime;
-    private Map<String, Object> rawMessage;
+    public Map<String, Object> rawMessage;
 
     public static class SignalSource implements Parcelable {
         private final String mac;

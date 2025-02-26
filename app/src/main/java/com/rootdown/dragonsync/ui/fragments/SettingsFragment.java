@@ -6,6 +6,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.HapticFeedbackConstants;
 import android.view.LayoutInflater;
@@ -41,6 +42,7 @@ public class SettingsFragment extends Fragment {
 
     private Handler mainHandler = new Handler(Looper.getMainLooper());
     private boolean isConnecting = false;
+    private static boolean appFirstLaunch = true;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -55,8 +57,31 @@ public class SettingsFragment extends Fragment {
         setupConnectionModes();
         loadCurrentSettings();
         setupListeners();
+
+        // Only force disconnect on first app launch
+        if (appFirstLaunch) {
+            connectionSwitch.setChecked(false);
+            settings.setListening(false);
+            updateConnectionStatusUI(false);
+            appFirstLaunch = false;
+        } else {
+            // Just update UI to match current state
+            connectionSwitch.setChecked(settings.isListening());
+            updateConnectionStatusUI(settings.isListening());
+        }
+
         updateConnectionStatusUI(settings.isListening());
         return view;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+
+        // Check the actual connection state and update UI accordingly
+        boolean isListening = settings.isListening();
+        connectionSwitch.setChecked(isListening);
+        updateConnectionStatusUI(isListening);
     }
 
     private void initializeViews(View view) {
@@ -187,6 +212,16 @@ public class SettingsFragment extends Fragment {
         // Ensure the current connection mode is set
         ConnectionMode currentMode = settings.getConnectionMode();
 
+        // Save host settings before connecting
+        String hostValue = hostInput.getText().toString().trim();
+        if (!hostValue.isEmpty()) {
+            if (currentMode == ConnectionMode.ZMQ) {
+                settings.setZmqHost(hostValue);
+            } else {
+                settings.setMulticastHost(hostValue);
+            }
+        }
+
         // Start service with explicit connection mode
         Intent intent = new Intent(requireContext(), NetworkService.class);
         intent.putExtra("CONNECTION_MODE", currentMode.name());
@@ -194,21 +229,25 @@ public class SettingsFragment extends Fragment {
         // Use startForegroundService for compatibility with newer Android versions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             requireContext().startForegroundService(intent);
+            Log.i(TAG, "Started foreground service with mode: " + currentMode.name());
         } else {
             requireContext().startService(intent);
+            Log.i(TAG, "Started service with mode: " + currentMode.name());
         }
 
-        // Add delay to simulate connection attempt
+        // Set listening state immediately
+        settings.setListening(true);
+
+        // Update UI after a short delay to give service time to start
         mainHandler.postDelayed(() -> {
             isConnecting = false;
-            settings.setListening(true);
             updateConnectionStatusUI(true);
 
             // Notify activity if needed
             if (getActivity() != null) {
                 getActivity().setResult(1);
             }
-        }, 1500);
+        }, 500);
     }
 
     private void stopConnection() {

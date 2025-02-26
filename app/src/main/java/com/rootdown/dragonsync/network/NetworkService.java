@@ -5,6 +5,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Intent;
+import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.IBinder;
 import androidx.core.app.NotificationCompat;
@@ -33,14 +34,26 @@ public class NetworkService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        Log.i(TAG, "Network service onStartCommand triggered");
+
         if (!isRunning) {
-            startForeground(NOTIFICATION_ID, createNotification());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(NOTIFICATION_ID, createNotification(),
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+            } else {
+                startForeground(NOTIFICATION_ID, createNotification());
+            }
 
             // Check for explicit connection mode
             if (intent != null && intent.hasExtra("CONNECTION_MODE")) {
                 String modeString = intent.getStringExtra("CONNECTION_MODE");
-                ConnectionMode mode = ConnectionMode.valueOf(modeString);
-                settings.setConnectionMode(mode);
+                try {
+                    ConnectionMode mode = ConnectionMode.valueOf(modeString);
+                    settings.setConnectionMode(mode);
+                    Log.i(TAG, "Using connection mode from intent: " + mode);
+                } catch (IllegalArgumentException e) {
+                    Log.e(TAG, "Invalid connection mode: " + modeString);
+                }
             }
 
             startNetworkHandlers();
@@ -51,6 +64,7 @@ public class NetworkService extends Service {
 
     private void startNetworkHandlers() {
         ConnectionMode mode = settings.getConnectionMode();
+        Log.i(TAG, "Starting network handler with mode: " + mode.name());
 
         switch (mode) {
             case ZMQ:
@@ -58,6 +72,9 @@ public class NetworkService extends Service {
                 break;
             case MULTICAST:
                 startMulticastHandler();
+                break;
+            default:
+                Log.e(TAG, "Unknown connection mode: " + mode);
                 break;
         }
     }
@@ -151,13 +168,20 @@ public class NetworkService extends Service {
         super.onDestroy();
         if (zmqHandler != null) {
             zmqHandler.disconnect();
+            zmqHandler = null;
             Log.d(TAG, "ZMQ stopped");
         }
         if (multicastHandler != null) {
             multicastHandler.stopListening();
+            multicastHandler = null;
             Log.d(TAG, "Multicast stopped");
         }
+
+        // Update the settings to reflect that we're no longer listening
+        settings.setListening(false);
+
         isRunning = false;
+        Log.i(TAG, "Network service destroyed");
     }
 
     @Override

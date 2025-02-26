@@ -65,12 +65,12 @@ public class StatusFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        serviceViewModel.startMonitoring();
+//        serviceViewModel.startMonitoring();
     }
 
     @Override
     public void onPause() {
         super.onPause();
-        serviceViewModel.stopMonitoring();
+//        serviceViewModel.stopMonitoring();
     }
 }

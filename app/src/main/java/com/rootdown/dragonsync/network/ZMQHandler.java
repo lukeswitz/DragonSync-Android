@@ -154,6 +154,11 @@ public class ZMQHandler {
     }
 
     public void disconnect() {
+        if (!isConnected.get()) {
+            // Already disconnected, no need to do it again
+            return;
+        }
+
         Log.i(TAG, "ZMQ: Disconnecting...");
         shouldContinueRunning.set(false);
 

@@ -3,9 +3,8 @@ package com.rootdown.dragonsync.network;
 import android.util.Log;
 import android.util.Xml;
 import com.rootdown.dragonsync.models.CoTMessage;
-import com.rootdown.dragonsync.models.DroneSignature;
 import com.rootdown.dragonsync.models.StatusMessage;
-
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.xmlpull.v1.XmlPullParser;
@@ -19,36 +18,6 @@ import java.util.Map;
 
 public class XMLParser {
     private static final String TAG = "XMLParser";
-    private ZMQHandler.MessageFormat messageFormat = ZMQHandler.MessageFormat.BLUETOOTH;
-    private Map<String, Object> rawMessage;
-    private String currentElement = "";
-    private String currentIdType = "Unknown";
-    private String parentElement = "";
-    private ArrayList<String> elementStack = new ArrayList<>();
-    private Map<String, String> eventAttributes = new HashMap<>();
-    private Map<String, String> pointAttributes = new HashMap<>();
-    private Map<String, String> messageAttributes = new HashMap<>();
-
-    // Message values
-    private String speed = "0.0";
-    private String vspeed = "0.0";
-    private String alt = "0.0";
-    private String height = "0.0";
-    private String pilotLat = "0.0";
-    private String pilotLon = "0.0";
-    private String pHomeLat = "0.0";
-    private String pHomeLon = "0.0";
-    private String droneDescription = "";
-    private String currentValue = "";
-    private String messageContent = "";
-    private String remarks = "";
-    private double cpuUsage = 0.0;
-
-    // Result objects
-    private CoTMessage cotMessage;
-    private StatusMessage statusMessage;
-    private boolean isStatusMessage = false;
-
     private final Map<String, ArrayList<String>> macPrefixesByManufacturer = new HashMap<>();
 
     public XMLParser() {
@@ -56,22 +25,36 @@ public class XMLParser {
     }
 
     private void initializeMacPrefixes() {
-        // DJI
         ArrayList<String> djiPrefixes = new ArrayList<>();
         djiPrefixes.add("04:A8:5A");
         djiPrefixes.add("34:D2:62");
         djiPrefixes.add("48:1C:B9");
         djiPrefixes.add("58:B8:58");
-        djiPrefixes.add("60:60:1F");  // Mavic 1 Pro
+        djiPrefixes.add("60:60:1F");
         djiPrefixes.add("E4:7A:2C");
         macPrefixesByManufacturer.put("DJI", djiPrefixes);
-
-        // Add other manufacturers...
     }
 
     public ParseResult parse(String xmlStr) {
         ParseResult result = new ParseResult();
         XmlPullParser parser = Xml.newPullParser();
+
+        String currentElement = "";
+        ArrayList<String> elementStack = new ArrayList<>();
+        Map<String, String> eventAttributes = new HashMap<>();
+        Map<String, String> pointAttributes = new HashMap<>();
+
+        String speed = "0.0";
+        String alt = "0.0";
+        String droneDescription = "";
+        String currentValue = "";
+        String messageContent = "";
+        String remarks = "";
+        double cpuUsage = 0.0;
+
+        CoTMessage cotMessage = null;
+        StatusMessage statusMessage = null;
+        boolean isStatusMessage = false;
 
         try {
             parser.setInput(new StringReader(xmlStr));
@@ -80,13 +63,121 @@ public class XMLParser {
             while (eventType != XmlPullParser.END_DOCUMENT) {
                 switch (eventType) {
                     case XmlPullParser.START_TAG:
-                        handleStartTag(parser);
+                        currentElement = parser.getName();
+                        currentValue = "";
+                        messageContent = "";
+                        elementStack.add(currentElement);
+
+                        if (currentElement.equals("event")) {
+                            for (int i = 0; i < parser.getAttributeCount(); i++) {
+                                eventAttributes.put(parser.getAttributeName(i),
+                                        parser.getAttributeValue(i));
+                            }
+                            remarks = "";
+                        } else if (currentElement.equals("point")) {
+                            for (int i = 0; i < parser.getAttributeCount(); i++) {
+                                pointAttributes.put(parser.getAttributeName(i),
+                                        parser.getAttributeValue(i));
+                            }
+                            if (pointAttributes.containsKey("hae")) {
+                                alt = pointAttributes.get("hae");
+                            }
+                        }
                         break;
                     case XmlPullParser.TEXT:
-                        handleText(parser);
+                        String text = parser.getText();
+                        if (currentElement.equals("message")) {
+                            messageContent += text;
+                            if (text != null && !text.isEmpty() && text.startsWith("{")) {
+                                try {
+                                    JSONObject json = new JSONObject(text);
+
+                                    if (json.has("system_stats")) {
+                                        isStatusMessage = true;
+                                        statusMessage = new StatusMessage();
+                                        Log.d(TAG, "Created StatusMessage from JSON");
+
+                                    } else if (json.has("drone_id") || json.has("uid")) {
+                                        cotMessage = new CoTMessage();
+
+                                        // Create a map of values for future field access
+                                        Map<String, Object> rawData = new HashMap<>();
+                                        rawData.put("uid", json.optString("drone_id", json.optString("uid", "")));
+                                        rawData.put("lat", json.optString("lat", "0.0"));
+                                        rawData.put("lon", json.optString("lon", "0.0"));
+                                        rawData.put("alt", json.optString("alt", "0.0"));
+                                        rawData.put("speed", json.optString("speed", "0.0"));
+                                        rawData.put("direction", json.optString("direction", "0.0"));
+
+                                        if (json.has("rssi")) {
+                                            rawData.put("rssi", json.getInt("rssi"));
+                                        }
+
+                                        if (json.has("mac")) {
+                                            rawData.put("mac", json.getString("mac"));
+                                        }
+
+                                        if (json.has("description")) {
+                                            rawData.put("description", json.getString("description"));
+                                        }
+
+                                        if (json.has("pilot_lat")) {
+                                            rawData.put("pilotLat", json.getString("pilot_lat"));
+                                        }
+
+                                        if (json.has("pilot_lon")) {
+                                            rawData.put("pilotLon", json.getString("pilot_lon"));
+                                        }
+
+                                        cotMessage.rawMessage = rawData;
+                                        Log.d(TAG, "Created CoTMessage from JSON");
+                                    }
+                                } catch (JSONException e) {
+                                    Log.e(TAG, "Error parsing JSON: " + e.getMessage());
+                                }
+                            }
+                        } else if (currentElement.equals("remarks")) {
+                            remarks += text;
+                        } else {
+                            currentValue += text.trim();
+                        }
                         break;
                     case XmlPullParser.END_TAG:
-                        handleEndTag(parser);
+                        String element = parser.getName();
+                        if (!elementStack.isEmpty()) {
+                            elementStack.remove(elementStack.size() - 1);
+                        }
+
+                        if (element.equals("event")) {
+                            if (remarks.contains("CPU Usage:") && statusMessage == null) {
+                                statusMessage = new StatusMessage();
+                                isStatusMessage = true;
+                                Log.d(TAG, "Created StatusMessage from remarks");
+                            } else if (cotMessage == null) {
+                                cotMessage = new CoTMessage();
+
+                                // Create a map of values for future field access
+                                Map<String, Object> rawData = new HashMap<>();
+                                if (eventAttributes.containsKey("uid")) {
+                                    rawData.put("uid", eventAttributes.get("uid"));
+                                }
+
+                                if (pointAttributes.containsKey("lat")) {
+                                    rawData.put("lat", pointAttributes.get("lat"));
+                                }
+
+                                if (pointAttributes.containsKey("lon")) {
+                                    rawData.put("lon", pointAttributes.get("lon"));
+                                }
+
+                                rawData.put("alt", alt);
+                                rawData.put("speed", speed);
+                                rawData.put("description", droneDescription);
+
+                                cotMessage.rawMessage = rawData;
+                                Log.d(TAG, "Created CoTMessage from XML attributes");
+                            }
+                        }
                         break;
                 }
                 eventType = parser.next();
@@ -106,198 +197,22 @@ public class XMLParser {
         return result;
     }
 
-    private void handleStartTag(XmlPullParser parser) {
-        currentElement = parser.getName();
-        currentValue = "";
-        messageContent = "";
-        elementStack.add(currentElement);
-
-        if (currentElement.equals("event")) {
-            for (int i = 0; i < parser.getAttributeCount(); i++) {
-                eventAttributes.put(parser.getAttributeName(i),
-                        parser.getAttributeValue(i));
-            }
-            remarks = "";
-        } else if (currentElement.equals("point")) {
-            for (int i = 0; i < parser.getAttributeCount(); i++) {
-                pointAttributes.put(parser.getAttributeName(i),
-                        parser.getAttributeValue(i));
-            }
-            if (pointAttributes.containsKey("hae")) {
-                alt = pointAttributes.get("hae");
-            }
-        }
-    }
-
-    private void handleText(XmlPullParser parser) {
-        String text = parser.getText();
-        if (currentElement.equals("message")) {
-            messageContent += text;
-            processMessageContent(text);
-        } else if (currentElement.equals("remarks")) {
-            remarks += text;
-        } else {
-            currentValue += text.trim();
-        }
-    }
-
-    private void handleEndTag(XmlPullParser parser) {
-        // Similar to Swift version's parser didEndElement
-        String element = parser.getName();
-        if (!elementStack.isEmpty()) {
-            elementStack.remove(elementStack.size() - 1);
+    private String findManufacturer(String mac) {
+        if (mac == null || mac.isEmpty()) {
+            return "Unknown";
         }
 
-        if (element.equals("event")) {
-            finalizeMessage();
-        }
-    }
+        String prefix = mac.toUpperCase().substring(0, Math.min(8, mac.length()));
 
-    private void processMessageContent(String content) {
-        if (content == null || content.isEmpty()) return;
-
-        try {
-            if (content.startsWith("{")) {
-                JSONObject json = new JSONObject(content);
-
-                if (json.has("system_stats")) {
-                    isStatusMessage = true;
-
-                    JSONObject stats = json.getJSONObject("system_stats");
-                    if (stats.has("cpu")) {
-                        cpuUsage = stats.getDouble("cpu");
-                    }
-
-                    statusMessage = new StatusMessage();
-                    if (json.has("serial_number")) {
-                        statusMessage.setSerialNumber(json.getString("serial_number"));
-                    }
-                    if (json.has("timestamp")) {
-                        statusMessage.setTimestamp(json.getDouble("timestamp"));
-                    }
-
-                    // Extract memory stats
-                    if (stats.has("memory")) {
-                        JSONObject memory = stats.getJSONObject("memory");
-                        StatusMessage.SystemStats.MemoryStats memoryStats = new StatusMessage.SystemStats.MemoryStats();
-                        if (memory.has("total")) {
-                            memoryStats.setTotal(memory.getLong("total"));
-                        }
-                        if (memory.has("used")) {
-                            memoryStats.setUsed(memory.getLong("used"));
-                        }
-                        // Set memory stats to system stats
-                    }
-
-                    // Create and populate system stats
-                    StatusMessage.SystemStats systemStats = new StatusMessage.SystemStats();
-                    systemStats.setCpuUsage(cpuUsage);
-                    if (stats.has("temperature")) {
-                        systemStats.setTemperature(stats.getDouble("temperature"));
-                    }
-                    if (stats.has("uptime")) {
-                        systemStats.setUptime(stats.getDouble("uptime"));
-                    }
-
-                    statusMessage.setSystemStats(systemStats);
-                } else if (json.has("drone_id")) {
-                    cotMessage = new CoTMessage();
-
-                    if (json.has("drone_id")) {
-                        cotMessage.setUid(json.getString("drone_id"));
-                    }
-                    if (json.has("lat")) {
-                        cotMessage.setLat(json.getString("lat"));
-                    }
-                    if (json.has("lon")) {
-                        cotMessage.setLon(json.getString("lon"));
-                    }
-                    if (json.has("alt")) {
-                        cotMessage.setAlt(json.getString("alt"));
-                    }
-                    if (json.has("speed")) {
-                        cotMessage.setSpeed(json.getString("speed"));
-                    }
-                    if (json.has("direction")) {
-                        cotMessage.setDirection(json.getString("direction"));
-                    }
-                    if (json.has("rssi")) {
-                        cotMessage.setRssi(json.getInt("rssi"));
-                    }
-                    if (json.has("mac")) {
-                        cotMessage.setMac(json.getString("mac"));
-                    }
-                    if (json.has("description")) {
-                        cotMessage.setDescription(json.getString("description"));
-                    }
-                    if (json.has("pilot_lat")) {
-                        cotMessage.setPilotLat(json.getString("pilot_lat"));
-                    }
-                    if (json.has("pilot_lon")) {
-                        cotMessage.setPilotLon(json.getString("pilot_lon"));
-                    }
-                    if (json.has("height")) {
-                        cotMessage.setHeight(json.getString("height"));
-                    }
-                    if (json.has("timestamp")) {
-                        cotMessage.setTimestamp(json.getString("timestamp"));
-                    }
-
-                    // Extract signal sources if available
-                    if (json.has("signal_sources") && json.get("signal_sources") instanceof JSONArray) {
-                        JSONArray sources = json.getJSONArray("signal_sources");
-                        for (int i = 0; i < sources.length(); i++) {
-                            JSONObject source = sources.getJSONObject(i);
-                            String sourceMac = source.optString("mac", "");
-                            int sourceRssi = source.optInt("rssi", 0);
-                            String sourceType = source.optString("type", "UNKNOWN");
-                            long sourceTimestamp = source.optLong("timestamp", System.currentTimeMillis());
-
-                            CoTMessage.SignalSource.SignalType signalType;
-                            switch (sourceType.toUpperCase()) {
-                                case "BLUETOOTH":
-                                case "BT":
-                                case "BLE":
-                                    signalType = CoTMessage.SignalSource.SignalType.BLUETOOTH;
-                                    break;
-                                case "WIFI":
-                                    signalType = CoTMessage.SignalSource.SignalType.WIFI;
-                                    break;
-                                case "SDR":
-                                    signalType = CoTMessage.SignalSource.SignalType.SDR;
-                                    break;
-                                default:
-                                    signalType = CoTMessage.SignalSource.SignalType.UNKNOWN;
-                            }
-
-                            cotMessage.getSignalSources().add(
-                                    new CoTMessage.SignalSource(sourceMac, sourceRssi, signalType, sourceTimestamp)
-                            );
-                        }
-                    }
+        for (Map.Entry<String, ArrayList<String>> entry : macPrefixesByManufacturer.entrySet()) {
+            for (String knownPrefix : entry.getValue()) {
+                if (prefix.startsWith(knownPrefix.replace(":", ""))) {
+                    return entry.getKey();
                 }
             }
-        } catch (JSONException e) {
-            Log.e(TAG, "Error parsing JSON message content: " + e.getMessage());
         }
-    }
 
-    private void finalizeMessage() {
-        if (remarks.contains("CPU Usage:")) {
-            createStatusMessage();
-        } else {
-            createCoTMessage();
-        }
-    }
-
-    private void createStatusMessage() {
-        // Create StatusMessage object from parsed data
-        // Similar to Swift version's logic
-    }
-
-    private void createCoTMessage() {
-        // Create CoTMessage object from parsed data
-        // Similar to Swift version's logic
+        return "Unknown";
     }
 
     public static class ParseResult {

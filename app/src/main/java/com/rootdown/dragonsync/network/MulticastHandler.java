@@ -7,6 +7,7 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
+import java.util.Enumeration;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,24 +52,33 @@ public class MulticastHandler {
         socket = new MulticastSocket(port);
         group = InetAddress.getByName(multicastAddress);
 
-        // Find network interface that supports multicast
-        NetworkInterface networkInterface = NetworkInterface.getNetworkInterfaces()
-                .nextElement();
-        while (networkInterface != null && !networkInterface.supportsMulticast()) {
-            networkInterface = NetworkInterface.getNetworkInterfaces().nextElement();
+        // Improved network interface discovery
+        NetworkInterface networkInterface = null;
+        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+
+        while (interfaces.hasMoreElements()) {
+            NetworkInterface iface = interfaces.nextElement();
+            if (iface.isUp() && iface.supportsMulticast() && !iface.isLoopback()) {
+                // Found a suitable interface
+                networkInterface = iface;
+                Log.i(TAG, "Using network interface: " + iface.getDisplayName());
+                break;
+            }
         }
 
         if (networkInterface == null) {
-            throw new IOException("No multicast-capable network interface found");
+            // Fall back to default behavior
+            Log.w(TAG, "No suitable multicast network interface found, using default");
+        } else {
+            socket.setNetworkInterface(networkInterface);
         }
 
-        socket.setNetworkInterface(networkInterface);
         socket.joinGroup(group);
         socket.setReuseAddress(true);
         socket.setSoTimeout(1000); // 1 second timeout for receives
 
         isRunning.set(true);
-        Log.i(TAG, "Multicast socket setup complete on " + networkInterface.getDisplayName());
+        Log.i(TAG, "Multicast socket setup complete");
     }
 
     private void listenForMessages() {
@@ -110,12 +120,15 @@ public class MulticastHandler {
 
         if (socket != null) {
             try {
-                socket.leaveGroup(group);
+                if (group != null) {
+                    socket.leaveGroup(group);
+                }
             } catch (IOException e) {
                 Log.e(TAG, "Error leaving multicast group: " + e.getMessage());
+            } finally {
+                socket.close();
+                socket = null;
             }
-            socket.close();
-            socket = null;
         }
 
         if (executor != null) {
