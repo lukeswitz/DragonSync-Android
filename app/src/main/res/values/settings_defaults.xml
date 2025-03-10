@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Network Constants -->
+    <!-- Multicast Settings -->
+    <string name="default_multicast_host">224.0.0.1</string>
+    <integer name="default_multicast_port">6969</integer>
+
+    <!-- ZMQ Settings -->
+    <string name="default_zmq_host">0.0.0.0</string>
+    <integer name="default_zmq_telemetry_port">4224</integer>
+    <integer name="default_zmq_status_port">4225</integer>
+    <integer name="default_zmq_spectrum_port">4226</integer>
+
+    <!-- Serial Connection Settings -->
+    <integer name="default_serial_multicast_port">6970</integer>
+    <integer name="default_serial_zmq_port">4227</integer>
+
+    <!-- Warning Thresholds -->
+    <item name="default_cpu_warning_threshold" format="float" type="dimen">80.0</item>
+    <item name="default_temp_warning_threshold" format="float" type="dimen">70.0</item>
+    <item name="default_memory_warning_threshold" format="float" type="dimen">0.85</item>
+    <item name="default_pluto_temp_threshold" format="float" type="dimen">85.0</item>
+    <item name="default_zynq_temp_threshold" format="float" type="dimen">85.0</item>
+    <integer name="default_proximity_threshold">-60</integer>
+
+    <!-- Cache Sizes -->
+    <integer name="max_messages_cache">1000</integer>
+    <integer name="max_history_entries">100</integer>
+    <integer name="max_host_history">5</integer>
+
+    <!-- Default Feature Settings -->
+    <bool name="default_notifications_enabled">true</bool>
+    <bool name="default_keep_screen_on">false</bool>
+    <bool name="default_system_warnings_enabled">true</bool>
+    <bool name="default_spoof_detection_enabled">true</bool>
+    <bool name="default_proximity_warnings_enabled">true</bool>
+    <bool name="default_serial_console_enabled">false</bool>
+</resources>

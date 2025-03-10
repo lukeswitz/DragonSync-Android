@@ -98,7 +98,7 @@ public class NetworkService extends Service {
     }
 
     private void startMulticastHandler() {
-        multicastHandler = new MulticastHandler();
+        multicastHandler = new MulticastHandler(this);  // Pass context
         Log.d(TAG, "Multicast starting");
         multicastHandler.startListening(
                 settings.getMulticastHost(),
