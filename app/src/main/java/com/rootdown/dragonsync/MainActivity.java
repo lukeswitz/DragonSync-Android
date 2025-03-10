@@ -1,7 +1,7 @@
 package com.rootdown.dragonsync;
 
 import android.os.Bundle;
-import com.google.android.material.navigation.NavigationBarView;
+
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 
@@ -15,7 +15,6 @@ import com.rootdown.dragonsync.ui.fragments.HistoryFragment;
 import com.rootdown.dragonsync.ui.fragments.SettingsFragment;
 import com.rootdown.dragonsync.ui.fragments.StatusFragment;
 
-import androidx.lifecycle.SavedStateViewModelFactory;
 import androidx.lifecycle.ViewModelProvider;
 import com.rootdown.dragonsync.viewmodels.CoTViewModel;
 import com.rootdown.dragonsync.viewmodels.StatusViewModel;
