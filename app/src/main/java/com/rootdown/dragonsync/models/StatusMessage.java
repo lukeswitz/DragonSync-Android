@@ -37,6 +37,7 @@ public class StatusMessage implements Parcelable {
         dest.writeParcelable(gpsData, flags);
         dest.writeParcelable(systemStats, flags);
         dest.writeParcelable(antStats, flags);
+
     }
 
     @Override
@@ -256,10 +257,10 @@ public class StatusMessage implements Parcelable {
         }
 
         public static class DiskStats implements Parcelable {
-            private long total;
-            private long used;
+            public long total;
+            public long used;
             private long free;
-            private double percent;
+            public double percent;
 
             public DiskStats() {
             }

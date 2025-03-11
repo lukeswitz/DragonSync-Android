@@ -127,17 +127,17 @@ public class DashboardFragment extends Fragment {
         droneStatsGrid.removeAllViews();
 
         // Create tracker counter card
-        View trackedCard = createCounterCard(requireContext(), "TRACKED", 0, Color.BLUE);
+        View trackedCard = createCounterCard(requireContext(), "TRACKED", 0, getResources().getColor(R.color.teal_200, null));
         trackedDronesText = trackedCard.findViewById(R.id.counter_value);
         droneStatsGrid.addView(trackedCard);
 
         // Create spoofed counter card
-        View spoofedCard = createCounterCard(requireContext(), "SPOOFED", 0, Color.YELLOW);
+        View spoofedCard = createCounterCard(requireContext(), "SPOOFED", 0, getResources().getColor(R.color.orange, null));
         spoofedDronesText = spoofedCard.findViewById(R.id.counter_value);
         droneStatsGrid.addView(spoofedCard);
 
         // Create nearby counter card
-        View nearbyCard = createCounterCard(requireContext(), "NEARBY", 0, Color.GREEN);
+        View nearbyCard = createCounterCard(requireContext(), "NEARBY", 0, Color.YELLOW);
         nearbyDronesText = nearbyCard.findViewById(R.id.counter_value);
         droneStatsGrid.addView(nearbyCard);
     }
@@ -146,18 +146,16 @@ public class DashboardFragment extends Fragment {
         // Clear existing views
         sdrStatsGrid.removeAllViews();
 
-        // Add PLUTO temperature gauge
+        // PLUTO temperature gauge
         CircularGaugeView plutoGauge = createGauge(requireContext(), "PLUTO", 0, "°C", Color.GREEN);
         sdrStatsGrid.addView(plutoGauge);
 
-        // Add ZYNQ temperature gauge
+        // ZYNQ temperature gauge
         CircularGaugeView zynqGauge = createGauge(requireContext(), "ZYNQ", 0, "°C", Color.GREEN);
         sdrStatsGrid.addView(zynqGauge);
 
-        // Add status text
+        // SDR status text
         TextView statusText = new TextView(requireContext());
-        statusText.setText("STATUS\nINACTIVE");
-        statusText.setTextColor(Color.RED);
         statusText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         sdrStatsGrid.addView(statusText);
     }
@@ -207,7 +205,6 @@ public class DashboardFragment extends Fragment {
                 Constants.DEFAULT_TEMP_WARNING_THRESHOLD
         ));
 
-        // Update SDR stats if available
         if (status.getAntStats() != null) {
             updateGauge(sdrStatsGrid, 0, status.getAntStats().getPlutoTemp(), getColorForValue(
                     status.getAntStats().getPlutoTemp(),
@@ -220,6 +217,20 @@ public class DashboardFragment extends Fragment {
                     Constants.DEFAULT_ZYNQ_TEMP_THRESHOLD * 0.8,
                     Constants.DEFAULT_ZYNQ_TEMP_THRESHOLD
             ));
+
+            // Update status text (third child in the grid)
+            if (sdrStatsGrid.getChildCount() > 2) {
+                TextView statusText = (TextView) sdrStatsGrid.getChildAt(2);
+                statusText.setText("STATUS\nACTIVE");
+                statusText.setTextColor(Color.GREEN);
+            }
+        } else {
+            // Set inactive status when no ANT stats available
+            if (sdrStatsGrid.getChildCount() > 2) {
+                TextView statusText = (TextView) sdrStatsGrid.getChildAt(2);
+                statusText.setText("STATUS\nINACTIVE");
+                statusText.setTextColor(Color.RED);
+            }
         }
     }
 

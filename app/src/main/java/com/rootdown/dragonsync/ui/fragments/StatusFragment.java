@@ -31,7 +31,6 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
     private StatusViewModel statusViewModel;
     private ServiceViewModel serviceViewModel;
 
-    // Status views
     private TextView serverNameText;
     private TextView uptimeText;
     private TextView cpuValueText;
@@ -53,6 +52,7 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
 
     private MapView mapView;
     private GoogleMap googleMap;
+    private StatusMessage latestMessage;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -65,7 +65,20 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_status, container, false);
 
-        // Initialize views
+        initializeViews(view);
+
+        mapView = view.findViewById(R.id.map_view);
+        if (mapView != null) {
+            mapView.onCreate(savedInstanceState);
+            mapView.getMapAsync(this);
+        }
+
+        setupObservers();
+
+        return view;
+    }
+
+    private void initializeViews(View view) {
         serverNameText = view.findViewById(R.id.server_name_text);
         uptimeText = view.findViewById(R.id.uptime_text);
         cpuValueText = view.findViewById(R.id.cpu_value_text);
@@ -84,22 +97,12 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
         zynqTempProgress = view.findViewById(R.id.zynq_temp_progress);
         memoryProgress = view.findViewById(R.id.memory_progress);
         diskProgress = view.findViewById(R.id.disk_progress);
-
-        mapView = view.findViewById(R.id.map_view);
-        if (mapView != null) {
-            mapView.onCreate(savedInstanceState);
-            mapView.getMapAsync(this);
-        }
-
-        setupObservers();
-
-        return view;
     }
 
     private void setupObservers() {
         statusViewModel.getStatusMessages().observe(getViewLifecycleOwner(), messages -> {
             if (!messages.isEmpty()) {
-                StatusMessage latestMessage = messages.get(messages.size() - 1);
+                latestMessage = messages.get(messages.size() - 1);
                 updateStatusUI(latestMessage);
             }
         });
@@ -108,7 +111,6 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
     private void updateStatusUI(StatusMessage message) {
         if (message == null || message.getSystemStats() == null) return;
 
-        // Update server name and uptime
         if (message.getSerialNumber() != null) {
             serverNameText.setText(message.getSerialNumber());
         }
@@ -116,108 +118,156 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
         double uptime = message.getSystemStats().getUptime();
         uptimeText.setText(formatUptime(uptime));
 
-        // Update CPU usage
-        double cpuUsage = message.getSystemStats().getCpuUsage();
-        cpuValueText.setText(String.format("%.1f", cpuUsage));
+        updateCpuUsage(message.getSystemStats().getCpuUsage());
+        updateTemperature(message.getSystemStats().getTemperature());
+
+        if (message.getSystemStats().getMemory() != null) {
+            updateMemoryUsage(message.getSystemStats().getMemory());
+        }
+
+        if (message.getSystemStats().getDisk() != null) {
+            updateDiskStatus(message.getSystemStats().getDisk());
+        }
+
+        if (message.getAntStats() != null) {
+            updateSdrStats(message.getAntStats());
+        }
+
+        if (message.getGpsData() != null) {
+            updateLocationInfo(message.getGpsData());
+            updateMapLocation(message);
+        }
+    }
+
+    private void updateDiskStatus(StatusMessage.SystemStats.DiskStats disk) {
+        if (disk != null) {
+            // Access the fields directly since they're declared in the class
+            long totalBytes = disk.total;
+            long usedBytes = disk.used;
+
+            if (totalBytes > 0) {
+                double usedGB = usedBytes / 1024.0 / 1024.0 / 1024.0;
+                double totalGB = totalBytes / 1024.0 / 1024.0 / 1024.0;
+                diskText.setText(String.format(Locale.getDefault(), "%.1f/%.1fGB", usedGB, totalGB));
+
+                int diskPercent = (int)(disk.percent * 100);
+                diskProgress.setProgress(diskPercent);
+
+                int diskColor;
+                double diskWarningThreshold = 0.9; // 90% usage
+                double diskCriticalThreshold = 0.95; // 95% usage
+
+                if (disk.percent > diskCriticalThreshold) {
+                    diskColor = getResources().getColor(R.color.red, null);
+                } else if (disk.percent > diskWarningThreshold) {
+                    diskColor = getResources().getColor(R.color.orange, null);
+                } else {
+                    diskColor = getResources().getColor(R.color.green, null);
+                }
+                diskProgress.setProgressTintList(ColorStateList.valueOf(diskColor));
+            }
+        }
+    }
+
+    private void updateCpuUsage(double cpuUsage) {
+        cpuValueText.setText(String.format(Locale.getDefault(), "%.1f", cpuUsage));
         cpuProgress.setProgress((int)cpuUsage);
 
-        // Update CPU color based on threshold
         int cpuColor;
         if (cpuUsage > Constants.DEFAULT_CPU_WARNING_THRESHOLD) {
-            cpuColor = Color.RED;
+            cpuColor = getResources().getColor(R.color.red, null);
         } else if (cpuUsage > Constants.DEFAULT_CPU_WARNING_THRESHOLD * 0.8) {
-            cpuColor = Color.YELLOW;
+            cpuColor = getResources().getColor(R.color.orange, null);
         } else {
-            cpuColor = Color.GREEN;
+            cpuColor = getResources().getColor(R.color.green, null);
         }
         cpuProgress.setProgressTintList(ColorStateList.valueOf(cpuColor));
         cpuValueText.setTextColor(cpuColor);
+    }
 
-        // Update temperature
-        double temp = message.getSystemStats().getTemperature();
-        tempValueText.setText(String.format("%.1f", temp));
+    private void updateTemperature(double temp) {
+        tempValueText.setText(String.format(Locale.getDefault(), "%.1f", temp));
         tempProgress.setProgress((int)temp);
 
-        // Update temperature color based on threshold
         int tempColor;
         if (temp > Constants.DEFAULT_TEMP_WARNING_THRESHOLD) {
-            tempColor = Color.RED;
+            tempColor = getResources().getColor(R.color.red, null);
         } else if (temp > Constants.DEFAULT_TEMP_WARNING_THRESHOLD * 0.8) {
-            tempColor = Color.YELLOW;
+            tempColor = getResources().getColor(R.color.orange, null);
         } else {
-            tempColor = Color.GREEN;
+            tempColor = getResources().getColor(R.color.green, null);
         }
         tempProgress.setProgressTintList(ColorStateList.valueOf(tempColor));
         tempValueText.setTextColor(tempColor);
+    }
 
-        // Update memory usage
-        if (message.getSystemStats().getMemory() != null) {
-            long memTotal = message.getSystemStats().getMemory().getTotal();
-            long memUsed = message.getSystemStats().getMemory().getUsed();
+    private void updateMemoryUsage(StatusMessage.SystemStats.MemoryStats memory) {
+        if (memory != null) {
+            long memTotal = memory.getTotal();
+            long memUsed = memory.getUsed();
 
             if (memTotal > 0) {
                 double memGB = memUsed / 1024.0 / 1024.0 / 1024.0;
                 double totalGB = memTotal / 1024.0 / 1024.0 / 1024.0;
-                memoryText.setText(String.format("%.1f/%.1fGB", memGB, totalGB));
+                memoryText.setText(String.format(Locale.getDefault(), "%.1f/%.1fGB", memGB, totalGB));
 
-                // Update memory progress
                 int memPercent = (int)((double)memUsed / memTotal * 100);
                 memoryProgress.setProgress(memPercent);
+
+                int memColor;
+                if (memPercent > Constants.DEFAULT_MEMORY_WARNING_THRESHOLD * 100) {
+                    memColor = getResources().getColor(R.color.red, null);
+                } else if (memPercent > Constants.DEFAULT_MEMORY_WARNING_THRESHOLD * 0.8 * 100) {
+                    memColor = getResources().getColor(R.color.orange, null);
+                } else {
+                    memColor = getResources().getColor(R.color.green, null);
+                }
+                memoryProgress.setProgressTintList(ColorStateList.valueOf(memColor));
             }
         }
+    }
 
-        // Update ANT stats if available
-        if (message.getAntStats() != null) {
-            double plutoTemp = message.getAntStats().getPlutoTemp();
-            double zynqTemp = message.getAntStats().getZynqTemp();
+    private void updateSdrStats(StatusMessage.ANTStats antStats) {
+        double plutoTemp = antStats.getPlutoTemp();
+        double zynqTemp = antStats.getZynqTemp();
 
-            plutoTempValueText.setText(String.format("%.1f", plutoTemp));
-            zynqTempValueText.setText(String.format("%.1f", zynqTemp));
+        plutoTempValueText.setText(String.format(Locale.getDefault(), "%.1f", plutoTemp));
+        zynqTempValueText.setText(String.format(Locale.getDefault(), "%.1f", zynqTemp));
 
-            plutoTempProgress.setProgress((int)plutoTemp);
-            zynqTempProgress.setProgress((int)zynqTemp);
+        plutoTempProgress.setProgress((int)plutoTemp);
+        zynqTempProgress.setProgress((int)zynqTemp);
 
-            // Set colors based on thresholds
-            int plutoColor;
-            if (plutoTemp > Constants.DEFAULT_PLUTO_TEMP_THRESHOLD) {
-                plutoColor = Color.RED;
-            } else if (plutoTemp > Constants.DEFAULT_PLUTO_TEMP_THRESHOLD * 0.8) {
-                plutoColor = Color.YELLOW;
-            } else {
-                plutoColor = Color.GREEN;
-            }
-            plutoTempProgress.setProgressTintList(ColorStateList.valueOf(plutoColor));
-            plutoTempValueText.setTextColor(plutoColor);
-
-            int zynqColor;
-            if (zynqTemp > Constants.DEFAULT_ZYNQ_TEMP_THRESHOLD) {
-                zynqColor = Color.RED;
-            } else if (zynqTemp > Constants.DEFAULT_ZYNQ_TEMP_THRESHOLD * 0.8) {
-                zynqColor = Color.YELLOW;
-            } else {
-                zynqColor = Color.GREEN;
-            }
-            zynqTempProgress.setProgressTintList(ColorStateList.valueOf(zynqColor));
-            zynqTempValueText.setTextColor(zynqColor);
+        int plutoColor;
+        if (plutoTemp > Constants.DEFAULT_PLUTO_TEMP_THRESHOLD) {
+            plutoColor = getResources().getColor(R.color.red, null);
+        } else if (plutoTemp > Constants.DEFAULT_PLUTO_TEMP_THRESHOLD * 0.8) {
+            plutoColor = getResources().getColor(R.color.orange, null);
+        } else {
+            plutoColor = getResources().getColor(R.color.green, null);
         }
+        plutoTempProgress.setProgressTintList(ColorStateList.valueOf(plutoColor));
+        plutoTempValueText.setTextColor(plutoColor);
 
-        // Update GPS data if available
-        if (message.getGpsData() != null) {
-            // Create combined coordinate text
-            String coordText = String.format(Locale.US, "%.6f°, %.6f°",
-                    message.getGpsData().getLatitude(),
-                    message.getGpsData().getLongitude());
-
-            // Update the coordinates display
-            coordinatesText.setText(coordText);
-
-            // Update altitude and speed
-            altitudeText.setText(String.format(Locale.US, "ALT %.1fm", message.getGpsData().getAltitude()));
-            speedText.setText(String.format(Locale.US, "SPD %.1fm/s", message.getGpsData().getSpeed()));
-
-            // Update map if available
-            updateMapLocation(message);
+        int zynqColor;
+        if (zynqTemp > Constants.DEFAULT_ZYNQ_TEMP_THRESHOLD) {
+            zynqColor = getResources().getColor(R.color.red, null);
+        } else if (zynqTemp > Constants.DEFAULT_ZYNQ_TEMP_THRESHOLD * 0.8) {
+            zynqColor = getResources().getColor(R.color.orange, null);
+        } else {
+            zynqColor = getResources().getColor(R.color.green, null);
         }
+        zynqTempProgress.setProgressTintList(ColorStateList.valueOf(zynqColor));
+        zynqTempValueText.setTextColor(zynqColor);
+    }
+
+    private void updateLocationInfo(StatusMessage.GPSData gpsData) {
+        String coordText = String.format(Locale.getDefault(), "%.6f°, %.6f°",
+                gpsData.getLatitude(),
+                gpsData.getLongitude());
+        coordinatesText.setText(coordText);
+
+        altitudeText.setText(String.format(Locale.getDefault(), getString(R.string.altitude_format), gpsData.getAltitude()));
+        speedText.setText(String.format(Locale.getDefault(), getString(R.string.speed_format), gpsData.getSpeed()));
     }
 
     private void updateMapLocation(StatusMessage message) {
@@ -227,15 +277,10 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
                     message.getGpsData().getLongitude()
             );
 
-            // Clear previous markers
             googleMap.clear();
-
-            // Add new marker
             googleMap.addMarker(new MarkerOptions()
                     .position(position)
                     .title(message.getSerialNumber()));
-
-            // Move camera to the position
             googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(position, 15f));
         }
     }
@@ -244,13 +289,17 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
         int hours = (int)(uptime / 3600);
         int minutes = (int)((uptime % 3600) / 60);
         int seconds = (int)(uptime % 60);
-        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+        return String.format(Locale.getDefault(), "%02d:%02d:%02d", hours, minutes, seconds);
     }
 
     @Override
     public void onMapReady(GoogleMap map) {
         googleMap = map;
         googleMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+
+        if (latestMessage != null && latestMessage.getGpsData() != null) {
+            updateMapLocation(latestMessage);
+        }
     }
 
     @Override

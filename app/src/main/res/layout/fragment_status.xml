@@ -4,7 +4,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000">
+    android:background="@color/black">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -17,16 +17,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="8dp"
+            android:padding="16dp"
+            android:layout_marginTop="25dp">
 
             <TextView
                 android:id="@+id/system_status_title"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="SYSTEM STATUS"
+                android:text="@string/system_status"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="#FFFFFF"/>
+                android:textColor="@color/white"/>
 
             <View
                 android:layout_width="0dp"
@@ -38,8 +40,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="16sp"
-                android:textColor="#4CAF50"
-                android:text="wardragon-101"/>
+                android:textColor="@color/green" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -52,8 +53,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="16sp"
-                android:textColor="#4CAF50"
-                android:text="00:09:21"/>
+                android:textColor="@color/green" />
         </LinearLayout>
 
         <!-- Main Metrics Grid - centered layout -->
@@ -103,8 +103,8 @@
                             app:indicatorSize="100dp"
                             app:trackThickness="8dp"
                             app:trackColor="@android:color/transparent"
-                            app:indicatorColor="#4CAF50"
-                            android:progress="51"
+                            app:indicatorColor="@color/green"
+                            android:progress="0"
                             android:max="100"/>
 
                         <LinearLayout
@@ -120,15 +120,14 @@
                                 android:layout_height="wrap_content"
                                 android:textSize="32sp"
                                 android:textStyle="bold"
-                                android:textColor="#4CAF50"
-                                android:text="51.0"/>
+                                android:textColor="@color/green" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:textSize="16sp"
-                                android:textColor="#4CAF50"
-                                android:text="%"/>
+                                android:textColor="@color/green"
+                                android:text="@string/percent_symbol"/>
                         </LinearLayout>
 
                         <TextView
@@ -137,7 +136,7 @@
                             android:layout_gravity="bottom|center_horizontal"
                             android:textSize="16sp"
                             android:textColor="#AAAAAA"
-                            android:text="CPU"/>
+                            android:text="@string/cpu_label"/>
                     </FrameLayout>
 
                     <!-- TEMP Gauge -->
@@ -166,8 +165,8 @@
                             app:indicatorSize="100dp"
                             app:trackThickness="8dp"
                             app:trackColor="@android:color/transparent"
-                            app:indicatorColor="#4CAF50"
-                            android:progress="46"
+                            app:indicatorColor="@color/green"
+                            android:progress="0"
                             android:max="100"/>
 
                         <LinearLayout
@@ -183,15 +182,14 @@
                                 android:layout_height="wrap_content"
                                 android:textSize="32sp"
                                 android:textStyle="bold"
-                                android:textColor="#4CAF50"
-                                android:text="46.8"/>
+                                android:textColor="@color/green" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:textSize="16sp"
-                                android:textColor="#4CAF50"
-                                android:text="°C"/>
+                                android:textColor="@color/green"
+                                android:text="@string/celsius_symbol"/>
                         </LinearLayout>
 
                         <TextView
@@ -200,7 +198,7 @@
                             android:layout_gravity="bottom|center_horizontal"
                             android:textSize="16sp"
                             android:textColor="#AAAAAA"
-                            android:text="TEMP"/>
+                            android:text="@string/temp_label"/>
                     </FrameLayout>
                 </LinearLayout>
             </LinearLayout>
@@ -224,10 +222,10 @@
                     android:id="@+id/sdr_status_title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="SDR STATUS"
+                    android:text="@string/sdr_status"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    android:textColor="#FFFFFF"/>
+                    android:textColor="@color/white"/>
 
                 <LinearLayout
                     android:id="@+id/sdr_metrics_container"
@@ -263,8 +261,8 @@
                             app:indicatorSize="100dp"
                             app:trackThickness="8dp"
                             app:trackColor="@android:color/transparent"
-                            app:indicatorColor="#FFEB3B"
-                            android:progress="55"
+                            app:indicatorColor="@color/green"
+                            android:progress="0"
                             android:max="100"/>
 
                         <LinearLayout
@@ -280,15 +278,14 @@
                                 android:layout_height="wrap_content"
                                 android:textSize="32sp"
                                 android:textStyle="bold"
-                                android:textColor="#FFEB3B"
-                                android:text="55.0"/>
+                                android:textColor="@color/green" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:textSize="16sp"
-                                android:textColor="#FFEB3B"
-                                android:text="°C"/>
+                                android:textColor="@color/green"
+                                android:text="@string/celsius_symbol"/>
                         </LinearLayout>
 
                         <TextView
@@ -297,7 +294,7 @@
                             android:layout_gravity="bottom|center_horizontal"
                             android:textSize="16sp"
                             android:textColor="#AAAAAA"
-                            android:text="PLUTO"/>
+                            android:text="@string/pluto_label"/>
                     </FrameLayout>
 
                     <!-- ZYNQ Gauge -->
@@ -326,8 +323,8 @@
                             app:indicatorSize="100dp"
                             app:trackThickness="8dp"
                             app:trackColor="@android:color/transparent"
-                            app:indicatorColor="#4CAF50"
-                            android:progress="40"
+                            app:indicatorColor="@color/green"
+                            android:progress="0"
                             android:max="100"/>
 
                         <LinearLayout
@@ -343,15 +340,14 @@
                                 android:layout_height="wrap_content"
                                 android:textSize="32sp"
                                 android:textStyle="bold"
-                                android:textColor="#4CAF50"
-                                android:text="40.0"/>
+                                android:textColor="@color/green" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:textSize="16sp"
-                                android:textColor="#4CAF50"
-                                android:text="°C"/>
+                                android:textColor="@color/green"
+                                android:text="@string/celsius_symbol"/>
                         </LinearLayout>
 
                         <TextView
@@ -360,7 +356,7 @@
                             android:layout_gravity="bottom|center_horizontal"
                             android:textSize="16sp"
                             android:textColor="#AAAAAA"
-                            android:text="ZYNQ"/>
+                            android:text="@string/zynq_label"/>
                     </FrameLayout>
                 </LinearLayout>
             </LinearLayout>
@@ -384,10 +380,10 @@
                     android:id="@+id/location_title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="LOCATION"
+                    android:text="@string/location_label"
                     android:textSize="14sp"
                     android:textStyle="bold"
-                    android:textColor="#FFFFFF"/>
+                    android:textColor="@color/white"/>
 
                 <!-- Combined GPS coordinates -->
                 <LinearLayout
@@ -402,8 +398,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:textSize="16sp"
-                        android:textColor="#4CAF50"
-                        android:text="41.0563°, -75.0798°"
+                        android:textColor="@color/green"
                         android:textAlignment="center"
                         android:typeface="monospace"/>
 
@@ -420,8 +415,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:textSize="16sp"
-                            android:textColor="#4CAF50"
-                            android:text="ALT 1236.0m"
+                            android:textColor="@color/green"
                             android:layout_marginEnd="16dp"/>
 
                         <TextView
@@ -429,8 +423,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:textSize="16sp"
-                            android:textColor="#4CAF50"
-                            android:text="SPD 0.0m/s"/>
+                            android:textColor="@color/green"/>
                     </LinearLayout>
                 </LinearLayout>
 
@@ -445,7 +438,7 @@
                         android:id="@+id/map_view"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
-                        android:contentDescription="Map showing device location" />
+                        android:contentDescription="@string/map_description" />
 
                     <FrameLayout
                         android:layout_width="wrap_content"
@@ -458,8 +451,7 @@
                             android:id="@+id/map_station_label"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="wardragon-101"
-                            android:textColor="#FFFFFF"
+                            android:textColor="@color/white"
                             android:textSize="12sp"/>
                     </FrameLayout>
                 </FrameLayout>
@@ -482,16 +474,16 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="SYSTEM RESOURCES"
+                    android:text="@string/system_resources"
                     android:textSize="16sp"
                     android:textStyle="bold"
-                    android:textColor="#FFFFFF"/>
+                    android:textColor="@color/white"/>
 
                 <!-- Memory -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="MEMORY"
+                    android:text="@string/memory_label"
                     android:textColor="#AAAAAA"
                     android:textSize="14sp"
                     android:layout_marginTop="16dp"/>
@@ -500,24 +492,23 @@
                     android:id="@+id/memory_text"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="#4CAF50"
-                    android:textSize="16sp"
-                    android:text="2.8/8.0GB"/>
+                    android:textColor="@color/green"
+                    android:textSize="16sp"/>
 
                 <ProgressBar
                     android:id="@+id/memory_progress"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:progress="35"
+                    android:progress="0"
                     android:max="100"
-                    android:progressTint="#4CAF50"/>
+                    android:progressTint="@color/green"/>
 
                 <!-- Disk -->
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="DISK"
+                    android:text="@string/disk_label"
                     android:textColor="#AAAAAA"
                     android:textSize="14sp"
                     android:layout_marginTop="16dp"/>
@@ -526,18 +517,17 @@
                     android:id="@+id/disk_text"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="#4CAF50"
-                    android:textSize="16sp"
-                    android:text="146.4/500.0GB"/>
+                    android:textColor="@color/green"
+                    android:textSize="16sp"/>
 
                 <ProgressBar
                     android:id="@+id/disk_progress"
                     style="?android:attr/progressBarStyleHorizontal"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:progress="29"
+                    android:progress="0"
                     android:max="100"
-                    android:progressTint="#4CAF50"/>
+                    android:progressTint="@color/green"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>

@@ -1,11 +1,16 @@
 package com.rootdown.dragonsync.network;
 
 import android.util.Log;
+
+import org.json.JSONObject;
+import org.xmlpull.v1.XmlPullParser;
+import org.xmlpull.v1.XmlPullParserFactory;
 import org.zeromq.SocketType;
 import org.zeromq.ZContext;
 import org.zeromq.ZMQ;
 import org.zeromq.ZMQException;
 
+import java.io.StringReader;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -107,12 +112,13 @@ public class ZMQHandler {
         }
     }
 
+    // Updated startPolling method
     private void startPolling(ZMQ.Socket socket, MessageHandler handler, String socketType) {
         executor.execute(() -> {
             Log.i(TAG, "Starting " + socketType + " polling thread");
             int pollTimeoutMs = 250;
             int emptyPollCount = 0;
-            int maxEmptyPolls = 20;  // Report every ~5 seconds of inactivity
+            int maxEmptyPolls = 20;
 
             try {
                 while (shouldContinueRunning.get() && !Thread.currentThread().isInterrupted()) {
@@ -124,25 +130,28 @@ public class ZMQHandler {
                             String message = new String(data);
                             Log.d(TAG, socketType + " received: " + message.substring(0, Math.min(50, message.length())) + "...");
 
+                            if (message.trim().startsWith("<?xml")) {
+                                message = convertXmlToJson(message);
+                            }
+
                             if (handler != null) {
                                 handler.onMessage(message);
                             }
                         } else {
                             emptyPollCount++;
                             if (emptyPollCount >= maxEmptyPolls) {
-                                Log.d(TAG, socketType + " socket: No data received for ~" + (pollTimeoutMs * emptyPollCount / 1000) + " seconds");
+                                Log.d(TAG, socketType + " socket: No data received for ~"
+                                        + (pollTimeoutMs * emptyPollCount / 1000) + " seconds");
                                 emptyPollCount = 0;
                             }
-                            // Sleep to avoid tight loop
                             Thread.sleep(pollTimeoutMs);
                         }
                     } catch (ZMQException e) {
                         if (e.getErrorCode() == ZMQ.Error.EAGAIN.getCode()) {
-                            // No message available, just continue
                             Thread.sleep(pollTimeoutMs);
                         } else if (shouldContinueRunning.get()) {
-                            Log.e(TAG, socketType + " ZMQ error: " + e.getMessage() + " (code: " + e.getErrorCode() + ")", e);
-                            // Add delay before retry
+                            Log.e(TAG, socketType + " ZMQ error: " + e.getMessage()
+                                    + " (code: " + e.getErrorCode() + ")", e);
                             Thread.sleep(1000);
                         }
                     } catch (InterruptedException ie) {
@@ -155,10 +164,42 @@ public class ZMQHandler {
                     Log.e(TAG, socketType + " polling thread error: " + e.getMessage(), e);
                 }
             }
-
             Log.i(TAG, socketType + " polling thread exiting");
         });
     }
+
+    // New function to convert XML to JSON using XmlPullParser
+    private String convertXmlToJson(String xmlString) {
+        try {
+            XmlPullParserFactory factory = XmlPullParserFactory.newInstance();
+            factory.setNamespaceAware(true);
+            XmlPullParser parser = factory.newPullParser();
+            parser.setInput(new StringReader(xmlString));
+            JSONObject json = new JSONObject();
+            String currentTag = null;
+            int eventType = parser.getEventType();
+            while (eventType != XmlPullParser.END_DOCUMENT) {
+                if (eventType == XmlPullParser.START_TAG) {
+                    currentTag = parser.getName();
+                } else if (eventType == XmlPullParser.TEXT) {
+                    if (currentTag != null) {
+                        String text = parser.getText().trim();
+                        if (!text.isEmpty()) {
+                            json.put(currentTag, text);
+                        }
+                    }
+                } else if (eventType == XmlPullParser.END_TAG) {
+                    currentTag = null;
+                }
+                eventType = parser.next();
+            }
+            return json.toString();
+        } catch (Exception e) {
+            Log.e(TAG, "Error converting XML to JSON: " + e.getMessage(), e);
+            return "{}";
+        }
+    }
+
 
     public void sendServiceCommand(String command, CommandCallback callback) {
         if (statusSocket == null || !isConnected.get()) {

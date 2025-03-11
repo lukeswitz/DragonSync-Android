@@ -3,4 +3,17 @@
     <string name="system_status">SYSTEM STATUS</string>
     <string name="active_drones">ACTIVE DRONES</string>
     <string name="sdr_status">SDR STATUS</string>
+    <string name="percent_symbol">%</string>
+    <string name="celsius_symbol">°C</string>
+    <string name="cpu_label">CPU</string>
+    <string name="temp_label">TEMP</string>
+    <string name="pluto_label">PLUTO</string>
+    <string name="zynq_label">ZYNQ</string>
+    <string name="location_label">LOCATION</string>
+    <string name="map_description">Map showing device location</string>
+    <string name="system_resources">SYSTEM RESOURCES</string>
+    <string name="memory_label">MEMORY</string>
+    <string name="disk_label">DISK</string>
+    <string name="altitude_format">ALT %.1fm</string>
+    <string name="speed_format">SPD %.1fm/s</string>
 </resources>
