@@ -1,14 +1,427 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
+<ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#000000">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/status_list"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:padding="8dp"/>
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+        <!-- Header with server name and uptime -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:id="@+id/server_name_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:textColor="#4CAF50"
+                android:text="wardragon-101"/>
+
+            <TextView
+                android:id="@+id/uptime_text"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="24sp"
+                android:textColor="#4CAF50"
+                android:text="00:09:21"/>
+        </LinearLayout>
+
+        <!-- Main Metrics Grid -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <!-- CPU Gauge -->
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <com.google.android.material.progressindicator.CircularProgressIndicator
+                    android:id="@+id/cpu_progress_bg"
+                    android:layout_width="match_parent"
+                    android:layout_height="120dp"
+                    android:layout_gravity="center"
+                    app:indicatorSize="120dp"
+                    app:trackThickness="8dp"
+                    app:trackColor="#333333"
+                    app:indicatorColor="#333333"
+                    android:progress="100"
+                    android:max="100"/>
+
+                <com.google.android.material.progressindicator.CircularProgressIndicator
+                    android:id="@+id/cpu_progress"
+                    android:layout_width="match_parent"
+                    android:layout_height="120dp"
+                    android:layout_gravity="center"
+                    app:indicatorSize="120dp"
+                    app:trackThickness="8dp"
+                    app:trackColor="@android:color/transparent"
+                    app:indicatorColor="#4CAF50"
+                    android:progress="51"
+                    android:max="100"/>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_gravity="center"
+                    android:gravity="center">
+
+                    <TextView
+                        android:id="@+id/cpu_value_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="32sp"
+                        android:textStyle="bold"
+                        android:textColor="#4CAF50"
+                        android:text="51.0"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="16sp"
+                        android:textColor="#4CAF50"
+                        android:text="%"/>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:textSize="16sp"
+                    android:textColor="#AAAAAA"
+                    android:text="CPU"/>
+            </FrameLayout>
+
+            <!-- TEMP Gauge -->
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <com.google.android.material.progressindicator.CircularProgressIndicator
+                    android:id="@+id/temp_progress_bg"
+                    android:layout_width="match_parent"
+                    android:layout_height="120dp"
+                    android:layout_gravity="center"
+                    app:indicatorSize="120dp"
+                    app:trackThickness="8dp"
+                    app:trackColor="#333333"
+                    app:indicatorColor="#333333"
+                    android:progress="100"
+                    android:max="100"/>
+
+                <com.google.android.material.progressindicator.CircularProgressIndicator
+                    android:id="@+id/temp_progress"
+                    android:layout_width="match_parent"
+                    android:layout_height="120dp"
+                    android:layout_gravity="center"
+                    app:indicatorSize="120dp"
+                    app:trackThickness="8dp"
+                    app:trackColor="@android:color/transparent"
+                    app:indicatorColor="#4CAF50"
+                    android:progress="46"
+                    android:max="100"/>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_gravity="center"
+                    android:gravity="center">
+
+                    <TextView
+                        android:id="@+id/temp_value_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="32sp"
+                        android:textStyle="bold"
+                        android:textColor="#4CAF50"
+                        android:text="46.8"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="16sp"
+                        android:textColor="#4CAF50"
+                        android:text="°C"/>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:textSize="16sp"
+                    android:textColor="#AAAAAA"
+                    android:text="TEMP"/>
+            </FrameLayout>
+        </LinearLayout>
+
+        <!-- GPS Coordinates -->
+        <TextView
+            android:id="@+id/latitude_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="24sp"
+            android:textColor="#4CAF50"
+            android:gravity="right"
+            android:text="41.0563°"/>
+
+        <TextView
+            android:id="@+id/longitude_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="24sp"
+            android:textColor="#4CAF50"
+            android:gravity="right"
+            android:text="-75.0798°"/>
+
+        <TextView
+            android:id="@+id/altitude_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="24sp"
+            android:textColor="#4CAF50"
+            android:gravity="right"
+            android:text="ALT 1236.0m"/>
+
+        <TextView
+            android:id="@+id/speed_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="24sp"
+            android:textColor="#4CAF50"
+            android:gravity="right"
+            android:text="SPD 0.0m/s"/>
+
+        <!-- Secondary Metrics Grid -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp">
+
+            <!-- PLUTO Gauge -->
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <com.google.android.material.progressindicator.CircularProgressIndicator
+                    android:id="@+id/pluto_progress_bg"
+                    android:layout_width="match_parent"
+                    android:layout_height="120dp"
+                    android:layout_gravity="center"
+                    app:indicatorSize="120dp"
+                    app:trackThickness="8dp"
+                    app:trackColor="#333333"
+                    app:indicatorColor="#333333"
+                    android:progress="100"
+                    android:max="100"/>
+
+                <com.google.android.material.progressindicator.CircularProgressIndicator
+                    android:id="@+id/pluto_temp_progress"
+                    android:layout_width="match_parent"
+                    android:layout_height="120dp"
+                    android:layout_gravity="center"
+                    app:indicatorSize="120dp"
+                    app:trackThickness="8dp"
+                    app:trackColor="@android:color/transparent"
+                    app:indicatorColor="#FFEB3B"
+                    android:progress="55"
+                    android:max="100"/>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_gravity="center"
+                    android:gravity="center">
+
+                    <TextView
+                        android:id="@+id/pluto_temp_value_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="32sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFEB3B"
+                        android:text="55.0"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="16sp"
+                        android:textColor="#FFEB3B"
+                        android:text="°C"/>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:textSize="16sp"
+                    android:textColor="#AAAAAA"
+                    android:text="PLUTO"/>
+            </FrameLayout>
+
+            <!-- ZYNQ Gauge -->
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1">
+
+                <com.google.android.material.progressindicator.CircularProgressIndicator
+                    android:id="@+id/zynq_progress_bg"
+                    android:layout_width="match_parent"
+                    android:layout_height="120dp"
+                    android:layout_gravity="center"
+                    app:indicatorSize="120dp"
+                    app:trackThickness="8dp"
+                    app:trackColor="#333333"
+                    app:indicatorColor="#333333"
+                    android:progress="100"
+                    android:max="100"/>
+
+                <com.google.android.material.progressindicator.CircularProgressIndicator
+                    android:id="@+id/zynq_temp_progress"
+                    android:layout_width="match_parent"
+                    android:layout_height="120dp"
+                    android:layout_gravity="center"
+                    app:indicatorSize="120dp"
+                    app:trackThickness="8dp"
+                    app:trackColor="@android:color/transparent"
+                    app:indicatorColor="#4CAF50"
+                    android:progress="40"
+                    android:max="100"/>
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_gravity="center"
+                    android:gravity="center">
+
+                    <TextView
+                        android:id="@+id/zynq_temp_value_text"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="32sp"
+                        android:textStyle="bold"
+                        android:textColor="#4CAF50"
+                        android:text="40.0"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="16sp"
+                        android:textColor="#4CAF50"
+                        android:text="°C"/>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom|center_horizontal"
+                    android:textSize="16sp"
+                    android:textColor="#AAAAAA"
+                    android:text="ZYNQ"/>
+            </FrameLayout>
+        </LinearLayout>
+
+        <!-- Memory and Disk -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="MEMORY"
+            android:textColor="#AAAAAA"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/memory_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#4CAF50"
+            android:textSize="18sp"
+            android:text="2.8/8.0GB"/>
+
+        <ProgressBar
+            android:id="@+id/memory_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:progress="35"
+            android:max="100"
+            android:progressTint="#4CAF50"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="DISK"
+            android:textColor="#AAAAAA"
+            android:textSize="16sp"
+            android:layout_marginTop="8dp"/>
+
+        <TextView
+            android:id="@+id/disk_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#4CAF50"
+            android:textSize="18sp"
+            android:text="146.4/500.0GB"/>
+
+        <ProgressBar
+            android:id="@+id/disk_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:progress="29"
+            android:max="100"
+            android:progressTint="#4CAF50"/>
+
+        <!-- Map with marker -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_marginTop="16dp"
+            android:background="#4F4F4F">
+
+            <com.google.android.gms.maps.MapView
+                android:id="@+id/map_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <FrameLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="#80A4DEA4"
+                android:padding="8dp"
+                android:layout_gravity="bottom|center">
+
+                <TextView
+                    android:id="@+id/map_station_label"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="wardragon-101"
+                    android:textColor="#FFFFFF"
+                    android:textSize="14sp"/>
+            </FrameLayout>
+        </FrameLayout>
+
+    </LinearLayout>
+</ScrollView>

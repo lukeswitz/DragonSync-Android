@@ -17,7 +17,11 @@ public class DroneSignature {
     private double firstSeen;
     private Double messageInterval;
 
-    public static class IdInfo {
+    public CoTMessage getPrimaryId() {
+        return primaryId;
+    }
+
+    public static class IdInfo extends CoTMessage {
         private String id;
         private IdType type;
         private String protocolVersion;
@@ -155,6 +159,34 @@ public class DroneSignature {
         private double lastUpdate;
     }
 
-    public class SpoofDetectionResult {
+    public static class SpoofDetectionResult {
+        private double confidence;
+        private String reason;
+
+        public SpoofDetectionResult() {
+            this.confidence = 0.0;
+            this.reason = "";
+        }
+
+        public SpoofDetectionResult(double confidence, String reason) {
+            this.confidence = confidence;
+            this.reason = reason;
+        }
+
+        public double getConfidence() {
+            return confidence;
+        }
+
+        public void setConfidence(double confidence) {
+            this.confidence = confidence;
+        }
+
+        public String getReason() {
+            return reason;
+        }
+
+        public void setReason(String reason) {
+            this.reason = reason;
+        }
     }
 }

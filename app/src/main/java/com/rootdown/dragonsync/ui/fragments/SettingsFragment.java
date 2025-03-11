@@ -98,7 +98,7 @@ public class SettingsFragment extends Fragment {
         ViewGroup parent = (ViewGroup) connectionSwitch.getParent();
         parent.addView(connectionStatus, parent.indexOfChild(connectionSwitch) + 1);
 
-        // Continue with other view bindings
+        // Bind view stuff
         notificationsSwitch = view.findViewById(R.id.notifications_switch);
         spoofDetectionSwitch = view.findViewById(R.id.spoof_detection_switch);
         screenOnSwitch = view.findViewById(R.id.screen_on_switch);

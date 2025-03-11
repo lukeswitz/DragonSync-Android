@@ -18,20 +18,28 @@ import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.rootdown.dragonsync.R;
 import com.rootdown.dragonsync.models.CoTMessage;
 import com.rootdown.dragonsync.viewmodels.CoTViewModel;
 
+import android.location.Location;
+import android.util.Log;
+import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
+    private static final String TAG = "LiveMapFragment";
+
     private MapView mapView;
     private GoogleMap googleMap;
     private CoTViewModel viewModel;
     private Map<String, Marker> droneMarkers = new HashMap<>();
+    private Map<String, Marker> operatorMarkers = new HashMap<>();
+    private Map<String, Marker> homeMarkers = new HashMap<>();
     private Map<String, List<LatLng>> flightPaths = new HashMap<>();
     private boolean userHasMovedMap = false;
     private CoTMessage initialMessage;
@@ -95,6 +103,26 @@ public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
         googleMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
         googleMap.getUiSettings().setZoomControlsEnabled(true);
         googleMap.getUiSettings().setCompassEnabled(true);
+
+        // Set up marker info window
+        googleMap.setInfoWindowAdapter(new GoogleMap.InfoWindowAdapter() {
+            @Override
+            public View getInfoWindow(Marker marker) {
+                return null; // Use default window frame
+            }
+
+            @Override
+            public View getInfoContents(Marker marker) {
+                View view = getLayoutInflater().inflate(R.layout.map_info_window, null);
+                TextView title = view.findViewById(R.id.info_window_title);
+                TextView snippet = view.findViewById(R.id.info_window_snippet);
+
+                title.setText(marker.getTitle());
+                snippet.setText(marker.getSnippet());
+
+                return view;
+            }
+        });
     }
 
     private void setupMapGestures() {
@@ -155,6 +183,54 @@ public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
                 Double.parseDouble(message.getAlt()),
                 Double.parseDouble(message.getSpeed()));
         marker.setSnippet(snippet);
+
+        // Add operator location if available
+        if (message.getPilotLat() != null && message.getPilotLon() != null &&
+                !message.getPilotLat().equals("0.0") && !message.getPilotLon().equals("0.0")) {
+
+            LatLng operatorPos = new LatLng(
+                    Double.parseDouble(message.getPilotLat()),
+                    Double.parseDouble(message.getPilotLon())
+            );
+
+            // Use a unique ID for the operator marker
+            String operatorMarkerId = message.getUid() + "_operator";
+            Marker operatorMarker = operatorMarkers.get(operatorMarkerId);
+
+            if (operatorMarker == null) {
+                operatorMarker = googleMap.addMarker(new MarkerOptions()
+                        .position(operatorPos)
+                        .title("Operator for " + message.getUid())
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+                operatorMarkers.put(operatorMarkerId, operatorMarker);
+            } else {
+                operatorMarker.setPosition(operatorPos);
+            }
+        }
+
+        // Add home location if available (for DJI drones)
+        if (message.getHomeLat() != null && message.getHomeLon() != null &&
+                !message.getHomeLat().equals("0.0") && !message.getHomeLon().equals("0.0")) {
+
+            LatLng homePos = new LatLng(
+                    Double.parseDouble(message.getHomeLat()),
+                    Double.parseDouble(message.getHomeLon())
+            );
+
+            // Use a unique ID for the home marker
+            String homeMarkerId = message.getUid() + "_home";
+            Marker homeMarker = homeMarkers.get(homeMarkerId);
+
+            if (homeMarker == null) {
+                homeMarker = googleMap.addMarker(new MarkerOptions()
+                        .position(homePos)
+                        .title("Home for " + message.getUid())
+                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW)));
+                homeMarkers.put(homeMarkerId, homeMarker);
+            } else {
+                homeMarker.setPosition(homePos);
+            }
+        }
     }
 
     private void updateCameraToFitDrones(List<CoTMessage> messages) {

@@ -1,5 +1,9 @@
 package com.rootdown.dragonsync;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Bundle;
 
 import androidx.fragment.app.Fragment;
@@ -9,6 +13,8 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.widget.FrameLayout;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.rootdown.dragonsync.models.CoTMessage;
+import com.rootdown.dragonsync.models.StatusMessage;
 import com.rootdown.dragonsync.ui.fragments.DashboardFragment;
 import com.rootdown.dragonsync.ui.fragments.DroneListFragment;
 import com.rootdown.dragonsync.ui.fragments.HistoryFragment;
@@ -51,6 +57,43 @@ public class MainActivity extends FragmentActivity {
                     .replace(R.id.fragment_container, new SettingsFragment())
                     .commit();
         }
+    }
+
+    private BroadcastReceiver telemetryReceiver = new BroadcastReceiver() {
+        public void onReceive(Context context, Intent intent) {
+            if (intent.hasExtra("parsed_message")) {
+                CoTMessage message = intent.getParcelableExtra("parsed_message");
+                if (message != null) {
+                    cotViewModel.updateMessage(message);
+                }
+            }
+        }
+    };
+
+    private BroadcastReceiver statusReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.hasExtra("status_message")) {
+                StatusMessage message = intent.getParcelableExtra("status_message");
+                if (message != null) {
+                    statusViewModel.updateStatusMessage(message);
+                }
+            }
+        }
+    };
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        registerReceiver(telemetryReceiver, new IntentFilter("com.rootdown.dragonsync.TELEMETRY"));
+        registerReceiver(statusReceiver, new IntentFilter("com.rootdown.dragonsync.STATUS"));
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        unregisterReceiver(telemetryReceiver);
+        unregisterReceiver(statusReceiver);
     }
 
     private boolean onNavigationItemSelected(MenuItem item) {
