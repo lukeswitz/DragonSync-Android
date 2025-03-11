@@ -25,6 +25,8 @@ import com.rootdown.dragonsync.viewmodels.ServiceViewModel;
 import com.rootdown.dragonsync.viewmodels.StatusViewModel;
 import com.rootdown.dragonsync.utils.Constants;
 
+import java.util.Locale;
+
 public class StatusFragment extends Fragment implements OnMapReadyCallback {
     private StatusViewModel statusViewModel;
     private ServiceViewModel serviceViewModel;
@@ -38,8 +40,7 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
     private TextView zynqTempValueText;
     private TextView memoryText;
     private TextView diskText;
-    private TextView latitudeText;
-    private TextView longitudeText;
+    private TextView coordinatesText;
     private TextView altitudeText;
     private TextView speedText;
 
@@ -73,8 +74,7 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
         zynqTempValueText = view.findViewById(R.id.zynq_temp_value_text);
         memoryText = view.findViewById(R.id.memory_text);
         diskText = view.findViewById(R.id.disk_text);
-        latitudeText = view.findViewById(R.id.latitude_text);
-        longitudeText = view.findViewById(R.id.longitude_text);
+        coordinatesText = view.findViewById(R.id.coordinates_text);
         altitudeText = view.findViewById(R.id.altitude_text);
         speedText = view.findViewById(R.id.speed_text);
 
@@ -203,10 +203,17 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
 
         // Update GPS data if available
         if (message.getGpsData() != null) {
-            latitudeText.setText(String.format("%.6f°", message.getGpsData().getLatitude()));
-            longitudeText.setText(String.format("%.6f°", message.getGpsData().getLongitude()));
-            altitudeText.setText(String.format("ALT %.1fm", message.getGpsData().getAltitude()));
-            speedText.setText(String.format("SPD %.1fm/s", message.getGpsData().getSpeed()));
+            // Create combined coordinate text
+            String coordText = String.format(Locale.US, "%.6f°, %.6f°",
+                    message.getGpsData().getLatitude(),
+                    message.getGpsData().getLongitude());
+
+            // Update the coordinates display
+            coordinatesText.setText(coordText);
+
+            // Update altitude and speed
+            altitudeText.setText(String.format(Locale.US, "ALT %.1fm", message.getGpsData().getAltitude()));
+            speedText.setText(String.format(Locale.US, "SPD %.1fm/s", message.getGpsData().getSpeed()));
 
             // Update map if available
             updateMapLocation(message);

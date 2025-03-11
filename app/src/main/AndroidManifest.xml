@@ -31,7 +31,7 @@
         android:theme="@style/Theme.DragonSync"
         android:usesCleartextTraffic="true"
         tools:targetApi="35">
-
+        
         <service
             android:name=".network.NetworkService"
             android:enabled="true"

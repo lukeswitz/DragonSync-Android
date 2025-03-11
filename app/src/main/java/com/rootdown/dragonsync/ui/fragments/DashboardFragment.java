@@ -3,6 +3,7 @@ package com.rootdown.dragonsync.ui.fragments;
 import android.content.Context;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -96,20 +97,29 @@ public class DashboardFragment extends Fragment {
     }
 
     private void createSystemMetricsGauges() {
-        // Clear existing views
         systemMetricsGrid.removeAllViews();
 
-        // Add CPU usage gauge
+        // Center content
+        systemMetricsGrid.setUseDefaultMargins(true);
+        systemMetricsGrid.setAlignmentMode(GridLayout.ALIGN_BOUNDS);
+
+        // CPU usage gauge
         CircularGaugeView cpuGauge = createGauge(requireContext(), "CPU", 0, "%", Color.GREEN);
-        systemMetricsGrid.addView(cpuGauge);
+        GridLayout.LayoutParams cpuParams = new GridLayout.LayoutParams();
+        cpuParams.setGravity(Gravity.CENTER);
+        systemMetricsGrid.addView(cpuGauge, cpuParams);
 
-        // Add Memory usage gauge
+        // Memory usage gauge
         CircularGaugeView memGauge = createGauge(requireContext(), "MEM", 0, "%", Color.GREEN);
-        systemMetricsGrid.addView(memGauge);
+        GridLayout.LayoutParams memParams = new GridLayout.LayoutParams();
+        memParams.setGravity(Gravity.CENTER);
+        systemMetricsGrid.addView(memGauge, memParams);
 
-        // Add Temperature gauge
+        // Temperature gauge
         CircularGaugeView tempGauge = createGauge(requireContext(), "TEMP", 0, "°C", Color.GREEN);
-        systemMetricsGrid.addView(tempGauge);
+        GridLayout.LayoutParams tempParams = new GridLayout.LayoutParams();
+        tempParams.setGravity(Gravity.CENTER);
+        systemMetricsGrid.addView(tempGauge, tempParams);
     }
 
     private void createDroneStatsCards() {
@@ -275,7 +285,7 @@ public class DashboardFragment extends Fragment {
         gauge.setTitle(title);
         gauge.setValue(value);
         gauge.setUnit(unit);
-        gauge.setColor(color);
+        gauge.setColor(getResources().getColor(R.color.status_green, null));
         return gauge;
     }
 
@@ -308,7 +318,7 @@ public class DashboardFragment extends Fragment {
         } else if (value >= warningThreshold) {
             return Color.YELLOW;
         } else {
-            return Color.GREEN;
+            return getResources().getColor(R.color.status_green, null);
         }
     }
 }

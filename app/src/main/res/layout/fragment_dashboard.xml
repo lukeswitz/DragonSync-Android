@@ -57,20 +57,23 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/active_drones"
-                    android:textAppearance="?attr/textAppearanceHeadline6"/>
+                    android:textAppearance="?attr/textAppearanceHeadline6"
+                    />
 
                 <GridLayout
                     android:id="@+id/drone_stats_grid"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:columnCount="3"
-                    android:layout_marginTop="8dp"/>
+                    android:layout_marginTop="8dp"
+                    android:layout_gravity="center"/>
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/recent_drones_list"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"/>
+                    android:layout_marginTop="12dp"
+                    android:layout_gravity="center"/>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -95,8 +98,9 @@
                     android:textAppearance="?attr/textAppearanceHeadline6"/>
 
                 <GridLayout
+                    android:layout_gravity="center"
                     android:id="@+id/sdr_stats_grid"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:columnCount="2"
                     android:layout_marginTop="8dp"/>

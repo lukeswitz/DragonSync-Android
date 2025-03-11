@@ -136,6 +136,7 @@ public class NetworkService extends Service {
             } else if (result.cotMessage != null) {
                 // Broadcast parsed CoTMessage
                 Intent intent = new Intent("com.rootdown.dragonsync.TELEMETRY");
+                intent.setPackage(getPackageName());
                 intent.putExtra("parsed_message", result.cotMessage);
                 intent.putExtra("raw_message", message);
                 sendBroadcast(intent);
@@ -154,6 +155,7 @@ public class NetworkService extends Service {
                     if (statusMessage != null) {
                         // Broadcast parsed StatusMessage
                         Intent intent = new Intent("com.rootdown.dragonsync.STATUS");
+                        intent.setPackage(getPackageName());
                         intent.putExtra("status_message", statusMessage);
                         intent.putExtra("raw_message", message);
                         sendBroadcast(intent);
@@ -169,11 +171,13 @@ public class NetworkService extends Service {
 
                 if (result.cotMessage != null) {
                     Intent intent = new Intent("com.rootdown.dragonsync.TELEMETRY");
+                    intent.setPackage(getPackageName());
                     intent.putExtra("parsed_message", result.cotMessage);
                     intent.putExtra("raw_message", message);
                     sendBroadcast(intent);
 
                     Log.d(TAG, "Broadcast telemetry from status channel for drone: " + result.cotMessage.getUid());
+
                 }
             }
         }

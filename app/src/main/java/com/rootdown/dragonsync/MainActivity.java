@@ -85,8 +85,13 @@ public class MainActivity extends FragmentActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        registerReceiver(telemetryReceiver, new IntentFilter("com.rootdown.dragonsync.TELEMETRY"));
-        registerReceiver(statusReceiver, new IntentFilter("com.rootdown.dragonsync.STATUS"));
+        registerReceiver(telemetryReceiver,
+                new IntentFilter("com.rootdown.dragonsync.TELEMETRY"),
+                Context.RECEIVER_NOT_EXPORTED);
+
+        registerReceiver(statusReceiver,
+                new IntentFilter("com.rootdown.dragonsync.STATUS"),
+                Context.RECEIVER_NOT_EXPORTED);
     }
 
     @Override
