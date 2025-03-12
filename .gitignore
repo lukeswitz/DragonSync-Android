@@ -85,3 +85,7 @@ lint/tmp/
 
 # compiler junk
 .idea
+
+secrets.properties
+
+gradle/libs.versions.toml

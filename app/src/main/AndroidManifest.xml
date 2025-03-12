@@ -31,7 +31,11 @@
         android:theme="@style/Theme.DragonSync"
         android:usesCleartextTraffic="true"
         tools:targetApi="35">
-        
+
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${MAPS_API_KEY}" />
+
         <service
             android:name=".network.NetworkService"
             android:enabled="true"
