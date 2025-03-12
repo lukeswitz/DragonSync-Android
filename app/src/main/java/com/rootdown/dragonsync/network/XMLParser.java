@@ -74,6 +74,8 @@ public class XMLParser {
     private void extractStatusFromRemarks(String remarks, CoTMessage cotMessage, ParseResult result) {
         if (remarks == null || remarks.isEmpty()) return;
 
+        Log.d(TAG, "Parsing remarks for status: " + remarks);
+
         StatusMessage statusMessage = new StatusMessage();
         statusMessage.setId(cotMessage.getUid()); // Use the CoT UID as status ID
         statusMessage.setSerialNumber(cotMessage.getUid());
@@ -201,42 +203,81 @@ public class XMLParser {
 
         // Parse Pluto Temperature
         if (remarks.contains("Pluto Temp:")) {
+            Log.d(TAG, "Found Pluto Temp in remarks");
             int plutoTempStart = remarks.indexOf("Pluto Temp:") + 11;
+
+            // Skip whitespace
+            while (plutoTempStart < remarks.length() && Character.isWhitespace(remarks.charAt(plutoTempStart))) {
+                plutoTempStart++;
+            }
+
             int plutoTempEnd = plutoTempStart;
+
+            // Find the end of the number
             while (plutoTempEnd < remarks.length() &&
-                    (Character.isDigit(remarks.charAt(plutoTempEnd)) ||
-                            remarks.charAt(plutoTempEnd) == '.')) {
+                    Character.isDigit(remarks.charAt(plutoTempEnd))) {
                 plutoTempEnd++;
             }
+
             if (plutoTempEnd > plutoTempStart) {
                 String plutoTempStr = remarks.substring(plutoTempStart, plutoTempEnd).trim();
+                Log.d(TAG, "Extracted Pluto Temp string: '" + plutoTempStr + "'");
+
                 try {
                     double plutoTemp = Double.parseDouble(plutoTempStr);
                     antStats.setPlutoTemp(plutoTemp);
+                    Log.d(TAG, "Successfully parsed Pluto Temp: " + plutoTemp);
                 } catch (NumberFormatException e) {
-                    Log.e(TAG, "Failed to parse Pluto Temp: " + plutoTempStr);
+                    Log.e(TAG, "Failed to parse Pluto Temp: " + plutoTempStr + ", Error: " + e.getMessage());
                 }
+            } else {
+                Log.d(TAG, "No valid Pluto Temp value found after the label");
             }
+        } else {
+            Log.d(TAG, "No Pluto Temp found in remarks");
         }
 
         // Parse Zynq Temperature
         if (remarks.contains("Zynq Temp:")) {
+            Log.d(TAG, "Found Zynq Temp in remarks");
             int zynqTempStart = remarks.indexOf("Zynq Temp:") + 10;
+
+            // Skip whitespace
+            while (zynqTempStart < remarks.length() && Character.isWhitespace(remarks.charAt(zynqTempStart))) {
+                zynqTempStart++;
+            }
+
             int zynqTempEnd = zynqTempStart;
+
+            // Find the end of the number
             while (zynqTempEnd < remarks.length() &&
-                    (Character.isDigit(remarks.charAt(zynqTempEnd)) ||
-                            remarks.charAt(zynqTempEnd) == '.')) {
+                    Character.isDigit(remarks.charAt(zynqTempEnd))) {
                 zynqTempEnd++;
             }
+
             if (zynqTempEnd > zynqTempStart) {
                 String zynqTempStr = remarks.substring(zynqTempStart, zynqTempEnd).trim();
+                Log.d(TAG, "Extracted Zynq Temp string: '" + zynqTempStr + "'");
+
                 try {
                     double zynqTemp = Double.parseDouble(zynqTempStr);
                     antStats.setZynqTemp(zynqTemp);
+                    Log.d(TAG, "Successfully parsed Zynq Temp: " + zynqTemp);
                 } catch (NumberFormatException e) {
-                    Log.e(TAG, "Failed to parse Zynq Temp: " + zynqTempStr);
+                    Log.e(TAG, "Failed to parse Zynq Temp: " + zynqTempStr + ", Error: " + e.getMessage());
                 }
+            } else {
+                Log.d(TAG, "No valid Zynq Temp value found after the label");
             }
+        } else {
+            Log.d(TAG, "No Zynq Temp found in remarks");
+        }
+
+        if (antStats.getPlutoTemp() > 0 || antStats.getZynqTemp() > 0) {
+            Log.d(TAG, "Setting ANT stats - Pluto: " + antStats.getPlutoTemp() + ", Zynq: " + antStats.getZynqTemp());
+            statusMessage.setAntStats(antStats);
+        } else {
+            Log.d(TAG, "No ANT stats set - values were zero");
         }
 
         // Create the message
