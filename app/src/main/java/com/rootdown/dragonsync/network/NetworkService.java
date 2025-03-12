@@ -158,10 +158,10 @@ public class NetworkService extends Service {
     private void logMessageFormat(String message) {
         String logMessage = message.length() > 500 ? message.substring(0, 500) + "..." : message;
 
-        if (message.trim().startsWith("<?xml")) {
-            if (message.contains("<status")) {
+        if (message.trim().startsWith("<")) {
+            if (message.contains("CPU Usage")) {
                 Log.d(TAG, "Status XML Message: " + logMessage);
-            } else if (message.contains("<event")) {
+            } else if (message.contains("drone-")) {
                 Log.d(TAG, "CoT XML Message: " + logMessage);
             } else {
                 Log.d(TAG, "Unknown XML format: " + logMessage);

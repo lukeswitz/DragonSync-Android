@@ -45,7 +45,7 @@ public class XMLParser {
         ParseResult result = new ParseResult();
 
         // First check if this is XML (multicast mode)
-        if (message.trim().startsWith("<?xml")) {
+        if (message.trim().startsWith("<")) {
             return parseXML(message);
         }
 
@@ -1133,29 +1133,36 @@ public class XMLParser {
                                 }
 
                                 // Extract UID from event attributes
-                                if (attrName.equals("uid")) {
-                                    // Remove "drone-" prefix if present
-                                    String uid = attrValue;
-                                    if (uid.startsWith("drone-")) {
-                                        uid = uid.substring(6);
+                                switch (attrName) {
+                                    case "uid" -> {
+                                        // Remove "drone-" prefix if present
+                                        String uid = attrValue;
+                                        if (uid.startsWith("drone-")) {
+                                            uid = uid.substring(6);
+                                        }
+                                        cotMessage.setUid(uid);
+                                        rawData.put("uid", uid);
                                     }
-                                    cotMessage.setUid(uid);
-                                    rawData.put("uid", uid);
-                                } else if (attrName.equals("time")) {
-                                    cotMessage.setTime(attrValue);
-                                    rawData.put("time", attrValue);
-                                } else if (attrName.equals("start")) {
-                                    cotMessage.setStart(attrValue);
-                                    rawData.put("start", attrValue);
-                                } else if (attrName.equals("stale")) {
-                                    cotMessage.setStale(attrValue);
-                                    rawData.put("stale", attrValue);
-                                } else if (attrName.equals("how")) {
-                                    cotMessage.setHow(attrValue);
-                                    rawData.put("how", attrValue);
-                                } else if (attrName.equals("type")) {
-                                    cotMessage.setType(attrValue);
-                                    rawData.put("type", attrValue);
+                                    case "time" -> {
+                                        cotMessage.setTime(attrValue);
+                                        rawData.put("time", attrValue);
+                                    }
+                                    case "start" -> {
+                                        cotMessage.setStart(attrValue);
+                                        rawData.put("start", attrValue);
+                                    }
+                                    case "stale" -> {
+                                        cotMessage.setStale(attrValue);
+                                        rawData.put("stale", attrValue);
+                                    }
+                                    case "how" -> {
+                                        cotMessage.setHow(attrValue);
+                                        rawData.put("how", attrValue);
+                                    }
+                                    case "type" -> {
+                                        cotMessage.setType(attrValue);
+                                        rawData.put("type", attrValue);
+                                    }
                                 }
                             }
                         } else if (currentElement.equals("point")) {
@@ -1165,23 +1172,29 @@ public class XMLParser {
                                 pointAttributes.put(attrName, attrValue);
 
                                 // Extract location from point attributes
-                                if (attrName.equals("lat")) {
-                                    cotMessage.setLat(attrValue);
-                                    rawData.put("lat", attrValue);
-                                } else if (attrName.equals("lon")) {
-                                    cotMessage.setLon(attrValue);
-                                    rawData.put("lon", attrValue);
-                                } else if (attrName.equals("hae")) {
-                                    cotMessage.setAlt(attrValue);
-                                    rawData.put("alt", attrValue);
-                                    cotMessage.setHae(attrValue);
-                                    rawData.put("hae", attrValue);
-                                } else if (attrName.equals("ce")) {
-                                    cotMessage.setCe(attrValue);
-                                    rawData.put("ce", attrValue);
-                                } else if (attrName.equals("le")) {
-                                    cotMessage.setLe(attrValue);
-                                    rawData.put("le", attrValue);
+                                switch (attrName) {
+                                    case "lat" -> {
+                                        cotMessage.setLat(attrValue);
+                                        rawData.put("lat", attrValue);
+                                    }
+                                    case "lon" -> {
+                                        cotMessage.setLon(attrValue);
+                                        rawData.put("lon", attrValue);
+                                    }
+                                    case "hae" -> {
+                                        cotMessage.setAlt(attrValue);
+                                        rawData.put("alt", attrValue);
+                                        cotMessage.setHae(attrValue);
+                                        rawData.put("hae", attrValue);
+                                    }
+                                    case "ce" -> {
+                                        cotMessage.setCe(attrValue);
+                                        rawData.put("ce", attrValue);
+                                    }
+                                    case "le" -> {
+                                        cotMessage.setLe(attrValue);
+                                        rawData.put("le", attrValue);
+                                    }
                                 }
                             }
                         }

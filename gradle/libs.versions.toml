@@ -1,5 +1,5 @@
 [versions]
-agp = "8.8.1"
+agp = "8.8.2"
 core = "1.15.0"
 gson = "2.10.1"
 jeromq = "0.5.3"
