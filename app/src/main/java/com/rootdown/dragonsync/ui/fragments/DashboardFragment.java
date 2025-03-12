@@ -123,23 +123,67 @@ public class DashboardFragment extends Fragment {
     }
 
     private void createDroneStatsCards() {
-        // Clear existing views
         droneStatsGrid.removeAllViews();
 
         // Create tracker counter card
-        View trackedCard = createCounterCard(requireContext(), "TRACKED", 0, getResources().getColor(R.color.teal_200, null));
+        View trackedCard = LayoutInflater.from(requireContext()).inflate(R.layout.card_counter, droneStatsGrid, false);
+
+        GridLayout.LayoutParams params = new GridLayout.LayoutParams(
+                GridLayout.spec(GridLayout.UNDEFINED, 1f),  // columnSpec
+                GridLayout.spec(GridLayout.UNDEFINED, 1f)   // rowSpec
+        );
+        params.width = 0;
+        params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+        params.setMargins(16, 16, 16, 16);
+
+        TextView trackedTitle = trackedCard.findViewById(R.id.counter_title);
+        trackedTitle.setText("TRACKED");
+        trackedTitle.setTextColor(getResources().getColor(R.color.teal_200, null));
+
         trackedDronesText = trackedCard.findViewById(R.id.counter_value);
-        droneStatsGrid.addView(trackedCard);
+        trackedDronesText.setTextColor(getResources().getColor(R.color.teal_200, null));
+
+        droneStatsGrid.addView(trackedCard, params);
 
         // Create spoofed counter card
-        View spoofedCard = createCounterCard(requireContext(), "SPOOFED", 0, getResources().getColor(R.color.orange, null));
+        View spoofedCard = LayoutInflater.from(requireContext()).inflate(R.layout.card_counter, droneStatsGrid, false);
+
+        GridLayout.LayoutParams spoofedParams = new GridLayout.LayoutParams(
+                GridLayout.spec(GridLayout.UNDEFINED, 1f),  // columnSpec
+                GridLayout.spec(GridLayout.UNDEFINED, 1f)   // rowSpec
+        );
+        spoofedParams.width = 0;
+        spoofedParams.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+        spoofedParams.setMargins(16, 16, 16, 16);
+
+        TextView spoofedTitle = spoofedCard.findViewById(R.id.counter_title);
+        spoofedTitle.setText("SPOOFED");
+        spoofedTitle.setTextColor(getResources().getColor(R.color.orange, null));
+
         spoofedDronesText = spoofedCard.findViewById(R.id.counter_value);
-        droneStatsGrid.addView(spoofedCard);
+        spoofedDronesText.setTextColor(getResources().getColor(R.color.orange, null));
+
+        droneStatsGrid.addView(spoofedCard, spoofedParams);
 
         // Create nearby counter card
-        View nearbyCard = createCounterCard(requireContext(), "NEARBY", 0, Color.YELLOW);
+        View nearbyCard = LayoutInflater.from(requireContext()).inflate(R.layout.card_counter, droneStatsGrid, false);
+
+        GridLayout.LayoutParams nearbyParams = new GridLayout.LayoutParams(
+                GridLayout.spec(GridLayout.UNDEFINED, 1f),  // columnSpec
+                GridLayout.spec(GridLayout.UNDEFINED, 1f)   // rowSpec
+        );
+        nearbyParams.width = 0;
+        nearbyParams.height = ViewGroup.LayoutParams.WRAP_CONTENT;
+        nearbyParams.setMargins(16, 16, 16, 16);
+
+        TextView nearbyTitle = nearbyCard.findViewById(R.id.counter_title);
+        nearbyTitle.setText("NEARBY");
+        nearbyTitle.setTextColor(Color.YELLOW);
+
         nearbyDronesText = nearbyCard.findViewById(R.id.counter_value);
-        droneStatsGrid.addView(nearbyCard);
+        nearbyDronesText.setTextColor(Color.YELLOW);
+
+        droneStatsGrid.addView(nearbyCard, nearbyParams);
     }
 
     private void createSDRStatsGauges() {
