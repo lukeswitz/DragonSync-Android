@@ -204,7 +204,12 @@ public class CoTMessage implements Parcelable {
         pilotLon = in.readString();
         description = in.readString();
         selfIDText = in.readString();
-        uaType = DroneSignature.IdInfo.UAType.valueOf(in.readString());
+        String uaTypeStr = in.readString();
+        try {
+            uaType = uaTypeStr != null ? DroneSignature.IdInfo.UAType.valueOf(uaTypeStr) : null;
+        } catch (IllegalArgumentException e) {
+            uaType = DroneSignature.IdInfo.UAType.OTHER;
+        }
         idType = in.readString();
         mac = in.readString();
         rssi = in.readInt();
@@ -296,7 +301,7 @@ public class CoTMessage implements Parcelable {
         dest.writeString(pilotLon);
         dest.writeString(description);
         dest.writeString(selfIDText);
-        dest.writeString(uaType.name());
+        dest.writeString(uaType != null ? uaType.name() : DroneSignature.IdInfo.UAType.OTHER.name());
         dest.writeString(idType);
         dest.writeString(mac);
         dest.writeInt(rssi != null ? rssi : 0);

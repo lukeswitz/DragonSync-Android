@@ -124,61 +124,54 @@ public class NetworkService extends Service {
     }
 
     private void handleMessage(String message, boolean isTelemetry) {
-        // Parse message based on its type
-        if (isTelemetry) {
-            // Telemetry messages contain drone data
-            Log.d(TAG, "Processing telemetry message");
-            XMLParser parser = new XMLParser();
-            XMLParser.ParseResult result = parser.parse(message);
+        logMessageFormat(message);
 
-            if (result.error != null) {
-                Log.e(TAG, "Error parsing telemetry: " + result.error);
-            } else if (result.cotMessage != null) {
-                // Broadcast parsed CoTMessage
-                Intent intent = new Intent("com.rootdown.dragonsync.TELEMETRY");
-                intent.setPackage(getPackageName());
-                intent.putExtra("parsed_message", result.cotMessage);
-                intent.putExtra("raw_message", message);
-                sendBroadcast(intent);
+        XMLParser parser = new XMLParser();
+        XMLParser.ParseResult result = parser.parse(message);
 
-                Log.d(TAG, "Broadcast telemetry for drone: " + result.cotMessage.getUid());
+        if (result.error != null) {
+            Log.e(TAG, "Failed to parse message: " + result.error);
+            return;
+        }
+
+        // Check if we have a status message
+        if (result.statusMessage != null) {
+            Intent statusIntent = new Intent("com.rootdown.dragonsync.STATUS");
+            statusIntent.setPackage(getPackageName());
+            statusIntent.putExtra("status_message", result.statusMessage);
+            statusIntent.putExtra("raw_message", message);
+            sendBroadcast(statusIntent);
+            Log.d(TAG, "Broadcast status message");
+        }
+
+        // Check if we have a telemetry message (but only if it's not the same as a status message)
+        if (result.cotMessage != null) {
+            Intent telemetryIntent = new Intent("com.rootdown.dragonsync.TELEMETRY");
+            telemetryIntent.setPackage(getPackageName());
+            telemetryIntent.putExtra("parsed_message", result.cotMessage);
+            telemetryIntent.putExtra("raw_message", message);
+            sendBroadcast(telemetryIntent);
+            Log.d(TAG, "Broadcast telemetry for drone: " + result.cotMessage.getUid());
+        }
+    }
+
+    private void logMessageFormat(String message) {
+        String logMessage = message.length() > 500 ? message.substring(0, 500) + "..." : message;
+
+        if (message.trim().startsWith("<?xml")) {
+            if (message.contains("<status")) {
+                Log.d(TAG, "Status XML Message: " + logMessage);
+            } else if (message.contains("<event")) {
+                Log.d(TAG, "CoT XML Message: " + logMessage);
+            } else {
+                Log.d(TAG, "Unknown XML format: " + logMessage);
             }
         } else {
-            // Status messages contain system information
-            Log.d(TAG, "Processing status message");
             try {
-                // Try to parse as status message
-                JSONObject json = new JSONObject(message);
-                if (json.has("system_stats")) {
-                    // This is a status message
-                    StatusMessage statusMessage = parseStatusMessage(json);
-                    if (statusMessage != null) {
-                        // Broadcast parsed StatusMessage
-                        Intent intent = new Intent("com.rootdown.dragonsync.STATUS");
-                        intent.setPackage(getPackageName());
-                        intent.putExtra("status_message", statusMessage);
-                        intent.putExtra("raw_message", message);
-                        sendBroadcast(intent);
-
-                        Log.d(TAG, "Broadcast status message");
-                    }
-                }
+                new JSONObject(message);
+                Log.d(TAG, "JSON Message: " + logMessage);
             } catch (JSONException e) {
-                Log.e(TAG, "Error parsing status JSON: " + e.getMessage());
-                // If status parsing fails, try to parse as a CoTMessage as fallback
-                XMLParser parser = new XMLParser();
-                XMLParser.ParseResult result = parser.parse(message);
-
-                if (result.cotMessage != null) {
-                    Intent intent = new Intent("com.rootdown.dragonsync.TELEMETRY");
-                    intent.setPackage(getPackageName());
-                    intent.putExtra("parsed_message", result.cotMessage);
-                    intent.putExtra("raw_message", message);
-                    sendBroadcast(intent);
-
-                    Log.d(TAG, "Broadcast telemetry from status channel for drone: " + result.cotMessage.getUid());
-
-                }
+                Log.d(TAG, "Unknown message format: " + logMessage);
             }
         }
     }

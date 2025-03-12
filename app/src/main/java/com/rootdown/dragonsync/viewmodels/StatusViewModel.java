@@ -20,21 +20,29 @@ public class StatusViewModel extends ViewModel {
     }
 
     public void updateStatusMessage(StatusMessage message) {
+        if (message == null) return;
+
         List<StatusMessage> currentMessages = statusMessages.getValue();
-        if (currentMessages != null) {
-            // Update or add new message
-            boolean updated = false;
+        if (currentMessages == null) {
+            currentMessages = new ArrayList<>();
+        }
+
+        boolean updated = false;
+        if (message.getId() != null) {
             for (int i = 0; i < currentMessages.size(); i++) {
-                if (currentMessages.get(i).getId().equals(message.getId())) {
+                StatusMessage existing = currentMessages.get(i);
+                if (existing.getId() != null && existing.getId().equals(message.getId())) {
                     currentMessages.set(i, message);
                     updated = true;
                     break;
                 }
             }
-            if (!updated) {
-                currentMessages.add(message);
-            }
-            statusMessages.setValue(currentMessages);
         }
+
+        if (!updated) {
+            currentMessages.add(message);
+        }
+
+        statusMessages.postValue(new ArrayList<>(currentMessages));
     }
 }

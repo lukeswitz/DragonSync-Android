@@ -259,7 +259,7 @@ public class StatusMessage implements Parcelable {
         public static class DiskStats implements Parcelable {
             public long total;
             public long used;
-            private long free;
+            public long free;
             public double percent;
 
             public DiskStats() {

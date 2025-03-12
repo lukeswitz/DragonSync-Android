@@ -71,12 +71,218 @@ public class XMLParser {
         return result;
     }
 
+    private void extractStatusFromRemarks(String remarks, CoTMessage cotMessage, ParseResult result) {
+        if (remarks == null || remarks.isEmpty()) return;
+
+        StatusMessage statusMessage = new StatusMessage();
+        statusMessage.setId(cotMessage.getUid()); // Use the CoT UID as status ID
+        statusMessage.setSerialNumber(cotMessage.getUid());
+        statusMessage.setTimestamp(System.currentTimeMillis() / 1000.0);
+
+        StatusMessage.SystemStats stats = new StatusMessage.SystemStats();
+        StatusMessage.SystemStats.MemoryStats memory = new StatusMessage.SystemStats.MemoryStats();
+        StatusMessage.ANTStats antStats = new StatusMessage.ANTStats();
+
+        // Parse CPU usage
+        if (remarks.contains("CPU Usage:")) {
+            int cpuStart = remarks.indexOf("CPU Usage:") + 11;
+            int cpuEnd = remarks.indexOf("%", cpuStart);
+            if (cpuEnd > cpuStart) {
+                String cpuStr = remarks.substring(cpuStart, cpuEnd).trim();
+                try {
+                    double cpuUsage = Double.parseDouble(cpuStr);
+                    stats.setCpuUsage(cpuUsage);
+                } catch (NumberFormatException e) {
+                    Log.e(TAG, "Failed to parse CPU usage: " + cpuStr);
+                }
+            }
+        }
+
+        // Memory Total
+        if (remarks.contains("Memory Total:")) {
+            int memTotalStart = remarks.indexOf("Memory Total:") + 13;
+            int memTotalEnd = remarks.indexOf("MB", memTotalStart);
+            if (memTotalEnd > memTotalStart) {
+                String memTotalStr = remarks.substring(memTotalStart, memTotalEnd).trim();
+                try {
+                    long memoryTotal = (long)(Double.parseDouble(memTotalStr) * 1024 * 1024); // Convert MB to bytes
+                    memory.setTotal(memoryTotal);
+                } catch (NumberFormatException e) {
+                    Log.e(TAG, "Failed to parse Memory Total: " + memTotalStr);
+                }
+            }
+        }
+
+        // Memory Available
+        if (remarks.contains("Memory Available:")) {
+            int memAvailStart = remarks.indexOf("Memory Available:") + 17;
+            int memAvailEnd = remarks.indexOf("MB", memAvailStart);
+            if (memAvailEnd > memAvailStart) {
+                String memAvailStr = remarks.substring(memAvailStart, memAvailEnd).trim();
+                try {
+                    long memoryAvailable = (long)(Double.parseDouble(memAvailStr) * 1024 * 1024); // Convert MB to bytes
+                    // Calculate used memory
+                    if (memory.getTotal() > 0) {
+                        memory.setUsed(memory.getTotal() - memoryAvailable);
+                        memory.setFree(memoryAvailable);
+                        memory.setPercent((double) memory.getUsed() / memory.getTotal());
+                    }
+                } catch (NumberFormatException e) {
+                    Log.e(TAG, "Failed to parse Memory Available: " + memAvailStr);
+                }
+            }
+        }
+
+        // Parse Disk Total and Used
+        if (remarks.contains("Disk Total:") && remarks.contains("Disk Used:")) {
+            int diskTotalStart = remarks.indexOf("Disk Total:") + 11;
+            int diskTotalEnd = remarks.indexOf("MB", diskTotalStart);
+            int diskUsedStart = remarks.indexOf("Disk Used:") + 10;
+            int diskUsedEnd = remarks.indexOf("MB", diskUsedStart);
+
+            try {
+                if (diskTotalEnd > diskTotalStart && diskUsedEnd > diskUsedStart) {
+                    String diskTotalStr = remarks.substring(diskTotalStart, diskTotalEnd).trim();
+                    String diskUsedStr = remarks.substring(diskUsedStart, diskUsedEnd).trim();
+
+                    StatusMessage.SystemStats.DiskStats disk = new StatusMessage.SystemStats.DiskStats();
+                    disk.total = (long)(Double.parseDouble(diskTotalStr) * 1024 * 1024); // Convert MB to bytes
+                    disk.used = (long)(Double.parseDouble(diskUsedStr) * 1024 * 1024); // Convert MB to bytes
+                    disk.free = disk.total - disk.used;
+                    disk.percent = (double) disk.used / disk.total;
+
+                    stats.setDisk(disk);
+                }
+            } catch (NumberFormatException e) {
+                Log.e(TAG, "Failed to parse disk information");
+            }
+        }
+
+        // Temperature
+        if (remarks.contains("Temperature:")) {
+            int tempStart = remarks.indexOf("Temperature:") + 12;
+            int tempEnd = remarks.indexOf("°C", tempStart);
+            if (tempEnd > tempStart) {
+                String tempStr = remarks.substring(tempStart, tempEnd).trim();
+                try {
+                    double temperature = Double.parseDouble(tempStr);
+                    stats.setTemperature(temperature);
+                } catch (NumberFormatException e) {
+                    Log.e(TAG, "Failed to parse Temperature: " + tempStr);
+                }
+            }
+        }
+
+        // Parse Uptime
+        if (remarks.contains("Uptime:")) {
+            int uptimeStart = remarks.indexOf("Uptime:") + 7;
+            int uptimeEnd = remarks.indexOf("seconds", uptimeStart);
+            if (uptimeEnd == -1) uptimeEnd = remarks.indexOf("second", uptimeStart);
+            if (uptimeEnd == -1) uptimeEnd = remarks.indexOf("minutes", uptimeStart);
+            if (uptimeEnd == -1) uptimeEnd = remarks.indexOf("minute", uptimeStart);
+            if (uptimeEnd == -1) uptimeEnd = remarks.indexOf("hours", uptimeStart);
+            if (uptimeEnd == -1) uptimeEnd = remarks.indexOf("hour", uptimeStart);
+            if (uptimeEnd > uptimeStart) {
+                String uptimeStr = remarks.substring(uptimeStart, uptimeEnd).trim();
+                try {
+                    double uptime = Double.parseDouble(uptimeStr);
+                    // Convert to seconds if needed based on unit
+                    if (remarks.substring(uptimeEnd).trim().startsWith("minute")) {
+                        uptime *= 60;
+                    } else if (remarks.substring(uptimeEnd).trim().startsWith("hour")) {
+                        uptime *= 3600;
+                    }
+                    stats.setUptime(uptime);
+                } catch (NumberFormatException e) {
+                    Log.e(TAG, "Failed to parse Uptime: " + uptimeStr);
+                }
+            }
+        }
+
+        // Parse Pluto Temperature
+        if (remarks.contains("Pluto Temp:")) {
+            int plutoTempStart = remarks.indexOf("Pluto Temp:") + 11;
+            int plutoTempEnd = plutoTempStart;
+            while (plutoTempEnd < remarks.length() &&
+                    (Character.isDigit(remarks.charAt(plutoTempEnd)) ||
+                            remarks.charAt(plutoTempEnd) == '.')) {
+                plutoTempEnd++;
+            }
+            if (plutoTempEnd > plutoTempStart) {
+                String plutoTempStr = remarks.substring(plutoTempStart, plutoTempEnd).trim();
+                try {
+                    double plutoTemp = Double.parseDouble(plutoTempStr);
+                    antStats.setPlutoTemp(plutoTemp);
+                } catch (NumberFormatException e) {
+                    Log.e(TAG, "Failed to parse Pluto Temp: " + plutoTempStr);
+                }
+            }
+        }
+
+        // Parse Zynq Temperature
+        if (remarks.contains("Zynq Temp:")) {
+            int zynqTempStart = remarks.indexOf("Zynq Temp:") + 10;
+            int zynqTempEnd = zynqTempStart;
+            while (zynqTempEnd < remarks.length() &&
+                    (Character.isDigit(remarks.charAt(zynqTempEnd)) ||
+                            remarks.charAt(zynqTempEnd) == '.')) {
+                zynqTempEnd++;
+            }
+            if (zynqTempEnd > zynqTempStart) {
+                String zynqTempStr = remarks.substring(zynqTempStart, zynqTempEnd).trim();
+                try {
+                    double zynqTemp = Double.parseDouble(zynqTempStr);
+                    antStats.setZynqTemp(zynqTemp);
+                } catch (NumberFormatException e) {
+                    Log.e(TAG, "Failed to parse Zynq Temp: " + zynqTempStr);
+                }
+            }
+        }
+
+        // Create the message
+        stats.setMemory(memory);
+        statusMessage.setSystemStats(stats);
+
+        // Add ANT stats if parsed
+        if (antStats.getPlutoTemp() > 0 || antStats.getZynqTemp() > 0) {
+            statusMessage.setAntStats(antStats);
+        }
+
+        // Add GPS data from the CoT message
+        if (cotMessage.getCoordinate() != null) {
+            StatusMessage.GPSData gpsData = new StatusMessage.GPSData();
+            gpsData.setLatitude(cotMessage.getCoordinate().getLatitude());
+            gpsData.setLongitude(cotMessage.getCoordinate().getLongitude());
+
+            if (cotMessage.getAlt() != null && !cotMessage.getAlt().isEmpty()) {
+                try {
+                    gpsData.setAltitude(Double.parseDouble(cotMessage.getAlt()));
+                } catch (NumberFormatException e) {
+                    // Ignore parse errors TODO - sometime
+                }
+            }
+
+            if (cotMessage.getSpeed() != null && !cotMessage.getSpeed().isEmpty()) {
+                try {
+                    gpsData.setSpeed(Double.parseDouble(cotMessage.getSpeed()));
+                } catch (NumberFormatException e) {
+                    // Ignore parse errors TODO - lowpri
+                }
+            }
+
+            statusMessage.setGpsData(gpsData);
+        }
+
+        // Set the status message in the result
+        result.statusMessage = statusMessage;
+    }
+
     private ParseResult parseESP32Format(JsonObject json) {
         ParseResult result = new ParseResult();
         CoTMessage cotMessage = new CoTMessage();
         Map<String, Object> rawData = new HashMap<>();
 
-        // Extract Basic ID info
+        // Basic ID info
         if (json.has("Basic ID")) {
             JsonObject basicId = json.getAsJsonObject("Basic ID");
             if (basicId.has("id")) {
@@ -113,7 +319,7 @@ public class XMLParser {
             }
         }
 
-        // Extract Location/Vector info
+        // Location/Vector info
         if (json.has("Location/Vector Message")) {
             JsonObject locationVector = json.getAsJsonObject("Location/Vector Message");
             if (locationVector.has("latitude")) {
@@ -183,7 +389,7 @@ public class XMLParser {
             }
         }
 
-        // Extract Self-ID info
+        // Self-ID info
         if (json.has("Self-ID Message")) {
             JsonObject selfId = json.getAsJsonObject("Self-ID Message");
             if (selfId.has("text")) {
@@ -859,6 +1065,7 @@ public class XMLParser {
         Map<String, String> eventAttributes = new HashMap<>();
         Map<String, String> pointAttributes = new HashMap<>();
         String remarks = "";
+        boolean isStatusNode = false;
 
         try {
             parser.setInput(new StringReader(xmlStr));
@@ -878,6 +1085,11 @@ public class XMLParser {
                                 String attrName = parser.getAttributeName(i);
                                 String attrValue = parser.getAttributeValue(i);
                                 eventAttributes.put(attrName, attrValue);
+
+                                // Check if this is a status node based on type
+                                if (attrName.equals("type") && attrValue.equals("b-m-p-s-m")) {
+                                    isStatusNode = true;
+                                }
 
                                 // Extract UID from event attributes
                                 if (attrName.equals("uid")) {
@@ -900,6 +1112,9 @@ public class XMLParser {
                                 } else if (attrName.equals("how")) {
                                     cotMessage.setHow(attrValue);
                                     rawData.put("how", attrValue);
+                                } else if (attrName.equals("type")) {
+                                    cotMessage.setType(attrValue);
+                                    rawData.put("type", attrValue);
                                 }
                             }
                         } else if (currentElement.equals("point")) {
@@ -940,8 +1155,15 @@ public class XMLParser {
 
                     case XmlPullParser.END_TAG:
                         if (parser.getName().equals("remarks") && !remarks.isEmpty()) {
-                            // Parse the remarks section for additional data when we have the complete remarks text
+                            // Parse remarks for additional data
                             parseRemarks(remarks, cotMessage, rawData);
+
+                            // Check if this contains status information
+                            if (remarks.contains("CPU Usage:") || remarks.contains("Memory Total:") ||
+                                    remarks.contains("Temperature:")) {
+                                extractStatusFromRemarks(remarks, cotMessage, result);
+                            }
+
                             remarks = "";
                         }
                         break;
@@ -951,7 +1173,11 @@ public class XMLParser {
 
             // Store the raw data and finalize the CoT message
             cotMessage.setRawMessage(rawData);
-            result.cotMessage = cotMessage;
+
+            // Only set the cotMessage in result if this is not a status node
+            if (!isStatusNode || result.statusMessage == null) {
+                result.cotMessage = cotMessage;
+            }
 
         } catch (XmlPullParserException | IOException e) {
             Log.e(TAG, "Error parsing XML: " + e.getMessage());
