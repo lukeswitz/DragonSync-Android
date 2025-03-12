@@ -87,5 +87,3 @@ lint/tmp/
 .idea
 
 secrets.properties
-
-gradle/libs.versions.toml
