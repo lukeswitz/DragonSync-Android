@@ -3,6 +3,7 @@ package com.rootdown.dragonsync.ui.fragments;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -19,7 +20,11 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Dash;
+import com.google.android.gms.maps.model.Dot;
+import com.google.android.gms.maps.model.Gap;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.material.card.MaterialCardView;
@@ -28,6 +33,7 @@ import com.rootdown.dragonsync.models.CoTMessage;
 import com.rootdown.dragonsync.viewmodels.CoTViewModel;
 
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
@@ -603,79 +609,137 @@ public class DroneDetailFragment extends Fragment implements OnMapReadyCallback 
 		}
 	}
 
-	private void updateMap() {
-		if (googleMap == null || message == null || message.getCoordinate() == null) {
-			return;
-		}
+    private void updateMap() {
+        if (googleMap == null || message == null || message.getCoordinate() == null) {
+            return;
+        }
 
-		// Clear previous markers
-		googleMap.clear();
+        // Clear previous markers
+        googleMap.clear();
 
-		LatLng position = new LatLng(
-				message.getCoordinate().getLatitude(),
-				message.getCoordinate().getLongitude()
-		);
+        LatLng position = new LatLng(
+                message.getCoordinate().getLatitude(),
+                message.getCoordinate().getLongitude()
+        );
 
-		// Add drone marker
-		googleMap.addMarker(new MarkerOptions()
-				.position(position)
-				.title(message.getUid()));
+        // Add drone marker
+        googleMap.addMarker(new MarkerOptions()
+                .position(position)
+                .title("Drone: " + message.getUid())
+                .icon(BitmapDescriptorFactory.fromResource(android.R.drawable.ic_menu_send)));
 
-		// Add home position if available
-		if (message.getHomeLat() != null && message.getHomeLon() != null &&
-				!message.getHomeLat().equals("0.0") && !message.getHomeLon().equals("0.0")) {
-			try {
-				LatLng homePos = new LatLng(
-						Double.parseDouble(message.getHomeLat()),
-						Double.parseDouble(message.getHomeLon())
-				);
+
+        // Add home position if available
+        if (message.getHomeLat() != null && message.getHomeLon() != null &&
+                !message.getHomeLat().equals("0.0") && !message.getHomeLon().equals("0.0")) {
+            try {
+                double homeLat = Double.parseDouble(message.getHomeLat());
+                double homeLon = Double.parseDouble(message.getHomeLon());
+
+                LatLng homePos = new LatLng(homeLat, homeLon);
 
 				googleMap.addMarker(new MarkerOptions()
 						.position(homePos)
 						.title("Home")
-						.icon(BitmapDescriptorFactory.defaultMarker(
-								BitmapDescriptorFactory.HUE_YELLOW)));
+						.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW))
+						.anchor(0.5f, 0.5f)
+						.alpha(0.9f)
+						.zIndex(1.0f));
 
-				// Draw line between drone and home
-				googleMap.addPolyline(new PolylineOptions()
-						.add(position, homePos)
-						.color(Color.YELLOW)
-						.width(2f));
-			} catch (NumberFormatException e) {
-				// Ignore parse errors
-			}
-		}
+                // Draw line between drone and home
+                googleMap.addPolyline(new PolylineOptions()
+                        .add(position, homePos)
+                        .color(Color.YELLOW)
+                        .width(2f)
+                        .pattern(Arrays.asList(new Dash(20f), new Gap(10f)))); // Dashed line
+            } catch (NumberFormatException e) {
+                // Ignore parse errors
+                Log.d("DroneDetailFragment", "Error parsing home coordinates: " + e.getMessage());
+            }
+        }
 
-		// Add operator position if available
-		if (message.getPilotLat() != null && message.getPilotLon() != null &&
-				!message.getPilotLat().equals("0.0") && !message.getPilotLon().equals("0.0")) {
-			try {
-				LatLng operatorPos = new LatLng(
-						Double.parseDouble(message.getPilotLat()),
-						Double.parseDouble(message.getPilotLon())
-				);
+        // Add operator position if available
+        if (message.getPilotLat() != null && message.getPilotLon() != null &&
+                !message.getPilotLat().equals("0.0") && !message.getPilotLon().equals("0.0")) {
+            try {
+                double pilotLat = Double.parseDouble(message.getPilotLat());
+                double pilotLon = Double.parseDouble(message.getPilotLon());
+
+                LatLng operatorPos = new LatLng(pilotLat, pilotLon);
 
 				googleMap.addMarker(new MarkerOptions()
 						.position(operatorPos)
 						.title("Operator")
-						.icon(BitmapDescriptorFactory.defaultMarker(
-								BitmapDescriptorFactory.HUE_GREEN)));
+						.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN))
+						.anchor(0.5f, 0.5f)
+						.alpha(0.9f)
+						.zIndex(2.0f));
 
-				// Draw line between drone and operator
-				googleMap.addPolyline(new PolylineOptions()
-						.add(position, operatorPos)
-						.color(Color.GREEN)
-						.width(2f));
-			} catch (NumberFormatException e) {
-				// Ignore parse errors
-			}
-		}
-	}
+                // Draw line between drone and operator
+                googleMap.addPolyline(new PolylineOptions()
+                        .add(position, operatorPos)
+                        .color(Color.GREEN)
+                        .width(2f)
+                        .pattern(Arrays.asList(new Dot(), new Gap(10f)))); // Dotted line
+            } catch (NumberFormatException e) {
+                // Ignore parse errors
+                Log.d("DroneDetailFragment", "Error parsing operator coordinates: " + e.getMessage());
+            }
+        }
+
+        // Adjust camera bounds to show all points
+        LatLngBounds.Builder boundsBuilder = new LatLngBounds.Builder();
+        boundsBuilder.include(position); // Always include drone position
+
+        boolean hasAdditionalPoints = false;
+
+        // Add home location to bounds if available
+        if (message.getHomeLat() != null && message.getHomeLon() != null &&
+                !message.getHomeLat().equals("0.0") && !message.getHomeLon().equals("0.0")) {
+            try {
+                double homeLat = Double.parseDouble(message.getHomeLat());
+                double homeLon = Double.parseDouble(message.getHomeLon());
+                boundsBuilder.include(new LatLng(homeLat, homeLon));
+                hasAdditionalPoints = true;
+            } catch (NumberFormatException e) {
+                // Ignore parse errors
+            }
+        }
+
+        // Add operator location to bounds if available
+        if (message.getPilotLat() != null && message.getPilotLon() != null &&
+                !message.getPilotLat().equals("0.0") && !message.getPilotLon().equals("0.0")) {
+            try {
+                double pilotLat = Double.parseDouble(message.getPilotLat());
+                double pilotLon = Double.parseDouble(message.getPilotLon());
+                boundsBuilder.include(new LatLng(pilotLat, pilotLon));
+                hasAdditionalPoints = true;
+            } catch (NumberFormatException e) {
+                // Ignore parse errors
+            }
+        }
+
+        // Move camera to fit all points
+        try {
+            if (hasAdditionalPoints) {
+                // Fit all of them
+                LatLngBounds bounds = boundsBuilder.build();
+                googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 30));
+            } else {
+                // If we only have the drone position, use a fixed zoom level
+                googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(position, 15f));
+            }
+        } catch (Exception e) {
+            // Fallback if building bounds fails
+            googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(position, 15f));
+            Log.e("DroneDetailFragment", "Error adjusting camera: " + e.getMessage());
+        }
+    }
 
 	@Override
 	public void onMapReady(GoogleMap map) {
 		googleMap = map;
-		googleMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+		googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
 
 		if (message != null && message.getCoordinate() != null) {
 			LatLng position = new LatLng(

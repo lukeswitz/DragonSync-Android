@@ -1,6 +1,9 @@
 package com.rootdown.dragonsync.ui.fragments;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
@@ -17,6 +20,8 @@ import android.widget.EditText;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import com.google.android.material.switchmaterial.SwitchMaterial;
@@ -74,14 +79,50 @@ public class SettingsFragment extends Fragment {
         return view;
     }
 
+    private BroadcastReceiver connectionErrorReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (intent.hasExtra("error_message")) {
+                String errorMessage = intent.getStringExtra("error_message");
+
+                // Update the UI to show disconnected state
+                isConnecting = false;
+                connectionSwitch.setChecked(false);
+                updateConnectionStatusUI(false);
+
+                // Show an error message to the user
+                Toast.makeText(requireContext(),
+                        getString(R.string.connection_error, errorMessage),
+                        Toast.LENGTH_LONG).show();
+            }
+        }
+    };
+
+
     @Override
     public void onResume() {
         super.onResume();
+
+        // Register for connection error broadcasts
+        requireContext().registerReceiver(connectionErrorReceiver,
+                new IntentFilter("com.rootdown.dragonsync.CONNECTION_ERROR"),
+                Context.RECEIVER_NOT_EXPORTED);
 
         // Check the actual connection state and update UI accordingly
         boolean isListening = settings.isListening();
         connectionSwitch.setChecked(isListening);
         updateConnectionStatusUI(isListening);
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        // Unregister receiver
+        try {
+            requireContext().unregisterReceiver(connectionErrorReceiver);
+        } catch (IllegalArgumentException e) {
+            // ignore it
+        }
     }
 
     private void initializeViews(View view) {

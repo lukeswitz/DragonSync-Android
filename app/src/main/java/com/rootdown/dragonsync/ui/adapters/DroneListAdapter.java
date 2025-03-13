@@ -46,7 +46,7 @@ public class DroneListAdapter extends RecyclerView.Adapter<DroneListAdapter.View
             rssi = view.findViewById(R.id.rssi);
             timestamp = view.findViewById(R.id.timestamp);
             details = view.findViewById(R.id.details);
-            liveMapButton = view.findViewById(R.id.live_map_button);
+            liveMapButton = view.findViewById(R.id.live_map_button);  // TODO livemap---
         }
     }
 

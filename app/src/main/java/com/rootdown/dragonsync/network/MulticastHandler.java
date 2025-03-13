@@ -62,6 +62,10 @@ public class MulticastHandler {
                 Log.d(TAG, "Multicast lock acquired");
             } catch (Exception e) {
                 Log.e(TAG, "Failed to acquire multicast lock: " + e.getMessage());
+                if (messageHandler != null) {
+                    messageHandler.onError("Failed to acquire multicast lock: " + e.getMessage());
+                }
+                return; // Return early if we can't get the lock
             }
         }
 

@@ -118,10 +118,23 @@ public class NetworkService extends Service {
                     public void onError(String error) {
                         Log.e(TAG, "Multicast error: " + error);
                         updateNotification("Connection error: " + error);
+
+                        // Automatically turn off the connection when an error occurs
+                        settings.setListening(false);
+
+                        // Send a broadcast to update the UI
+                        Intent statusIntent = new Intent("com.rootdown.dragonsync.CONNECTION_ERROR");
+                        statusIntent.setPackage(getPackageName());
+                        statusIntent.putExtra("error_message", error);
+                        sendBroadcast(statusIntent);
+
+                        // Stop the service
+                        stopSelf();
                     }
                 }
         );
     }
+
 
     private void handleMessage(String message, boolean isTelemetry) {
         logMessageFormat(message);
