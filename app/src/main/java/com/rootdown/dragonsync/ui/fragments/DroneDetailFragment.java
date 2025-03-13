@@ -8,25 +8,33 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
+import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.material.card.MaterialCardView;
 import com.rootdown.dragonsync.R;
 import com.rootdown.dragonsync.models.CoTMessage;
 import com.rootdown.dragonsync.viewmodels.CoTViewModel;
-import java.util.List;
 
-public class DroneDetailFragment extends Fragment {
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+public class DroneDetailFragment extends Fragment implements OnMapReadyCallback {
     private CoTMessage message;
     private MapView mapView;
-    private List<LatLng> flightPath;
+    private GoogleMap googleMap;
     private CoTViewModel viewModel;
 
     public static DroneDetailFragment newInstance(CoTMessage message) {
@@ -49,105 +57,356 @@ public class DroneDetailFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_drone_detail, container, false);
-//
-//        mapView = view.findViewById(R.id.map_view);
-//        mapView.onCreate(savedInstanceState);
-//
-//        initializeViews(view);
-//        setupMapAndFlightPath(savedInstanceState);
+
+        mapView = view.findViewById(R.id.map_view);
+        if (mapView != null) {
+            mapView.onCreate(savedInstanceState);
+            mapView.getMapAsync(this);
+        }
+
+        initializeViews(view);
 
         return view;
     }
 
     private void initializeViews(View view) {
-        // Basic Info Section
+        // Basic drone info
         TextView droneId = view.findViewById(R.id.drone_id);
+        TextView manufacturer = view.findViewById(R.id.manufacturer);
         TextView description = view.findViewById(R.id.description);
-        TextView rssi = view.findViewById(R.id.rssi);
+        TextView lastSeen = view.findViewById(R.id.last_seen);
+        TextView macAddress = view.findViewById(R.id.mac_address);
+        TextView rssi = view.findViewById(R.id.rssi_value);
 
-//        droneId.setText(message.getUid());
-//        if (!message.getDescription().isEmpty()) {
-//            description.setText(message.getDescription());
-//        }
-//
-//        if (message.getRssi() != null) {
-//            rssi.setText(String.format("%d dBm", message.getRssi()));
-//            rssi.setTextColor(getRssiColor(message.getRssi()));
-//        }
-//
-//        // Signal Sources Section
-//        if (!message.getSignalSources().isEmpty()) {
-//            setupSignalSourcesView(view.findViewById(R.id.signal_sources_container));
-//        }
-//
-//        // MAC Randomization Warning
-//        if (viewModel.getMacHistory().getValue().containsKey(message.getUid())) {
-//            Set<String> macs = viewModel.getMacHistory().getValue().get(message.getUid());
-//            if (macs != null && macs.size() > 1) {
-//                setupMacRandomizationWarning(view.findViewById(R.id.mac_warning_container), macs);
-//            }
-//        }
-//
-//        // Position Info
-//        setupPositionInfo(view);
-//
-//        // Operator Info if available
-//        if (hasOperatorInfo()) {
-//            setupOperatorInfo(view);
-//        }
-//
-//        // Movement Info
-//        setupMovementInfo(view);
-//
-//        // Signal Data Section
-//        setupSignalData(view);
+        // Set values
+        if (message != null) {
+            // Drone ID
+            droneId.setText(message.getUid());
 
-        // Setup Export/Share button
-//        view.findViewById(R.id.export_button).setOnClickListener(v -> exportData());
+            // Manufacturer (if available)
+            if (message.getManufacturer() != null && !message.getManufacturer().isEmpty()) {
+                manufacturer.setText(message.getManufacturer());
+                manufacturer.setVisibility(View.VISIBLE);
+            } else {
+                manufacturer.setVisibility(View.GONE);
+            }
+
+            // Description
+            if (message.getDescription() != null && !message.getDescription().isEmpty()) {
+                description.setText(message.getDescription());
+                description.setVisibility(View.VISIBLE);
+            } else {
+                description.setVisibility(View.GONE);
+            }
+
+            // Last seen (timestamp)
+            if (message.getTimestamp() != null && !message.getTimestamp().isEmpty()) {
+                try {
+                    long timestamp = Long.parseLong(message.getTimestamp());
+                    Date date = new Date(timestamp);
+                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
+                    lastSeen.setText(sdf.format(date));
+                } catch (NumberFormatException e) {
+                    lastSeen.setText("Unknown");
+                }
+            } else {
+                lastSeen.setText("Unknown");
+            }
+
+            // MAC Address
+            if (message.getMac() != null && !message.getMac().isEmpty()) {
+                macAddress.setText(message.getMac());
+                macAddress.setVisibility(View.VISIBLE);
+            } else {
+                macAddress.setVisibility(View.GONE);
+            }
+
+            // RSSI
+            if (message.getRssi() != null) {
+                rssi.setText(String.format(Locale.US, "%d dBm", message.getRssi()));
+
+                // Set color based on signal strength
+                if (message.getRssi() > -60) {
+                    rssi.setTextColor(Color.GREEN);
+                } else if (message.getRssi() > -80) {
+                    rssi.setTextColor(Color.YELLOW);
+                } else {
+                    rssi.setTextColor(Color.RED);
+                }
+            } else {
+                rssi.setText("Unknown");
+            }
+
+            // Position Information
+            setupPositionInfo(view);
+
+            // Signal source Info
+            setupSignalSourcesInfo(view);
+
+            // MAC Randomization Warning (if applicable)
+            setupMacRandomizationWarning(view);
+
+            // Spoofing Warning (if applicable)
+            if (message.isSpoofed()) {
+                MaterialCardView spoofWarning = view.findViewById(R.id.spoof_warning_card);
+                spoofWarning.setVisibility(View.VISIBLE);
+
+                TextView spoofReason = view.findViewById(R.id.spoof_reason);
+                if (message.getSpoofingDetails() != null && message.getSpoofingDetails().getReason() != null) {
+                    spoofReason.setText(message.getSpoofingDetails().getReason());
+                } else {
+                    spoofReason.setText("Unusual movement pattern detected");
+                }
+            }
+        }
     }
 
-    private void setupMapAndFlightPath(Bundle savedInstanceState) {
-        mapView.onCreate(savedInstanceState);
-        mapView.getMapAsync(googleMap -> {
-            googleMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+    private void setupPositionInfo(View view) {
+        TextView position = view.findViewById(R.id.position);
+        TextView altitude = view.findViewById(R.id.altitude);
+        TextView speed = view.findViewById(R.id.speed);
+
+        if (message.getCoordinate() != null) {
+            position.setText(String.format(Locale.US, "Lat: %.6f, Lon: %.6f",
+                    message.getCoordinate().getLatitude(),
+                    message.getCoordinate().getLongitude()));
+        } else {
+            position.setText("Position unknown");
+        }
+
+        // Altitude
+        if (message.getAlt() != null && !message.getAlt().isEmpty()) {
+            try {
+                double altValue = Double.parseDouble(message.getAlt());
+                altitude.setText(String.format(Locale.US, "Altitude: %.1f m MSL", altValue));
+                altitude.setVisibility(View.VISIBLE);
+            } catch (NumberFormatException e) {
+                altitude.setVisibility(View.GONE);
+            }
+        } else {
+            altitude.setVisibility(View.GONE);
+        }
+
+        // Speed
+        if (message.getSpeed() != null && !message.getSpeed().isEmpty()) {
+            try {
+                double speedValue = Double.parseDouble(message.getSpeed());
+                speed.setText(String.format(Locale.US, "Speed: %.1f m/s", speedValue));
+                speed.setVisibility(View.VISIBLE);
+            } catch (NumberFormatException e) {
+                speed.setVisibility(View.GONE);
+            }
+        } else {
+            speed.setVisibility(View.GONE);
+        }
+    }
+
+    private void setupMacRandomizationWarning(View view) {
+        MaterialCardView macWarning = view.findViewById(R.id.mac_warning_card);
+        TextView macList = view.findViewById(R.id.mac_list);
+
+        if (viewModel != null && viewModel.getMacHistory().getValue() != null) {
+            String uid = message.getUid();
+            Map<String, Set<String>> macHistory = viewModel.getMacHistory().getValue();
+
+            if (macHistory.containsKey(uid)) {
+                Set<String> macs = macHistory.get(uid);
+                if (macs != null && macs.size() > 1) {
+                    macWarning.setVisibility(View.VISIBLE);
+
+                    StringBuilder sb = new StringBuilder();
+                    for (String mac : macs) {
+                        sb.append(mac).append("\n");
+                    }
+                    macList.setText(sb.toString().trim());
+                } else {
+                    macWarning.setVisibility(View.GONE);
+                }
+            } else {
+                macWarning.setVisibility(View.GONE);
+            }
+        } else {
+            macWarning.setVisibility(View.GONE);
+        }
+    }
+
+    private void setupSignalSourcesInfo(View view) {
+        TextView signalSources = view.findViewById(R.id.signal_sources);
+        View signalChart = view.findViewById(R.id.signal_chart);
+
+        // Hide the placeholder chart
+        signalChart.setVisibility(View.GONE);
+
+        if (message.getSignalSources() != null && !message.getSignalSources().isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+
+            for (CoTMessage.SignalSource source : message.getSignalSources()) {
+                String typeLabel = "UNKNOWN";
+                String typeIcon = "📶";
+
+                // Set appropriate icon and label based on signal type
+                switch (source.getType()) {
+                    case BLUETOOTH:
+                        typeLabel = "BLUETOOTH";
+                        typeIcon = "\uD83D\uDD37";
+                        break;
+                    case WIFI:
+                        typeLabel = "WIFI";
+                        typeIcon = "\uD83D\uDCF6 ";
+                        break;
+                    case SDR:
+                        typeLabel = "SDR";
+                        typeIcon = "\uD83D\uDCE1";
+                        break;
+                    default:
+                        typeLabel = "UNKNOWN";
+                        break;
+                }
+
+                // Format: Icon Type: MAC (RSSI dBm) Timestamp
+                sb.append(typeIcon)
+                        .append(" ")
+                        .append(typeLabel)
+                        .append(": ")
+                        .append(source.getMac())
+                        .append(" (")
+                        .append(source.getRssi())
+                        .append(" dBm)");
+
+                // Add timestamp if available
+                long timestamp = source.getTimestamp();
+                if (timestamp > 0) {
+                    try {
+                        Date date = new Date(timestamp);
+                        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.US);
+                        sb.append(" at ").append(sdf.format(date));
+                    } catch (Exception e) {
+                        // Ignore timestamp formatting errors
+                    }
+                }
+
+                sb.append("\n");
+            }
+
+            signalSources.setText(sb.toString().trim());
+        } else if (message.getRssi() != null && message.getMac() != null) {
+            // If no signal sources array but we have RSSI and MAC, show that
+            String sourceName = "UNKNOWN";
+            String sourceIcon = "📶";
+
+            // No MAC means its decoded via SDR
+            if (message.getMac() == null) {
+                    sourceName = "SDR";
+                    sourceIcon = "📡";
+            }
+
+            signalSources.setText(String.format("%s %s: %s (%d dBm)",
+                    sourceIcon, sourceName, message.getMac(), message.getRssi()));
+        } else {
+            signalSources.setText("No signal source information available");
+        }
+    }
+
+    @Override
+    public void onMapReady(GoogleMap map) {
+        googleMap = map;
+        googleMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+
+        if (message != null && message.getCoordinate() != null) {
+            LatLng position = new LatLng(
+                    message.getCoordinate().getLatitude(),
+                    message.getCoordinate().getLongitude()
+            );
 
             // Add drone marker
-            if (message.getCoordinate() != null) {
-                LatLng position = new LatLng(
-                        message.getCoordinate().getLatitude(),
-                        message.getCoordinate().getLongitude()
-                );
+            googleMap.addMarker(new MarkerOptions()
+                    .position(position)
+                    .title(message.getUid()));
 
-//                googleMap.addMarker(new MarkerOptions()
-//                        .position(position)
-//                        .title(message.getUid()));
+            // Add home position if available
+            if (message.getHomeLat() != null && message.getHomeLon() != null &&
+                    !message.getHomeLat().equals("0.0") && !message.getHomeLon().equals("0.0")) {
+                try {
+                    LatLng homePos = new LatLng(
+                            Double.parseDouble(message.getHomeLat()),
+                            Double.parseDouble(message.getHomeLon())
+                    );
 
-                googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(position, 15f));
+                    googleMap.addMarker(new MarkerOptions()
+                            .position(homePos)
+                            .title("Home")
+                            .icon(BitmapDescriptorFactory.defaultMarker(
+                                    BitmapDescriptorFactory.HUE_YELLOW)));
+
+                    // Draw line between drone and home
+                    googleMap.addPolyline(new PolylineOptions()
+                            .add(position, homePos)
+                            .color(Color.YELLOW)
+                            .width(2f));
+                } catch (NumberFormatException e) {
+                    // Ignore parse errors
+                }
             }
 
-            // Add flight path if available
-            if (flightPath != null && !flightPath.isEmpty()) {
-                googleMap.addPolyline(new PolylineOptions()
-                        .addAll(flightPath)
-                        .color(Color.BLUE)
-                        .width(2f));
+            // Add operator position if available
+            if (message.getPilotLat() != null && message.getPilotLon() != null &&
+                    !message.getPilotLat().equals("0.0") && !message.getPilotLon().equals("0.0")) {
+                try {
+                    LatLng operatorPos = new LatLng(
+                            Double.parseDouble(message.getPilotLat()),
+                            Double.parseDouble(message.getPilotLon())
+                    );
+
+                    googleMap.addMarker(new MarkerOptions()
+                            .position(operatorPos)
+                            .title("Operator")
+                            .icon(BitmapDescriptorFactory.defaultMarker(
+                                    BitmapDescriptorFactory.HUE_GREEN)));
+
+                    // Draw line between drone and operator
+                    googleMap.addPolyline(new PolylineOptions()
+                            .add(position, operatorPos)
+                            .color(Color.GREEN)
+                            .width(2f));
+                } catch (NumberFormatException e) {
+                    // Ignore parse errors
+                }
             }
 
-            // Add operator location if available
-//            if (message.getPilotLat() != "0.0" && message.getPilotLon() != "0.0") {
-//                LatLng operatorPos = new LatLng(
-//                        Double.parseDouble(message.getPilotLat()),
-//                        Double.parseDouble(message.getPilotLon())
-//                );
-//
-//                googleMap.addMarker(new MarkerOptions()
-//                        .position(operatorPos)
-//                        .title("Operator")
-//                        .icon(BitmapDescriptorFactory.defaultMarker(
-//                                BitmapDescriptorFactory.HUE_GREEN)));
-//            }
-        });
+            // Move camera to drone position with zoom
+            googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(position, 15f));
+        }
     }
 
-    // Continue with helper methods for each section...
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (mapView != null) {
+            mapView.onResume();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        if (mapView != null) {
+            mapView.onPause();
+        }
+        super.onPause();
+    }
+
+    @Override
+    public void onDestroy() {
+        if (mapView != null) {
+            mapView.onDestroy();
+        }
+        super.onDestroy();
+    }
+
+    @Override
+    public void onLowMemory() {
+        if (mapView != null) {
+            mapView.onLowMemory();
+        }
+        super.onLowMemory();
+    }
 }
