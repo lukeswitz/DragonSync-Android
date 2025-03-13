@@ -15,5 +15,10 @@
     <string name="memory_label">MEMORY</string>
     <string name="disk_label">DISK</string>
     <string name="altitude_format">ALT %.1fm</string>
-    <string name="speed_format">SPD %.1fm/s</string>
+    <string name="speed_format">SPD %.1fm/s</string>\
+    <string name="connection_error">Connection error: %s</string>
+    <string name="location">Location</string>
+    <string name="position_unknown">Position: unknown</string>
+    <string name="altitude_unknown">Altitude: unknown</string>
+    <string name="speed_unknown">Speed: unknown</string>
 </resources>

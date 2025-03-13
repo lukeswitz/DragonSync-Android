@@ -101,29 +101,6 @@
                     android:text="Speed: unknown"
                     android:layout_marginTop="4dp" />
 
-                <!-- Operator/Home location info -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginTop="8dp">
-
-                    <TextView
-                        android:id="@+id/operator_location"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Operator: Unknown"
-                        android:textAppearance="?attr/textAppearanceBody2" />
-
-                    <TextView
-                        android:id="@+id/home_location"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="Home: Unknown"
-                        android:textAppearance="?attr/textAppearanceBody2" />
-                </LinearLayout>
 
                 <com.google.android.gms.maps.MapView
                     android:id="@+id/map_view"
