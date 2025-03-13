@@ -1,13 +1,23 @@
-# DragonSync-Android
+# DragonSync
 
 [![Android CI](https://github.com/lukeswitz/DragonSync-Android/actions/workflows/android.yml/badge.svg)](https://github.com/lukeswitz/DragonSync-Android/actions/workflows/android.yml)
+
+Android version of the iOS [app](https://github.com/Root-Down-Digital/DragonSync-iOS)
+
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/e8b8098a-53b7-4ac9-9683-6e03559b68e2" width="100%" alt="DragonSync Logo">
+</div>
+<br>
+<div align="center">
+  Real-time drone detection and monitoring, powered by locally-hosted decoding. Enjoy professional-grade detection with advanced signal analysis and tracking. 
+</div>
+<br>
+
 
 ## Requirements
 
 > [!NOTE]
-> DragonSync will soon use onboard WiFi and BT.
-
-*For the time being, we rely on a more powerful hardware stack:*
+> *DragonSync will soon use onboard WiFi and BT. For the time being, we rely solely on a more powerful hardware stack:*
 
 ### Hardware
 Works with WarDragon Pro right out of the box, otherwise follow the below:
@@ -59,7 +69,7 @@ python3 sniffle/python_cli/sniff_receiver.py -l -e -a -z
 
 ### 3. Start WiFi Sniffing
 
-**If using an external adapter (not esp32)**
+**If using an external adapter (for ESP32 see step)**
 ```python
 ./wifi_receiver.py --interface wlan0 -z --zmqsetting 127.0.0.1:4223
 ```
@@ -70,13 +80,13 @@ python3 sniffle/python_cli/sniff_receiver.py -l -e -a -z
 
 ### 4. Start Decoding
 
-- Option A: With WiFi Adapter
+- Example A: With WiFi Adapter
 
 ```python
 python3 zmq_decoder.py -z --zmqsetting 0.0.0.0:4224 --zmqclients 127.0.0.1:4222,127.0.0.1:4223
 ```
 
-- Option B: With ESP32 WiFi RID & ANT SDR
+- Example B: With ESP32 WiFi RID & ANT SDR
 
 ```python
 python3 zmq_decoder.py -z --uart /dev/esp0 --dji 127.0.0.1:4221 --zmqsetting 0.0.0.0:4224 --zmqclients 127.0.0.1:4222
@@ -84,13 +94,15 @@ python3 zmq_decoder.py -z --uart /dev/esp0 --dji 127.0.0.1:4221 --zmqsetting 0.0
 
 > *Where `/dev/esp0` is your ESP32 port*
   
-### 4. Start System Monitoring (Optional)
+### 4.Start System Monitoring 
+(Set zmq or multicast flags)
 
 ```python
 python3 wardragon_monitor.py --zmq_host 127.0.0.1 --zmq_port 4225 --interval 30
 ```
 
-### 5. TAK/ATAK DragonSync (Optional: Limited Data)
+### 5. Multicast: TAK/ATAK DragonSync 
+(Optional: Limited Data, Multiple Sources)
 
 - Without TAK (ZMQ & UDP)
 ```python
@@ -119,4 +131,3 @@ python3 dragonsync.py --zmq-host 0.0.0.0 --zmq-port 4224 --zmq-status-port 4225 
 ## Features
 
 `// TODO`
-   
