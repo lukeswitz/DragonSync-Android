@@ -13,6 +13,9 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.Dash;
+import com.google.android.gms.maps.model.Dot;
+import com.google.android.gms.maps.model.Gap;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
@@ -27,8 +30,10 @@ import android.location.Location;
 import android.util.Log;
 import android.widget.TextView;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
@@ -167,68 +172,182 @@ public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
                 .color(Color.BLUE)
                 .width(2f));
 
-        // Update marker
+        // Update drone marker
         Marker marker = droneMarkers.get(message.getUid());
         if (marker == null) {
             marker = googleMap.addMarker(new MarkerOptions()
                     .position(position)
-                    .title(message.getUid()));
+                    .title(message.getUid())
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
             droneMarkers.put(message.getUid(), marker);
         } else {
             marker.setPosition(position);
         }
 
         // Update marker info
-        String snippet = String.format("Alt: %.1fm\nSpeed: %.1fm/s",
-                Double.parseDouble(message.getAlt()),
-                Double.parseDouble(message.getSpeed()));
-        marker.setSnippet(snippet);
+        updateMarkerInfo(message, marker);
 
         // Add operator location if available
-        if (message.getPilotLat() != null && message.getPilotLon() != null &&
-                !message.getPilotLat().equals("0.0") && !message.getPilotLon().equals("0.0")) {
+        updateOperatorLocation(message);
 
-            LatLng operatorPos = new LatLng(
-                    Double.parseDouble(message.getPilotLat()),
-                    Double.parseDouble(message.getPilotLon())
-            );
+        // Add home location if available (for DJI drones)
+        updateHomeLocation(message);
 
-            // Use a unique ID for the operator marker
-            String operatorMarkerId = message.getUid() + "_operator";
-            Marker operatorMarker = operatorMarkers.get(operatorMarkerId);
+        // Draw connections between drone, operator and home
+        drawConnections(message, position);
+    }
 
-            if (operatorMarker == null) {
-                operatorMarker = googleMap.addMarker(new MarkerOptions()
-                        .position(operatorPos)
-                        .title("Operator for " + message.getUid())
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
-                operatorMarkers.put(operatorMarkerId, operatorMarker);
-            } else {
-                operatorMarker.setPosition(operatorPos);
+    private void updateMarkerInfo(CoTMessage message, Marker marker) {
+        StringBuilder snippet = new StringBuilder();
+
+        // Add altitude if available
+        if (message.getAlt() != null && !message.getAlt().isEmpty()) {
+            try {
+                double alt = Double.parseDouble(message.getAlt());
+                snippet.append(String.format(Locale.US, "Alt: %.1fm", alt));
+            } catch (NumberFormatException e) {
+                // Skip if can't parse
             }
         }
 
-        // Add home location if available (for DJI drones)
+        // Add height if available
+        if (message.getHeight() != null && !message.getHeight().isEmpty()) {
+            try {
+                double height = Double.parseDouble(message.getHeight());
+                if (snippet.length() > 0) snippet.append("\n");
+                snippet.append(String.format(Locale.US, "Height: %.1fm", height));
+            } catch (NumberFormatException e) {
+                // Skip if can't parse
+            }
+        }
+
+        // Add speed if available
+        if (message.getSpeed() != null && !message.getSpeed().isEmpty()) {
+            try {
+                double speed = Double.parseDouble(message.getSpeed());
+                if (snippet.length() > 0) snippet.append("\n");
+                snippet.append(String.format(Locale.US, "Speed: %.1fm/s", speed));
+            } catch (NumberFormatException e) {
+                // Skip if can't parse
+            }
+        }
+
+        // Add RSSI if available
+        if (message.getRssi() != null) {
+            if (snippet.length() > 0) snippet.append("\n");
+            snippet.append(String.format(Locale.US, "RSSI: %ddBm", message.getRssi()));
+        }
+
+        // Add drone type if available
+        if (message.getUaType() != null) {
+            if (snippet.length() > 0) snippet.append("\n");
+            snippet.append("Type: ").append(message.getUaType().name());
+        }
+
+        // Set the snippet
+        marker.setSnippet(snippet.toString());
+    }
+
+    private void updateOperatorLocation(CoTMessage message) {
+        if (message.getPilotLat() != null && message.getPilotLon() != null &&
+                !message.getPilotLat().equals("0.0") && !message.getPilotLon().equals("0.0")) {
+            try {
+                LatLng operatorPos = new LatLng(
+                        Double.parseDouble(message.getPilotLat()),
+                        Double.parseDouble(message.getPilotLon())
+                );
+
+                // Use a unique ID for the operator marker
+                String operatorMarkerId = message.getUid() + "_operator";
+                Marker operatorMarker = operatorMarkers.get(operatorMarkerId);
+
+                if (operatorMarker == null) {
+                    operatorMarker = googleMap.addMarker(new MarkerOptions()
+                            .position(operatorPos)
+                            .title("Operator for " + message.getUid())
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN)));
+                    operatorMarkers.put(operatorMarkerId, operatorMarker);
+                } else {
+                    operatorMarker.setPosition(operatorPos);
+                }
+
+                // Add info to operator marker
+                operatorMarker.setSnippet("Operator for drone: " + message.getUid());
+            } catch (NumberFormatException e) {
+                // Handle parsing errors silently
+            }
+        }
+    }
+
+    private void updateHomeLocation(CoTMessage message) {
         if (message.getHomeLat() != null && message.getHomeLon() != null &&
                 !message.getHomeLat().equals("0.0") && !message.getHomeLon().equals("0.0")) {
+            try {
+                LatLng homePos = new LatLng(
+                        Double.parseDouble(message.getHomeLat()),
+                        Double.parseDouble(message.getHomeLon())
+                );
 
-            LatLng homePos = new LatLng(
-                    Double.parseDouble(message.getHomeLat()),
-                    Double.parseDouble(message.getHomeLon())
-            );
+                // Use a unique ID for the home marker
+                String homeMarkerId = message.getUid() + "_home";
+                Marker homeMarker = homeMarkers.get(homeMarkerId);
 
-            // Use a unique ID for the home marker
-            String homeMarkerId = message.getUid() + "_home";
-            Marker homeMarker = homeMarkers.get(homeMarkerId);
+                if (homeMarker == null) {
+                    homeMarker = googleMap.addMarker(new MarkerOptions()
+                            .position(homePos)
+                            .title("Home for " + message.getUid())
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW)));
+                    homeMarkers.put(homeMarkerId, homeMarker);
+                } else {
+                    homeMarker.setPosition(homePos);
+                }
 
-            if (homeMarker == null) {
-                homeMarker = googleMap.addMarker(new MarkerOptions()
-                        .position(homePos)
-                        .title("Home for " + message.getUid())
-                        .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_YELLOW)));
-                homeMarkers.put(homeMarkerId, homeMarker);
-            } else {
-                homeMarker.setPosition(homePos);
+                // Add info to home marker
+                homeMarker.setSnippet("Home location for drone: " + message.getUid());
+            } catch (NumberFormatException e) {
+                // Handle parsing errors silently
+            }
+        }
+    }
+
+    private void drawConnections(CoTMessage message, LatLng dronePosition) {
+        // Draw line between drone and operator
+        if (message.getPilotLat() != null && message.getPilotLon() != null &&
+                !message.getPilotLat().equals("0.0") && !message.getPilotLon().equals("0.0")) {
+            try {
+                LatLng operatorPos = new LatLng(
+                        Double.parseDouble(message.getPilotLat()),
+                        Double.parseDouble(message.getPilotLon())
+                );
+
+                googleMap.addPolyline(new PolylineOptions()
+                        .add(dronePosition, operatorPos)
+                        .color(Color.GREEN)
+                        .width(2f)
+                        .pattern(Arrays.asList(
+                                new Dot(), new Gap(10f)))); // Dotted line for operator
+            } catch (NumberFormatException e) {
+                // Skip on parsing errors
+            }
+        }
+
+        // Draw line between drone and home
+        if (message.getHomeLat() != null && message.getHomeLon() != null &&
+                !message.getHomeLat().equals("0.0") && !message.getHomeLon().equals("0.0")) {
+            try {
+                LatLng homePos = new LatLng(
+                        Double.parseDouble(message.getHomeLat()),
+                        Double.parseDouble(message.getHomeLon())
+                );
+
+                googleMap.addPolyline(new PolylineOptions()
+                        .add(dronePosition, homePos)
+                        .color(Color.YELLOW)
+                        .width(2f)
+                        .pattern(Arrays.asList(
+                                new Dash(20f), new Gap(10f)))); // Dashed line for home
+            } catch (NumberFormatException e) {
+                // Skip on parsing errors
             }
         }
     }

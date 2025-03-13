@@ -43,11 +43,23 @@ public class DroneListFragment extends Fragment implements DroneListAdapter.OnDr
 
     @Override
     public void onDroneClick(CoTMessage message) {
-        // Show drone details
+        // Show drone details fragment
+        DroneDetailFragment detailFragment = DroneDetailFragment.newInstance(message);
+        requireActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, detailFragment)
+                .addToBackStack(null)
+                .commit();
     }
 
     @Override
     public void onLiveMapClick(CoTMessage message) {
-        // Show live map
+        // Show live map focused on this drone
+        LiveMapFragment mapFragment = LiveMapFragment.newInstance(message);
+        requireActivity().getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, mapFragment)
+                .addToBackStack(null)
+                .commit();
     }
 }

@@ -563,7 +563,7 @@ public class XMLParser {
             CoTMessage.SignalSource source = new CoTMessage.SignalSource(
                     cotMessage.getMac(),
                     cotMessage.getRssi(),
-                    CoTMessage.SignalSource.SignalType.BLUETOOTH, // Assuming ESP32 is BT
+                    CoTMessage.SignalSource.SignalType.WIFI, // ESP32 is always WIFI
                     timestamp
             );
             cotMessage.getSignalSources().add(source);
