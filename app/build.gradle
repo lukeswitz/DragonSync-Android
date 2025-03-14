@@ -37,6 +37,7 @@ android {
 
     buildFeatures {
         compose true
+        buildConfig true
     }
 }
 
@@ -56,6 +57,7 @@ dependencies {
     implementation libs.material
     implementation libs.support.annotations
     implementation libs.play.services.maps
+    implementation libs.play.services.location
 
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit

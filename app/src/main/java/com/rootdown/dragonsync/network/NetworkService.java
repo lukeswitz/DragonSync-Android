@@ -41,13 +41,6 @@ public class NetworkService extends Service {
         Log.i(TAG, "Network service onStartCommand triggered");
 
         if (!isRunning) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(NOTIFICATION_ID, createNotification(),
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
-            } else {
-                startForeground(NOTIFICATION_ID, createNotification());
-            }
-
             // Check for explicit connection mode
             if (intent != null && intent.hasExtra("CONNECTION_MODE")) {
                 String modeString = intent.getStringExtra("CONNECTION_MODE");
@@ -58,6 +51,31 @@ public class NetworkService extends Service {
                 } catch (IllegalArgumentException e) {
                     Log.e(TAG, "Invalid connection mode: " + modeString);
                 }
+            }
+
+            ConnectionMode mode = settings.getConnectionMode();
+
+            // Handle onboard detection mode separately
+            if (mode == ConnectionMode.ONBOARD) {
+                // Start the onboard detection service instead
+                Intent onboardIntent = new Intent(this, OnboardDetectionService.class);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    startForegroundService(onboardIntent);
+                } else {
+                    startService(onboardIntent);
+                }
+
+                // This service is not needed for onboard mode
+                stopSelf();
+                return START_NOT_STICKY;
+            }
+
+            // Otherwise proceed with network modes
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(NOTIFICATION_ID, createNotification(),
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+            } else {
+                startForeground(NOTIFICATION_ID, createNotification());
             }
 
             startNetworkHandlers();

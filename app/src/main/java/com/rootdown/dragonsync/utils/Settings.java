@@ -124,6 +124,14 @@ public class Settings {
         return prefs.getInt("zmq_spectrum_port", Constants.DEFAULT_ZMQ_SPECTRUM_PORT);
     }
 
+    public boolean isLocationEstimationEnabled() {
+        return prefs.getBoolean(Constants.KEY_ENABLE_LOCATION_ESTIMATION, true);
+    }
+
+    public void setLocationEstimationEnabled(boolean enabled) {
+        editor.putBoolean(Constants.KEY_ENABLE_LOCATION_ESTIMATION, enabled).apply();
+    }
+
     // Feature Flags
     public boolean isNotificationsEnabled() {
         return prefs.getBoolean(Constants.KEY_NOTIFICATIONS_ENABLED, true);

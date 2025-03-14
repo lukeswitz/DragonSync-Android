@@ -10,11 +10,13 @@ import android.location.Location;
 import android.util.Log;
 
 import com.rootdown.dragonsync.models.CoTMessage;
+import com.rootdown.dragonsync.models.ConnectionMode;
 import com.rootdown.dragonsync.models.DroneSignature;
 import com.rootdown.dragonsync.network.MulticastHandler;
 import com.rootdown.dragonsync.network.XMLParser;
 import com.rootdown.dragonsync.network.ZMQHandler;
 import com.rootdown.dragonsync.utils.Constants;
+import com.rootdown.dragonsync.utils.DeviceLocationManager;
 import com.rootdown.dragonsync.utils.Settings;
 
 import java.util.ArrayList;
@@ -49,9 +51,19 @@ public class CoTViewModel extends ViewModel {
     private ZMQHandler zmqHandler;
     private MulticastHandler multicastHandler;
 
+    private boolean isOnboardMode = false;
+    private DeviceLocationManager locationManager;
+
     public CoTViewModel(Context context) {
         settings = Settings.getInstance(context);
         xmlParser = new XMLParser();
+
+        // Check if we're in onboard mode
+        isOnboardMode = settings.getConnectionMode() == ConnectionMode.ONBOARD;
+
+        if (isOnboardMode) {
+            locationManager = DeviceLocationManager.getInstance(context);
+        }
     }
 
     public void startListening() {
@@ -262,6 +274,49 @@ public class CoTViewModel extends ViewModel {
         if (existingMessage == null) {
             // No previous message to compare with
             return;
+        }
+
+        // Check for RSSI consistency in onboard mode
+        if (isOnboardMode && message.getRssi() != null && existingMessage.getRssi() != null) {
+            int rssiDelta = Math.abs(message.getRssi() - existingMessage.getRssi());
+
+            // Get device locations
+            Location currentDeviceLocation = locationManager.getCurrentLocation();
+            Location previousDeviceLocation = null;
+
+            // Try to retrieve previous device location from message metadata
+            if (existingMessage.getRawMessage() != null &&
+                    existingMessage.getRawMessage().containsKey("device_location")) {
+                previousDeviceLocation = (Location) existingMessage.getRawMessage().get("device_location");
+            }
+
+            // If we have both current and previous device locations
+            if (currentDeviceLocation != null && previousDeviceLocation != null) {
+                // Calculate device movement
+                float deviceMovement = currentDeviceLocation.distanceTo(previousDeviceLocation);
+
+                // If device has moved significantly but RSSI hasn't changed proportionally
+                if (deviceMovement > 10 && rssiDelta < 5) {
+                    // Potential spoofing - RSSI should change when you move
+                    Log.w(TAG, "Potential spoofing detected for UID: " + message.getUid() +
+                            " - Device moved " + deviceMovement + "m but RSSI changed only by " +
+                            rssiDelta + " dBm");
+
+                    message.setSpoofed(true);
+                    DroneSignature.SpoofDetectionResult spoofResult =
+                            new DroneSignature.SpoofDetectionResult(0.75,
+                                    "Suspicious RSSI pattern: your device moved but signal strength didn't change");
+                    message.setSpoofingDetails(spoofResult);
+                }
+            }
+
+            // Store current device location in message metadata
+            if (currentDeviceLocation != null) {
+                if (message.getRawMessage() == null) {
+                    message.setRawMessage(new HashMap<>());
+                }
+                message.getRawMessage().put("device_location", currentDeviceLocation);
+            }
         }
 
         // Compare location, if both messages have valid coordinates

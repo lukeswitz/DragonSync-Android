@@ -26,6 +26,7 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.tabs.TabLayout;
+import com.google.android.material.textfield.TextInputLayout;
 import com.rootdown.dragonsync.R;
 import com.rootdown.dragonsync.models.ConnectionMode;
 import com.rootdown.dragonsync.network.NetworkService;
@@ -44,10 +45,11 @@ public class SettingsFragment extends Fragment {
     private SwitchMaterial serialConsoleSwitch;
     private SwitchMaterial systemWarningsSwitch;
     private ViewGroup thresholdsContainer;
-
+    private TextInputLayout hostInputLayout;
     private Handler mainHandler = new Handler(Looper.getMainLooper());
     private boolean isConnecting = false;
     private static boolean appFirstLaunch = true;
+    private ConnectionMode currentMode;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -129,7 +131,7 @@ public class SettingsFragment extends Fragment {
         connectionModeTabs = view.findViewById(R.id.connection_mode_tabs);
         hostInput = view.findViewById(R.id.host_input);
         connectionSwitch = view.findViewById(R.id.connection_switch);
-
+        hostInputLayout = view.findViewById(R.id.host_input_layout);
         // Create status TextView programmatically
         connectionStatus = new TextView(requireContext());
         connectionStatus.setText("Disconnected");
@@ -161,9 +163,52 @@ public class SettingsFragment extends Fragment {
         }
 
         // Set current mode
-        ConnectionMode currentMode = settings.getConnectionMode();
+        currentMode = settings.getConnectionMode();
         connectionModeTabs.selectTab(connectionModeTabs.getTabAt(currentMode.ordinal()));
+
+        // Update UI based on selected mode
+        updateUIForConnectionMode(currentMode);
     }
+
+    private void updateUIForConnectionMode(ConnectionMode mode) {
+        if (mode == ConnectionMode.ONBOARD) {
+            hostInputLayout.setVisibility(View.GONE);
+            connectionSwitch.setEnabled(false);
+            connectionSwitch.setChecked(false);
+            settings.setListening(false);
+            updateConnectionStatusUI(false);
+            TextView infoText = new TextView(requireContext());
+            infoText.setTag("onboard_info_text");
+            infoText.setText("Onboard detection uses your device's Bluetooth and WiFi " +
+                    "to directly detect nearby drones without external hardware.");
+            infoText.setPadding(16, 16, 16, 16);
+            ViewGroup parent = (ViewGroup) hostInputLayout.getParent();
+            for (int i = 0; i < parent.getChildCount(); i++) {
+                View child = parent.getChildAt(i);
+                if (child instanceof TextView && "onboard_info_text".equals(child.getTag())) {
+                    parent.removeView(child);
+                    break;
+                }
+            }
+            parent.addView(infoText, parent.indexOfChild(hostInputLayout));
+        } else {
+            hostInputLayout.setVisibility(View.VISIBLE);
+            connectionSwitch.setEnabled(true);
+            ViewGroup parent = (ViewGroup) hostInputLayout.getParent();
+            for (int i = 0; i < parent.getChildCount(); i++) {
+                View child = parent.getChildAt(i);
+                if (child instanceof TextView && "onboard_info_text".equals(child.getTag())) {
+                    parent.removeView(child);
+                    break;
+                }
+            }
+            // Force update status based on switch state when leaving ONBOARD mode
+            updateConnectionStatusUI(connectionSwitch.isChecked(), false);
+        }
+        connectionSwitch.setVisibility(View.VISIBLE);
+    }
+
+
 
     private void loadCurrentSettings() {
         // Connection settings
@@ -187,6 +232,10 @@ public class SettingsFragment extends Fragment {
             public void onTabSelected(TabLayout.Tab tab) {
                 ConnectionMode mode = ConnectionMode.values()[tab.getPosition()];
                 settings.setConnectionMode(mode);
+                currentMode = mode;
+
+                // Update UI elements based on selected mode
+                updateUIForConnectionMode(mode);
                 updateHostInput();
 
                 // If currently connected, reconnect with new mode
@@ -201,6 +250,7 @@ public class SettingsFragment extends Fragment {
             @Override
             public void onTabReselected(TabLayout.Tab tab) {}
         });
+
 
         connectionSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isConnecting) return;
@@ -318,7 +368,10 @@ public class SettingsFragment extends Fragment {
             if (connecting) {
                 connectionStatus.setText("Connecting...");
                 connectionStatus.setTextColor(getResources().getColor(R.color.orange, null));
-            } else if (connected) {
+            } else if (currentMode == ConnectionMode.ONBOARD) {
+                connectionStatus.setText("Active");
+                connectionStatus.setTextColor(getResources().getColor(R.color.green, null));
+            } else if (connectionSwitch.isChecked()) {
                 connectionStatus.setText("Connected");
                 connectionStatus.setTextColor(getResources().getColor(R.color.green, null));
             } else {

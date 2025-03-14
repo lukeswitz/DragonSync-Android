@@ -24,6 +24,9 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.rootdown.dragonsync.R;
 import com.rootdown.dragonsync.models.CoTMessage;
+import com.rootdown.dragonsync.models.ConnectionMode;
+import com.rootdown.dragonsync.utils.DeviceLocationManager;
+import com.rootdown.dragonsync.utils.Settings;
 import com.rootdown.dragonsync.viewmodels.CoTViewModel;
 
 import android.location.Location;
@@ -39,6 +42,7 @@ import java.util.Map;
 public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
     private static final String TAG = "LiveMapFragment";
 
+    private DeviceLocationManager.LocationUpdateListener locationListener;
     private MapView mapView;
     private GoogleMap googleMap;
     private CoTViewModel viewModel;
@@ -48,6 +52,10 @@ public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
     private Map<String, List<LatLng>> flightPaths = new HashMap<>();
     private boolean userHasMovedMap = false;
     private CoTMessage initialMessage;
+
+    private Marker userLocationMarker;
+    private boolean isOnboardMode = false;
+    private DeviceLocationManager locationManager;
 
     public static LiveMapFragment newInstance(CoTMessage initialMessage) {
         LiveMapFragment fragment = new LiveMapFragment();
@@ -63,6 +71,15 @@ public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
         viewModel = new ViewModelProvider(requireActivity()).get(CoTViewModel.class);
         if (getArguments() != null) {
             initialMessage = getArguments().getParcelable("initial_message");
+        }
+
+        // Check if we're in onboard mode
+        Settings settings = Settings.getInstance(requireContext());
+        isOnboardMode = settings.getConnectionMode() == ConnectionMode.ONBOARD;
+
+        // Set up location manager for onboard mode
+        if (isOnboardMode) {
+            locationManager = DeviceLocationManager.getInstance(requireContext());
         }
     }
 
@@ -88,9 +105,23 @@ public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onMapReady(GoogleMap map) {
         googleMap = map;
+        googleMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
 
         setupMapSettings();
         setupMapGestures();
+
+        // Start tracking user location in onboard mode
+        if (isOnboardMode) {
+            locationManager.addListener(locationListener);
+            locationManager.startLocationUpdates();
+
+            // Initialize with current location if available
+            Location currentLocation = locationManager.getCurrentLocation();
+            if (currentLocation != null) {
+                updateUserLocationOnMap(currentLocation);
+            }
+        }
+
         observeDrones();
 
         if (initialMessage != null && initialMessage.getCoordinate() != null) {
@@ -101,6 +132,15 @@ public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
                     ),
                     15f
             ));
+        } else if (isOnboardMode) {
+            // In onboard mode without initial drone, center on user
+            Location userLocation = locationManager.getCurrentLocation();
+            if (userLocation != null) {
+                googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
+                        new LatLng(userLocation.getLatitude(), userLocation.getLongitude()),
+                        15f
+                ));
+            }
         }
     }
 
@@ -150,13 +190,46 @@ public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
         });
     }
 
+    private void updateUserLocationOnMap(Location location) {
+        if (googleMap == null || location == null) return;
+
+        LatLng userPosition = new LatLng(location.getLatitude(), location.getLongitude());
+
+        if (userLocationMarker == null) {
+            // Create user marker if it doesn't exist
+            userLocationMarker = googleMap.addMarker(new MarkerOptions()
+                    .position(userPosition)
+                    .title("Your Location")
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE))
+                    .zIndex(1.0f)); // Keep user marker on top
+        } else {
+            // Update existing marker
+            userLocationMarker.setPosition(userPosition);
+        }
+
+        // If user hasn't moved the map manually, keep user in view
+        if (!userHasMovedMap) {
+            googleMap.animateCamera(CameraUpdateFactory.newLatLng(userPosition));
+        }
+    }
+
     private void updateDroneOnMap(CoTMessage message) {
-        if (message.getCoordinate() == null) return;
+        if (googleMap == null || message == null || message.getCoordinate() == null) {
+            return;
+        }
+
+        // Clear previous markers
+        googleMap.clear();
 
         LatLng position = new LatLng(
                 message.getCoordinate().getLatitude(),
                 message.getCoordinate().getLongitude()
         );
+
+        // Add drone marker
+        Marker marker = googleMap.addMarker(new MarkerOptions()
+                .position(position)
+                .title(message.getUid()));
 
         // Update flight path
         List<LatLng> path = flightPaths.getOrDefault(message.getUid(), new ArrayList<>());
@@ -166,35 +239,79 @@ public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
         }
         flightPaths.put(message.getUid(), path);
 
-        // Draw flight path
+        // Draw flight path - only show the drone's actual path
         googleMap.addPolyline(new PolylineOptions()
                 .addAll(path)
                 .color(Color.BLUE)
                 .width(2f));
 
-        // Update drone marker
-        Marker marker = droneMarkers.get(message.getUid());
-        if (marker == null) {
-            marker = googleMap.addMarker(new MarkerOptions()
-                    .position(position)
-                    .title(message.getUid())
-                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)));
-            droneMarkers.put(message.getUid(), marker);
-        } else {
-            marker.setPosition(position);
+        // Add home position if available
+        if (message.getHomeLat() != null && message.getHomeLon() != null &&
+                !message.getHomeLat().equals("0.0") && !message.getHomeLon().equals("0.0")) {
+            try {
+                LatLng homePos = new LatLng(
+                        Double.parseDouble(message.getHomeLat()),
+                        Double.parseDouble(message.getHomeLon())
+                );
+
+                googleMap.addMarker(new MarkerOptions()
+                        .position(homePos)
+                        .title("Home")
+                        .icon(BitmapDescriptorFactory.defaultMarker(
+                                BitmapDescriptorFactory.HUE_YELLOW)));
+
+                // Draw line between drone and home
+                googleMap.addPolyline(new PolylineOptions()
+                        .add(position, homePos)
+                        .color(Color.YELLOW)
+                        .width(2f));
+            } catch (NumberFormatException e) {
+                // Ignore parse errors
+            }
         }
 
-        // Update marker info
-        updateMarkerInfo(message, marker);
+        // Add operator position if available
+        if (message.getPilotLat() != null && message.getPilotLon() != null &&
+                !message.getPilotLat().equals("0.0") && !message.getPilotLon().equals("0.0")) {
+            try {
+                LatLng operatorPos = new LatLng(
+                        Double.parseDouble(message.getPilotLat()),
+                        Double.parseDouble(message.getPilotLon())
+                );
 
-        // Add operator location if available
-        updateOperatorLocation(message);
+                googleMap.addMarker(new MarkerOptions()
+                        .position(operatorPos)
+                        .title("Operator")
+                        .icon(BitmapDescriptorFactory.defaultMarker(
+                                BitmapDescriptorFactory.HUE_GREEN)));
 
-        // Add home location if available (for DJI drones)
-        updateHomeLocation(message);
+                // Draw line between drone and operator
+                googleMap.addPolyline(new PolylineOptions()
+                        .add(position, operatorPos)
+                        .color(Color.GREEN)
+                        .width(2f));
+            } catch (NumberFormatException e) {
+                // Ignore parse errors
+            }
+        }
 
-        // Draw connections between drone, operator and home
-        drawConnections(message, position);
+        // In onboard mode, we still show the user's location marker but without connecting lines
+        if (isOnboardMode && userLocationMarker != null) {
+            // Update user marker position (but don't connect it to drone)
+            // The drone distance info can still be added to the marker snippet if needed
+            if (message.getRawMessage() != null &&
+                    message.getRawMessage().containsKey("calculated_distance")) {
+                float distance = (float) message.getRawMessage().get("calculated_distance");
+
+                // Add distance to drone marker snippet
+                String snippet = marker != null && marker.getSnippet() != null ?
+                        marker.getSnippet() : "";
+                if (marker != null) {
+                    marker.setSnippet(snippet + (snippet.isEmpty() ? "" : "\n") +
+                            "Distance: " + String.format("%.1f", distance) + "m");
+                }
+            }
+        }
     }
 
     private void updateMarkerInfo(CoTMessage message, Marker marker) {
@@ -390,6 +507,10 @@ public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onDestroy() {
         mapView.onDestroy();
+        // Clean up location manager
+        if (isOnboardMode && locationManager != null) {
+            locationManager.removeListener(locationListener);
+        }
         super.onDestroy();
     }
 

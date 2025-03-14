@@ -26,6 +26,8 @@ public class Constants {
     public static final double MIN_POSITION_CHANGE = 50.0;
     public static final double CONFIDENCE_THRESHOLD = 0.7; // Minimum confidence to report spoof
 
+    public static final String KEY_ENABLE_LOCATION_ESTIMATION = "enable_location_estimation";
+
     // Storage Constants
     public static final String PREFS_NAME = "dragonsync_prefs";
     public static final String KEY_CONNECTION_MODE = "connection_mode";

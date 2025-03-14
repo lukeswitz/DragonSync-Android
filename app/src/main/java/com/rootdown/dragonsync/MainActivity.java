@@ -4,14 +4,20 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.Manifest;
 
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 
+import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.MenuItem;
 import android.widget.FrameLayout;
+import android.widget.Toast;
+
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.rootdown.dragonsync.models.CoTMessage;
 import com.rootdown.dragonsync.models.StatusMessage;
@@ -30,6 +36,7 @@ public class MainActivity extends FragmentActivity {
     private StatusViewModel statusViewModel;
     private FrameLayout fragmentContainer;
     private BottomNavigationView bottomNav;
+    private static final int REQUEST_PERMISSIONS_CODE = 1001;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +48,56 @@ public class MainActivity extends FragmentActivity {
 
         // Initialize views and navigation
         initializeNavigation(savedInstanceState);
+
+        // Request permissions needed for onboard detection
+        checkAndRequestPermissions();
+    }
+
+    private void checkAndRequestPermissions() {
+        // For Android 12+ (SDK 31+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            requestPermissions(new String[] {
+                    Manifest.permission.BLUETOOTH_SCAN,
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_WIFI_STATE,
+                    Manifest.permission.CHANGE_WIFI_STATE
+            }, REQUEST_PERMISSIONS_CODE);
+        } else {
+            // For Android 6-11
+            requestPermissions(new String[] {
+                    Manifest.permission.BLUETOOTH,
+                    Manifest.permission.BLUETOOTH_ADMIN,
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_WIFI_STATE,
+                    Manifest.permission.CHANGE_WIFI_STATE
+            }, REQUEST_PERMISSIONS_CODE);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == REQUEST_PERMISSIONS_CODE) {
+            boolean allGranted = true;
+            for (int result : grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    allGranted = false;
+                    break;
+                }
+            }
+
+            if (allGranted) {
+                Log.i("MainActivity", "All permissions granted for onboard detection");
+            } else {
+                Log.w("MainActivity", "Some permissions were denied for onboard detection");
+                // Show a message to the user explaining why permissions are needed
+                Toast.makeText(this, "Some features may be limited without required permissions",
+                        Toast.LENGTH_LONG).show();
+            }
+        }
     }
 
     private void initializeNavigation(Bundle savedInstanceState) {
