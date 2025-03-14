@@ -9,11 +9,14 @@ import android.bluetooth.le.ScanRecord;
 import android.bluetooth.le.ScanResult;
 import android.bluetooth.le.ScanSettings;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelUuid;
 import android.util.Log;
+import android.Manifest;
 
+import androidx.core.app.ActivityCompat;
 import com.rootdown.dragonsync.models.CoTMessage;
 import com.rootdown.dragonsync.models.DroneSignature;
 
@@ -103,19 +106,22 @@ public class BluetoothScanner {
         }, SCAN_PERIOD);
 
         try {
-            bluetoothLeScanner.startScan(filters, settings, scanCallback);
-            isScanning = true;
-            Log.d(TAG, "BLE scanning started");
-            return true;
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED) {
+                Log.d(TAG, "🔍 STARTING BLUETOOTH SCAN FOR DRONES");
+                bluetoothLeScanner.startScan(filters, settings, scanCallback);
+                isScanning = true;
+                return true;
+            }
         } catch (Exception e) {
             Log.e(TAG, "Failed to start BLE scan: " + e.getMessage());
-            listener.onError("Failed to start BLE scan: " + e.getMessage());
             return false;
         }
+        return false;
     }
 
     public void pauseScanning() {
-        if (bluetoothLeScanner != null && isScanning) {
+        if (bluetoothLeScanner != null && isScanning &&
+                ActivityCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED) {
             try {
                 bluetoothLeScanner.stopScan(scanCallback);
                 isScanning = false;
@@ -135,6 +141,7 @@ public class BluetoothScanner {
     private final ScanCallback scanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
+//            Log.d(TAG, "📡 BLE scan found device: " + result.getDevice().getAddress());
             // Process scan result
             processScanResult(result);
         }

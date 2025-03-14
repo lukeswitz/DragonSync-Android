@@ -30,6 +30,7 @@ import com.google.android.material.textfield.TextInputLayout;
 import com.rootdown.dragonsync.R;
 import com.rootdown.dragonsync.models.ConnectionMode;
 import com.rootdown.dragonsync.network.NetworkService;
+import com.rootdown.dragonsync.network.OnboardDetectionService;
 import com.rootdown.dragonsync.utils.Settings;
 
 public class SettingsFragment extends Fragment {
@@ -172,16 +173,16 @@ public class SettingsFragment extends Fragment {
 
     private void updateUIForConnectionMode(ConnectionMode mode) {
         if (mode == ConnectionMode.ONBOARD) {
+            // Hide the host input since it's not needed for onboard mode
             hostInputLayout.setVisibility(View.GONE);
-            connectionSwitch.setEnabled(false);
-            connectionSwitch.setChecked(false);
-            settings.setListening(false);
-            updateConnectionStatusUI(false);
+
+            // Check if there's an existing info text
             TextView infoText = new TextView(requireContext());
             infoText.setTag("onboard_info_text");
             infoText.setText("Onboard detection uses your device's Bluetooth and WiFi " +
                     "to directly detect nearby drones without external hardware.");
             infoText.setPadding(16, 16, 16, 16);
+
             ViewGroup parent = (ViewGroup) hostInputLayout.getParent();
             for (int i = 0; i < parent.getChildCount(); i++) {
                 View child = parent.getChildAt(i);
@@ -191,9 +192,14 @@ public class SettingsFragment extends Fragment {
                 }
             }
             parent.addView(infoText, parent.indexOfChild(hostInputLayout));
+
+            // Show current connection status
+            updateConnectionStatusUI(settings.isListening());
         } else {
+            // Other modes - keep existing code
             hostInputLayout.setVisibility(View.VISIBLE);
             connectionSwitch.setEnabled(true);
+
             ViewGroup parent = (ViewGroup) hostInputLayout.getParent();
             for (int i = 0; i < parent.getChildCount(); i++) {
                 View child = parent.getChildAt(i);
@@ -202,13 +208,12 @@ public class SettingsFragment extends Fragment {
                     break;
                 }
             }
-            // Force update status based on switch state when leaving ONBOARD mode
+
+            // Update connection status
             updateConnectionStatusUI(connectionSwitch.isChecked(), false);
         }
         connectionSwitch.setVisibility(View.VISIBLE);
     }
-
-
 
     private void loadCurrentSettings() {
         // Connection settings
@@ -255,12 +260,38 @@ public class SettingsFragment extends Fragment {
         connectionSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
             if (isConnecting) return;
 
+            ConnectionMode mode = settings.getConnectionMode();
+
             if (isChecked) {
-                startConnection();
+                // Start appropriate service based on connection mode
+                if (mode == ConnectionMode.ONBOARD) {
+                    // Start onboard detection service directly
+                    Log.d(TAG, "Starting Onboard Detection Service");
+                    Intent intent = new Intent(requireContext(), OnboardDetectionService.class);
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        requireContext().startForegroundService(intent);
+                    } else {
+                        requireContext().startService(intent);
+                    }
+                    settings.setListening(true);
+                    updateConnectionStatusUI(true);
+                } else {
+                    // Start network service for other modes
+                    startConnection();
+                }
             } else {
-                stopConnection();
+                // Stop service
+                if (mode == ConnectionMode.ONBOARD) {
+                    Log.d(TAG, "Stopping Onboard Detection Service");
+                    requireContext().stopService(new Intent(requireContext(), OnboardDetectionService.class));
+                    settings.setListening(false);
+                    updateConnectionStatusUI(false);
+                } else {
+                    stopConnection();
+                }
             }
         });
+
 
         notificationsSwitch.setOnCheckedChangeListener((buttonView, isChecked) ->
                 settings.setNotificationsEnabled(isChecked));

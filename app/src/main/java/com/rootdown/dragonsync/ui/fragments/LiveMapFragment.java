@@ -81,6 +81,8 @@ public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
         if (isOnboardMode) {
             locationManager = DeviceLocationManager.getInstance(requireContext());
         }
+
+        locationListener = this::updateUserLocationOnMap;
     }
 
     @Override
@@ -105,7 +107,8 @@ public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onMapReady(GoogleMap map) {
         googleMap = map;
-        googleMap.setMapType(GoogleMap.MAP_TYPE_HYBRID);
+        googleMap.setMapType(GoogleMap.MAP_TYPE_NORMAL);
+
 
         setupMapSettings();
         setupMapGestures();

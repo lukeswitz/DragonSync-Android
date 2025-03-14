@@ -1,14 +1,18 @@
 package com.rootdown.dragonsync.network;
 
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+
+import androidx.core.app.ActivityCompat;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -97,7 +101,7 @@ public class WiFiScanner {
         // Start periodic scanning
         handler.post(scanRunnable);
         isScanning = true;
-        Log.d(TAG, "WiFi scanning started");
+        Log.d(TAG, "🔍 STARTING WIFI SCAN FOR DRONES");
         return true;
     }
 
@@ -130,6 +134,16 @@ public class WiFiScanner {
     }
 
     private void processResults() {
+        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
         List<ScanResult> results = wifiManager.getScanResults();
         for (ScanResult result : results) {
             if (isDroneWiFi(result)) {

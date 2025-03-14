@@ -99,7 +99,6 @@ public class StatusMessage implements Parcelable {
             }
         };
 
-        // Existing methods
         public double getLatitude() { return latitude; }
         public void setLatitude(double latitude) { this.latitude = latitude; }
 
@@ -164,7 +163,6 @@ public class StatusMessage implements Parcelable {
             }
         };
 
-        // Existing methods
         public double getCpuUsage() { return cpuUsage; }
         public void setCpuUsage(double cpuUsage) { this.cpuUsage = cpuUsage; }
 
@@ -242,7 +240,6 @@ public class StatusMessage implements Parcelable {
                 }
             };
 
-            // Existing methods
             public long getTotal() { return total; }
             public void setTotal(long total) { this.total = total; }
 
@@ -334,7 +331,6 @@ public class StatusMessage implements Parcelable {
             }
         };
 
-        // Existing methods
         public double getPlutoTemp() { return plutoTemp; }
         public void setPlutoTemp(double plutoTemp) { this.plutoTemp = plutoTemp; }
 
@@ -342,7 +338,6 @@ public class StatusMessage implements Parcelable {
         public void setZynqTemp(double zynqTemp) { this.zynqTemp = zynqTemp; }
     }
 
-    // Existing methods
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 

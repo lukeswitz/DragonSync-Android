@@ -55,9 +55,9 @@ public class NetworkService extends Service {
 
             ConnectionMode mode = settings.getConnectionMode();
 
-            // Handle onboard detection mode separately
             if (mode == ConnectionMode.ONBOARD) {
-                // Start the onboard detection service instead
+                Log.i(TAG, "Starting onboard detection service...");
+                // Start the onboard detection service
                 Intent onboardIntent = new Intent(this, OnboardDetectionService.class);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     startForegroundService(onboardIntent);
@@ -65,7 +65,10 @@ public class NetworkService extends Service {
                     startService(onboardIntent);
                 }
 
-                // This service is not needed for onboard mode
+                // Mark that listening is active in settings
+                settings.setListening(true);
+
+                // Stop this service since onboard service will take over
                 stopSelf();
                 return START_NOT_STICKY;
             }
