@@ -99,7 +99,17 @@
                     android:id="@+id/serial_console_switch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Serial Console"/>
+                    android:text="Serial Console"
+                    android:visibility="gone" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/location_estimation_switch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Estimate Drone Location"
+                    android:summary="When enabled, estimates drone positions based on signal strength"
+                    android:visibility="gone"/>
+
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 

@@ -18,15 +18,23 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.rootdown.dragonsync.utils.DroneDataParser;
+
 public class WiFiScanner {
     private static final String TAG = "WiFiScanner";
     private static final long SCAN_INTERVAL = 30000; // 30 seconds between scans
+    private static final int[] DRI_CID = {0xFA, 0x0B, 0xBC};  // Drone Remote ID Company Identifier
+    private static final int CID_LENGTH = 3;
+    private static final int DRI_START_OFFSET = 4;
+    private static final int VENDOR_TYPE_LENGTH = 1;
+    private static final int VENDOR_TYPE_VALUE = 0x0D;  // Open Drone ID Application Code
 
     private Context context;
     private WifiManager wifiManager;
@@ -34,6 +42,7 @@ public class WiFiScanner {
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final OnDroneDetectedListener listener;
     private BroadcastReceiver wifiScanReceiver;
+    private final DroneDataParser dataParser;
 
     // Known drone WiFi SSID patterns
     private static final Map<String, String> DRONE_PATTERNS = new HashMap<>();
@@ -62,6 +71,7 @@ public class WiFiScanner {
     public WiFiScanner(Context context, OnDroneDetectedListener listener) {
         this.context = context;
         this.listener = listener;
+        this.dataParser = new DroneDataParser();
         this.wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
 
         this.wifiScanReceiver = new BroadcastReceiver() {
@@ -95,7 +105,8 @@ public class WiFiScanner {
         // Register for scan results
         context.registerReceiver(
                 wifiScanReceiver,
-                new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)
+                new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION),
+                Context.RECEIVER_NOT_EXPORTED
         );
 
         // Start periodic scanning
@@ -107,7 +118,12 @@ public class WiFiScanner {
 
     public void stopScanning() {
         if (isScanning) {
-            context.unregisterReceiver(wifiScanReceiver);
+            try {
+                context.unregisterReceiver(wifiScanReceiver);
+            } catch (IllegalArgumentException e) {
+                // Ignore if receiver wasn't registered
+            }
+
             handler.removeCallbacks(scanRunnable);
             isScanning = false;
             Log.d(TAG, "WiFi scanning stopped");
@@ -128,24 +144,19 @@ public class WiFiScanner {
         if (wifiManager != null) {
             boolean started = wifiManager.startScan();
             if (!started) {
-                Log.e(TAG, "Failed to start WiFi scan");
+                Log.e(TAG, "Failed to start WiFi scan - scan throttling may be active");
             }
         }
     }
 
     private void processResults() {
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
             return;
         }
+
         List<ScanResult> results = wifiManager.getScanResults();
         for (ScanResult result : results) {
+            // Check if it's a drone based on SSID
             if (isDroneWiFi(result)) {
                 JSONArray droneData = createDroneWiFiData(result);
                 if (droneData.length() > 0) {
@@ -153,6 +164,9 @@ public class WiFiScanner {
                     Log.d(TAG, "Detected drone WiFi: " + result.SSID + ", BSSID: " + result.BSSID);
                 }
             }
+
+            // Check for Remote ID beacons in information elements
+            processInformationElements(result);
         }
     }
 
@@ -176,6 +190,111 @@ public class WiFiScanner {
                 ssid.contains("UAV") ||
                 ssid.contains("UAS") ||
                 ssid.contains("COPTER");
+    }
+
+    private void processInformationElements(ScanResult result) {
+        // Android version dependent code to get the information elements
+        try {
+            ScanResult.InformationElement[] elements = getInformationElements(result);
+            if (elements == null) return;
+
+            for (ScanResult.InformationElement element : elements) {
+                if (element == null) continue;
+
+                int id = getElementId(element);
+                if (id == 221) { // Vendor-specific element
+                    byte[] data = getElementData(element);
+                    if (data != null) {
+                        processRemoteIdVendorData(result, ByteBuffer.wrap(data));
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error processing information elements: " + e.getMessage());
+        }
+    }
+
+    private void processRemoteIdVendorData(ScanResult result, ByteBuffer buffer) {
+        if (buffer.remaining() < 30) return;
+
+        byte[] cidBytes = new byte[CID_LENGTH];
+        buffer.get(cidBytes, 0, CID_LENGTH);
+
+        byte[] vendorType = new byte[VENDOR_TYPE_LENGTH];
+        buffer.get(vendorType);
+
+        // Check if this is a Drone Remote ID element
+        if ((cidBytes[0] & 0xFF) == DRI_CID[0] &&
+                (cidBytes[1] & 0xFF) == DRI_CID[1] &&
+                (cidBytes[2] & 0xFF) == DRI_CID[2] &&
+                vendorType[0] == VENDOR_TYPE_VALUE) {
+
+            // Position buffer at the start of the Remote ID data
+            buffer.position(DRI_START_OFFSET);
+            byte[] beaconData = new byte[buffer.remaining()];
+            buffer.get(beaconData);
+
+            // Parse and notify
+            JSONArray droneData = dataParser.parseWiFiBeaconData(beaconData, result.BSSID, result.level);
+            if (droneData.length() > 0) {
+                listener.onDroneDetected(droneData);
+                Log.d(TAG, "Detected drone Remote ID in beacon: " + result.BSSID);
+            }
+        }
+    }
+
+    private ScanResult.InformationElement[] getInformationElements(ScanResult result) {
+        try {
+            // For Android 12 (API 31) and newer
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                // Convert List<InformationElement> to InformationElement[]
+                List<ScanResult.InformationElement> elements = result.getInformationElements();
+                return elements.toArray(new ScanResult.InformationElement[0]);
+            } else {
+                // For older versions, use reflection
+                java.lang.reflect.Field field = ScanResult.class.getDeclaredField("informationElements");
+                field.setAccessible(true);
+                return (ScanResult.InformationElement[]) field.get(result);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to get information elements: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private int getElementId(ScanResult.InformationElement element) {
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                return element.getId();
+            } else {
+                // For older versions, use reflection
+                java.lang.reflect.Field field = element.getClass().getDeclaredField("id");
+                field.setAccessible(true);
+                return (int) field.get(element);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to get element ID: " + e.getMessage());
+            return -1;
+        }
+    }
+
+    private byte[] getElementData(ScanResult.InformationElement element) {
+        try {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                ByteBuffer buffer = element.getBytes();
+                byte[] data = new byte[buffer.remaining()];
+                buffer.get(data);
+                return data;
+            } else {
+                // For older versions, use reflection
+                java.lang.reflect.Field field = element.getClass().getDeclaredField("bytes");
+                field.setAccessible(true);
+                return (byte[]) field.get(element);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to get element data: " + e.getMessage());
+            return null;
+        }
     }
 
     private JSONArray createDroneWiFiData(ScanResult result) {
@@ -232,15 +351,12 @@ public class WiFiScanner {
 
             messagesArray.put(basicIdObj);
 
-            // Add location if frequency is in 5GHz band (common for drone controllers)
-            if (result.frequency > 5000) {
-                // Create self-ID message
-                JSONObject selfIdObj = new JSONObject();
-                JSONObject selfId = new JSONObject();
-                selfIdObj.put("Self-ID Message", selfId);
-                selfId.put("text", droneModel);
-                messagesArray.put(selfIdObj);
-            }
+            // Add self-ID message
+            JSONObject selfIdObj = new JSONObject();
+            JSONObject selfId = new JSONObject();
+            selfIdObj.put("Self-ID Message", selfId);
+            selfId.put("text", droneModel);
+            messagesArray.put(selfIdObj);
 
         } catch (JSONException e) {
             Log.e(TAG, "Error creating drone data: " + e.getMessage());

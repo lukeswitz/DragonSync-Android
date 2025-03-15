@@ -2,7 +2,9 @@
 agp = "8.8.2"
 core = "1.15.0"
 gson = "2.10.1"
+gsonVersion = "2.12.1"
 jeromq = "0.5.3"
+jeromqVersion = "0.6.0"
 kotlin = "2.0.0"
 coreKtx = "1.15.0"
 junit = "4.13.2"
@@ -26,7 +28,9 @@ androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = 
 androidx-lifecycle-runtime = { module = "androidx.lifecycle:lifecycle-runtime", version.ref = "lifecycleRuntime" }
 androidx-preference = { module = "androidx.preference:preference", version.ref = "preference" }
 gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
+gson-v2121 = { module = "com.google.code.gson:gson", version.ref = "gsonVersion" }
 jeromq = { module = "org.zeromq:jeromq", version.ref = "jeromq" }
+jeromq-v060 = { module = "org.zeromq:jeromq", version.ref = "jeromqVersion" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "junitVersion" }
 androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }

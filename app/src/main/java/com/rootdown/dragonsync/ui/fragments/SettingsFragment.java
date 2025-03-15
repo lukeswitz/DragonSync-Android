@@ -16,6 +16,7 @@ import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
@@ -137,6 +138,7 @@ public class SettingsFragment extends Fragment {
         connectionStatus = new TextView(requireContext());
         connectionStatus.setText("Disconnected");
         connectionStatus.setTextColor(getResources().getColor(R.color.red, null));
+        SwitchMaterial locationEstimationSwitch = view.findViewById(R.id.location_estimation_switch); // TODO decide if we need this
 
         // Add it to the parent layout right after the switch
         ViewGroup parent = (ViewGroup) connectionSwitch.getParent();
@@ -226,6 +228,7 @@ public class SettingsFragment extends Fragment {
         screenOnSwitch.setChecked(settings.keepScreenOn());
         serialConsoleSwitch.setChecked(settings.isSerialConsoleEnabled());
         systemWarningsSwitch.setChecked(settings.isSystemWarningsEnabled());
+//        locationEstimationSwitch.setChecked(settings.isLocationEstimationEnabled());
 
         // Warning thresholds
         setupThresholdDials();
@@ -291,6 +294,14 @@ public class SettingsFragment extends Fragment {
                 }
             }
         });
+
+        //        SwitchMaterial locationEstimationSwitch = view.findViewById(R.id.location_estimation_switch);
+//        locationEstimationSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+//            @Override
+//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+//                settings.setLocationEstimationEnabled(isChecked);
+//            }
+//        });
 
 
         notificationsSwitch.setOnCheckedChangeListener((buttonView, isChecked) ->
@@ -400,8 +411,14 @@ public class SettingsFragment extends Fragment {
                 connectionStatus.setText("Connecting...");
                 connectionStatus.setTextColor(getResources().getColor(R.color.orange, null));
             } else if (currentMode == ConnectionMode.ONBOARD) {
-                connectionStatus.setText("Active");
-                connectionStatus.setTextColor(getResources().getColor(R.color.green, null));
+                // Only show "Active" if we're in onboard mode AND actually connected/listening
+                if (connectionSwitch.isChecked() && settings.isListening()) {
+                    connectionStatus.setText("Active");
+                    connectionStatus.setTextColor(getResources().getColor(R.color.green, null));
+                } else {
+                    connectionStatus.setText("Disconnected");
+                    connectionStatus.setTextColor(getResources().getColor(R.color.red, null));
+                }
             } else if (connectionSwitch.isChecked()) {
                 connectionStatus.setText("Connected");
                 connectionStatus.setTextColor(getResources().getColor(R.color.green, null));

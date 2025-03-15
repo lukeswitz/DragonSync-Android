@@ -1,6 +1,5 @@
 package com.rootdown.dragonsync.network;
 
-import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -18,6 +17,7 @@ import androidx.core.app.NotificationCompat;
 
 import com.rootdown.dragonsync.R;
 import com.rootdown.dragonsync.models.CoTMessage;
+import com.rootdown.dragonsync.models.DroneSignature;
 import com.rootdown.dragonsync.utils.DeviceLocationManager;
 import com.rootdown.dragonsync.utils.Settings;
 
@@ -26,6 +26,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 public class OnboardDetectionService extends Service {
@@ -40,6 +41,7 @@ public class OnboardDetectionService extends Service {
     private XMLParser xmlParser;
     private DeviceLocationManager locationManager;
     private Location lastDeviceLocation;
+    private Map<String, Long> lastDetectionTime = new HashMap<>(); // For filtering duplicate detections
 
     @Override
     public void onCreate() {
@@ -140,108 +142,276 @@ public class OnboardDetectionService extends Service {
                 addDeviceLocationToData(droneData);
             }
 
-            // Parse the drone data into CoTMessage
-            String jsonString = droneData.toString();
-            XMLParser.ParseResult result = xmlParser.parse(jsonString);
+            // Process each message in the array
+            for (int i = 0; i < droneData.length(); i++) {
+                JSONObject msgObj = droneData.getJSONObject(i);
 
-            if (result.error != null) {
-                Log.e(TAG, "Error parsing drone data: " + result.error);
-                return;
-            }
-
-            // If we have a valid CoT message, enhance it with additional data
-            if (result.cotMessage != null) {
-                // Tag the message source
-                result.cotMessage.setType(source + "_ONBOARD");
-
-                // Only estimate location if drone doesn't provide its own coordinates
-                // AND user has enabled location estimation
-                if (result.cotMessage.getCoordinate() == null &&
-                        lastDeviceLocation != null &&
-                        result.cotMessage.getRssi() != null &&
-                        settings.isLocationEstimationEnabled()) {
-
-                    estimateDroneLocation(result.cotMessage);
+                // Get the appropriate message type and data
+                String messageType = null;
+                JSONObject messageData = null;
+                Iterator<String> keys = msgObj.keys();
+                if (keys.hasNext()) {
+                    messageType = keys.next();
+                    messageData = msgObj.getJSONObject(messageType);
                 }
 
-                // Set the device (operator) location for display purposes
-                if (lastDeviceLocation != null) {
-                    result.cotMessage.setPilotLat(String.valueOf(lastDeviceLocation.getLatitude()));
-                    result.cotMessage.setPilotLon(String.valueOf(lastDeviceLocation.getLongitude()));
+                if (messageType == null || messageData == null) continue;
+
+                // Extract key identifiers
+                String id = messageData.optString("id", "");
+                String mac = messageData.optString("MAC", "");
+
+                // Create a unique key for deduplication
+                String uniqueKey = !id.isEmpty() ? id : mac;
+                uniqueKey = !uniqueKey.isEmpty() ? uniqueKey : String.valueOf(messageData.hashCode());
+
+                // Check if we've recently seen this drone
+                long currentTime = System.currentTimeMillis();
+                Long lastDetection = lastDetectionTime.get(uniqueKey);
+
+                // Deduplicate within 2 seconds
+                if (lastDetection != null && (currentTime - lastDetection) < 2000) {
+                    continue;
                 }
 
-                // Calculate distance between user and drone if both coordinates are available
-                if (lastDeviceLocation != null && result.cotMessage.getCoordinate() != null) {
-                    float distanceInMeters = lastDeviceLocation.distanceTo(result.cotMessage.getCoordinate());
+                // Update last detection time
+                lastDetectionTime.put(uniqueKey, currentTime);
 
-                    // Store the calculated distance in the message
-                    if (result.cotMessage.getRawMessage() == null) {
-                        result.cotMessage.setRawMessage(new HashMap<>());
+                // Convert to CoTMessage
+                CoTMessage message = convertToCoTMessage(messageType, messageData, source);
+
+                if (message != null) {
+                    // Only estimate location if drone doesn't provide its own coordinates
+                    // AND user has enabled location estimation
+                    if (message.getCoordinate() == null &&
+                            lastDeviceLocation != null &&
+                            message.getRssi() != null &&
+                            settings.isLocationEstimationEnabled()) {
+
+                        estimateDroneLocation(message);
                     }
-                    result.cotMessage.getRawMessage().put("calculated_distance", distanceInMeters);
-                }
 
-                // Broadcast the enhanced telemetry message
-                Intent telemetryIntent = new Intent("com.rootdown.dragonsync.TELEMETRY");
-                telemetryIntent.setPackage(getPackageName());
-                telemetryIntent.putExtra("parsed_message", result.cotMessage);
-                telemetryIntent.putExtra("raw_message", jsonString);
-                sendBroadcast(telemetryIntent);
+                    // Set the device (operator) location for display purposes
+                    if (lastDeviceLocation != null) {
+                        message.setPilotLat(String.valueOf(lastDeviceLocation.getLatitude()));
+                        message.setPilotLon(String.valueOf(lastDeviceLocation.getLongitude()));
+                    }
+
+                    // Calculate distance between user and drone if both coordinates are available
+                    if (lastDeviceLocation != null && message.getCoordinate() != null) {
+                        float distanceInMeters = lastDeviceLocation.distanceTo(message.getCoordinate());
+
+                        // Store the calculated distance in the message
+                        if (message.getRawMessage() == null) {
+                            message.setRawMessage(new HashMap<>());
+                        }
+                        message.getRawMessage().put("calculated_distance", distanceInMeters);
+                    }
+
+                    // Broadcast the enhanced telemetry message
+                    Intent telemetryIntent = new Intent("com.rootdown.dragonsync.TELEMETRY");
+                    telemetryIntent.setPackage(getPackageName());
+                    telemetryIntent.putExtra("parsed_message", message);
+                    telemetryIntent.putExtra("raw_message", messageType + ": " + messageData.toString());
+                    sendBroadcast(telemetryIntent);
+                }
             }
         } catch (Exception e) {
             Log.e(TAG, "Error processing drone data: " + e.getMessage(), e);
         }
     }
 
+    private CoTMessage convertToCoTMessage(String messageType, JSONObject messageData, String source) {
+        CoTMessage message = new CoTMessage();
+
+        try {
+            // Common fields
+            if (messageData.has("MAC")) {
+                message.setMac(messageData.getString("MAC"));
+            }
+
+            if (messageData.has("RSSI")) {
+                message.setRssi(messageData.getInt("RSSI"));
+            }
+
+            // Source information
+            message.setType(source + "_ONBOARD");
+
+            // Specific message type handling
+            switch (messageType) {
+                case "Basic ID":
+                    if (messageData.has("id")) {
+                        message.setUid(messageData.getString("id"));
+                    } else if (messageData.has("MAC")) {
+                        // Use MAC as fallback ID
+                        message.setUid(messageData.getString("MAC"));
+                    } else {
+                        message.setUid("Unknown_" + System.currentTimeMillis());
+                    }
+
+                    if (messageData.has("ua_type")) {
+                        String uaTypeStr = messageData.getString("ua_type");
+                        DroneSignature.IdInfo.UAType uaType = mapUAType(uaTypeStr);
+                        message.setUaType(uaType);
+                    }
+
+                    if (messageData.has("id_type")) {
+                        message.setIdType(messageData.getString("id_type"));
+                    }
+
+                    if (messageData.has("description")) {
+                        message.setDescription(messageData.getString("description"));
+                    }
+
+                    if (messageData.has("manufacturer")) {
+                        message.setManufacturer(messageData.getString("manufacturer"));
+                    }
+                    break;
+
+                case "Location/Vector Message":
+                    if (messageData.has("latitude") && messageData.has("longitude")) {
+                        message.setLat(String.valueOf(messageData.getDouble("latitude")));
+                        message.setLon(String.valueOf(messageData.getDouble("longitude")));
+                    }
+
+                    if (messageData.has("speed")) {
+                        String speedStr = messageData.getString("speed");
+                        // Extract numeric part if needed
+                        if (speedStr.contains(" ")) {
+                            speedStr = speedStr.split(" ")[0];
+                        }
+                        message.setSpeed(speedStr);
+                    }
+
+                    if (messageData.has("vert_speed")) {
+                        String vspeedStr = messageData.getString("vert_speed");
+                        if (vspeedStr.contains(" ")) {
+                            vspeedStr = vspeedStr.split(" ")[0];
+                        }
+                        message.setVspeed(vspeedStr);
+                    }
+
+                    if (messageData.has("geodetic_altitude")) {
+                        String altStr = messageData.getString("geodetic_altitude");
+                        if (altStr.contains(" ")) {
+                            altStr = altStr.split(" ")[0];
+                        }
+                        message.setAlt(altStr);
+                    }
+
+                    if (messageData.has("height_agl")) {
+                        String heightStr = messageData.getString("height_agl");
+                        if (heightStr.contains(" ")) {
+                            heightStr = heightStr.split(" ")[0];
+                        }
+                        message.setHeight(heightStr);
+                    }
+
+                    if (messageData.has("direction")) {
+                        message.setDirection(String.valueOf(messageData.getDouble("direction")));
+                    }
+
+                    if (messageData.has("timestamp")) {
+                        // Convert to milliseconds if needed
+                        message.setTimestamp(String.valueOf(System.currentTimeMillis()));
+                    }
+                    break;
+
+                case "Self-ID Message":
+                    if (messageData.has("text")) {
+                        message.setSelfIDText(messageData.getString("text"));
+
+                        // If we don't have a description yet, use self-ID text
+                        if (message.getDescription() == null || message.getDescription().isEmpty()) {
+                            message.setDescription(messageData.getString("text"));
+                        }
+                    }
+                    break;
+
+                case "System Message":
+                    if (messageData.has("operator_lat") && messageData.has("operator_lon")) {
+                        message.setPilotLat(String.valueOf(messageData.getDouble("operator_lat")));
+                        message.setPilotLon(String.valueOf(messageData.getDouble("operator_lon")));
+                    }
+
+                    if (messageData.has("operator_altitude_geo")) {
+                        String opAltStr = messageData.getString("operator_altitude_geo");
+                        if (opAltStr.contains(" ")) {
+                            opAltStr = opAltStr.split(" ")[0];
+                        }
+                        // We could store this in a metadata field if needed
+                    }
+                    break;
+
+                case "Operator ID Message":
+                    if (messageData.has("operator_id")) {
+                        message.setOperatorId(messageData.getString("operator_id"));
+                    }
+
+                    if (messageData.has("operator_id_type")) {
+                        message.setOperatorIdType(messageData.getString("operator_id_type"));
+                    }
+                    break;
+            }
+
+            // For any unhandled message fields, store them in raw message data
+            Map<String, Object> rawData = new HashMap<>();
+            Iterator<String> keys = messageData.keys();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                rawData.put(key, messageData.get(key));
+            }
+            message.setRawMessage(rawData);
+
+            return message;
+
+        } catch (JSONException e) {
+            Log.e(TAG, "Error converting drone data to CoT Message: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private DroneSignature.IdInfo.UAType mapUAType(String uaTypeStr) {
+        if (uaTypeStr == null || uaTypeStr.isEmpty())
+            return DroneSignature.IdInfo.UAType.OTHER;
+
+        if (uaTypeStr.contains("Helicopter") || uaTypeStr.contains("Multirotor"))
+            return DroneSignature.IdInfo.UAType.HELICOPTER;
+        else if (uaTypeStr.contains("Aeroplane") || uaTypeStr.contains("Airplane"))
+            return DroneSignature.IdInfo.UAType.AEROPLANE;
+        else if (uaTypeStr.contains("Glider"))
+            return DroneSignature.IdInfo.UAType.GLIDER;
+        else if (uaTypeStr.contains("VTOL"))
+            return DroneSignature.IdInfo.UAType.HYBRID_LIFT;
+        else if (uaTypeStr.contains("Airship"))
+            return DroneSignature.IdInfo.UAType.AIRSHIP;
+        else if (uaTypeStr.contains("Free Balloon"))
+            return DroneSignature.IdInfo.UAType.FREE_BALLOON;
+        else if (uaTypeStr.contains("Captive Balloon"))
+            return DroneSignature.IdInfo.UAType.CAPTIVE;
+        else if (uaTypeStr.contains("Rocket"))
+            return DroneSignature.IdInfo.UAType.ROCKET;
+        else if (uaTypeStr.equals("None"))
+            return DroneSignature.IdInfo.UAType.NONE;
+
+        return DroneSignature.IdInfo.UAType.OTHER;
+    }
+
     private boolean hasBluetoothPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            return ActivityCompat.checkSelfPermission(this,
-                    Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED &&
-                    ActivityCompat.checkSelfPermission(this,
-                            Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED;
+            return ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_SCAN) == PackageManager.PERMISSION_GRANTED &&
+                    ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED;
         } else {
-            return ActivityCompat.checkSelfPermission(this,
-                    Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED &&
-                    ActivityCompat.checkSelfPermission(this,
-                            Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED &&
-                    ActivityCompat.checkSelfPermission(this,
-                            Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+            return ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH) == PackageManager.PERMISSION_GRANTED &&
+                    ActivityCompat.checkSelfPermission(this, android.Manifest.permission.BLUETOOTH_ADMIN) == PackageManager.PERMISSION_GRANTED &&
+                    ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
         }
     }
 
     private boolean hasWifiPermissions() {
-        return ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.ACCESS_WIFI_STATE) == PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this,
-                        Manifest.permission.CHANGE_WIFI_STATE) == PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this,
-                        Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
-    }
-
-    private Notification createNotification() {
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setContentTitle("DragonSync Onboard Detection")
-                .setContentText("Scanning for drones via BT and WiFi...")
-                .setSmallIcon(R.drawable.ic_drone)
-                .setPriority(NotificationCompat.PRIORITY_LOW);
-
-        return builder.build();
-    }
-
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "DragonSync Onboard Detection",
-                    NotificationManager.IMPORTANCE_LOW
-            );
-            channel.setDescription("Scanning for drones using device radios");
-
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            if (notificationManager != null) {
-                notificationManager.createNotificationChannel(channel);
-            }
-        }
+        return ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_WIFI_STATE) == PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, android.Manifest.permission.CHANGE_WIFI_STATE) == PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
     }
 
     private void addDeviceLocationToData(JSONArray droneData) throws JSONException {
@@ -254,7 +424,7 @@ public class OnboardDetectionService extends Service {
                 sysMsg.put("operator_lat", lastDeviceLocation.getLatitude());
                 sysMsg.put("operator_lon", lastDeviceLocation.getLongitude());
                 if (lastDeviceLocation.hasAltitude()) {
-                    sysMsg.put("operator_alt_geo", lastDeviceLocation.getAltitude());
+                    sysMsg.put("operator_altitude_geo", lastDeviceLocation.getAltitude());
                 }
                 foundSystemMessage = true;
                 break;
@@ -270,20 +440,21 @@ public class OnboardDetectionService extends Service {
             systemMessage.put("operator_lat", lastDeviceLocation.getLatitude());
             systemMessage.put("operator_lon", lastDeviceLocation.getLongitude());
             if (lastDeviceLocation.hasAltitude()) {
-                systemMessage.put("operator_alt_geo", lastDeviceLocation.getAltitude());
+                systemMessage.put("operator_altitude_geo", lastDeviceLocation.getAltitude());
             }
 
             droneData.put(systemObj);
         }
     }
 
-    // Estimate drone location based on RSSI and device location
+    // Estimate drone location based on RSSI and device location - For drones without any GPS (DISABLED)
     private void estimateDroneLocation(CoTMessage message) {
         if (message.getRssi() == null || lastDeviceLocation == null) return;
 
         if (!settings.isLocationEstimationEnabled()) {
             return;
         }
+
         // Simple distance estimation based on RSSI
         // This is a very basic model and could be improved
         // RSSI = -20 * log10(distance) - 41  (simplified free space path loss model)
@@ -334,12 +505,37 @@ public class OnboardDetectionService extends Service {
         rawData.put("estimated_distance", distance);
     }
 
+    private Notification createNotification() {
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle("DragonSync Onboard Detection")
+                .setContentText("Scanning for drones via BT and WiFi...")
+                .setSmallIcon(R.drawable.ic_drone)
+                .setPriority(NotificationCompat.PRIORITY_LOW);
+
+        return builder.build();
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "DragonSync Onboard Detection",
+                    NotificationManager.IMPORTANCE_LOW
+            );
+            channel.setDescription("Scanning for drones using device radios");
+
+            NotificationManager notificationManager = getSystemService(NotificationManager.class);
+            if (notificationManager != null) {
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
+    }
 
     @Override
     public void onDestroy() {
         // Stop location updates
         locationManager.stopLocationUpdates();
-//        locationManager.removeListener(locationListener); // TODO add location listener
+        locationManager.removeListener(this::updateUserLocation);
 
         if (bluetoothScanner != null) {
             bluetoothScanner.stopScanning();
@@ -355,6 +551,10 @@ public class OnboardDetectionService extends Service {
 
         Log.i(TAG, "Onboard detection service destroyed");
         super.onDestroy();
+    }
+
+    private void updateUserLocation(Location location) {
+        lastDeviceLocation = location;
     }
 
     @Override

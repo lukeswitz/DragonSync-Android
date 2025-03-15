@@ -149,6 +149,7 @@ public class Settings {
         editor.putBoolean(Constants.KEY_KEEP_SCREEN_ON, enabled).apply();
     }
 
+
     public boolean isListening() {
         return prefs.getBoolean(Constants.KEY_IS_LISTENING, false);
     }

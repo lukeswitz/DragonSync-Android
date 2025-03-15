@@ -1,5 +1,6 @@
 package com.rootdown.dragonsync.network;
 
+import android.Manifest;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
@@ -14,11 +15,11 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelUuid;
 import android.util.Log;
-import android.Manifest;
 
 import androidx.core.app.ActivityCompat;
+
 import com.rootdown.dragonsync.models.CoTMessage;
-import com.rootdown.dragonsync.models.DroneSignature;
+import com.rootdown.dragonsync.utils.DroneDataParser;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -28,6 +29,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class BluetoothScanner {
     private static final String TAG = "BluetoothScanner";
@@ -36,6 +38,9 @@ public class BluetoothScanner {
     // ASTM F3411 OpenDroneID manufacturer IDs
     private static final int OPENDRONEID_MFG_ID = 0x4150;
     private static final int ASTM_MFG_ID = 0xFFFA;
+    private static final UUID SERVICE_UUID = UUID.fromString("0000fffa-0000-1000-8000-00805f9b34fb");
+    private static final ParcelUuid SERVICE_pUUID = new ParcelUuid(SERVICE_UUID);
+    private static final byte[] OPEN_DRONE_ID_AD_CODE = new byte[]{(byte) 0x0D};
 
     // Message types (from ASTM F3411)
     private static final byte MESSAGE_TYPE_BASIC_ID = 0x00;
@@ -51,6 +56,7 @@ public class BluetoothScanner {
     private boolean isScanning = false;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final OnDroneDetectedListener listener;
+    private final DroneDataParser dataParser;
 
     public interface OnDroneDetectedListener {
         void onDroneDetected(JSONArray droneData);
@@ -60,6 +66,7 @@ public class BluetoothScanner {
     public BluetoothScanner(Context context, OnDroneDetectedListener listener) {
         this.context = context;
         this.listener = listener;
+        this.dataParser = new DroneDataParser();
 
         BluetoothManager bluetoothManager = (BluetoothManager) context.getSystemService(Context.BLUETOOTH_SERVICE);
         if (bluetoothManager != null) {
@@ -82,12 +89,24 @@ public class BluetoothScanner {
 
         // Define scan filters for drone manufacturer IDs
         List<ScanFilter> filters = new ArrayList<>();
+
+        // Add a filter for the OpenDroneID service UUID
+        ScanFilter serviceFilter = new ScanFilter.Builder()
+                .setServiceUuid(SERVICE_pUUID)
+                .build();
+
+        // Add manufacturer data filters
         ScanFilter openDroneIdFilter = new ScanFilter.Builder()
                 .setManufacturerData(OPENDRONEID_MFG_ID, null)
                 .build();
+
+        // Create a proper mask array instead of a single byte
+        byte[] astmMask = new byte[]{(byte)0x0F};
         ScanFilter astmFilter = new ScanFilter.Builder()
-                .setManufacturerData(ASTM_MFG_ID, null)
+                .setManufacturerData(ASTM_MFG_ID, OPEN_DRONE_ID_AD_CODE, astmMask)
                 .build();
+
+        filters.add(serviceFilter);
         filters.add(openDroneIdFilter);
         filters.add(astmFilter);
 
@@ -141,8 +160,6 @@ public class BluetoothScanner {
     private final ScanCallback scanCallback = new ScanCallback() {
         @Override
         public void onScanResult(int callbackType, ScanResult result) {
-//            Log.d(TAG, "📡 BLE scan found device: " + result.getDevice().getAddress());
-            // Process scan result
             processScanResult(result);
         }
 
@@ -172,12 +189,22 @@ public class BluetoothScanner {
         byte[] openDroneIdData = scanRecord.getManufacturerSpecificData(OPENDRONEID_MFG_ID);
         byte[] astmData = scanRecord.getManufacturerSpecificData(ASTM_MFG_ID);
 
-        byte[] droneData = (openDroneIdData != null) ? openDroneIdData : astmData;
+        byte[] droneData = null;
+
+        // Check manufacturer specific data
+        if (openDroneIdData != null) {
+            droneData = openDroneIdData;
+        } else if (astmData != null) {
+            droneData = astmData;
+        } else {
+            // Check if it's in the service data
+            droneData = scanRecord.getServiceData(SERVICE_pUUID);
+        }
 
         if (droneData != null) {
             // Parse ASTM F3411 format
             try {
-                JSONArray messages = parseOpenDroneID(droneData, deviceAddress, rssi);
+                JSONArray messages = dataParser.parseBluetoothData(droneData, deviceAddress, rssi);
                 if (messages.length() > 0) {
                     listener.onDroneDetected(messages);
                     Log.d(TAG, "Drone detected: " + deviceAddress + ", RSSI: " + rssi);
@@ -186,274 +213,5 @@ public class BluetoothScanner {
                 Log.e(TAG, "Error parsing drone data: " + e.getMessage());
             }
         }
-    }
-
-    private JSONArray parseOpenDroneID(byte[] data, String deviceAddress, int rssi) throws JSONException {
-        JSONArray messagesArray = new JSONArray();
-
-        // Minimum header size is 1 byte (message type)
-        if (data.length < 1) return messagesArray;
-
-        ByteBuffer buffer = ByteBuffer.wrap(data);
-        buffer.order(ByteOrder.LITTLE_ENDIAN);
-
-        // Read message type
-        byte messageType = buffer.get();
-
-        // Create Basic ID message (always included)
-        JSONObject basicIdObj = new JSONObject();
-        JSONObject basicId = new JSONObject();
-        basicIdObj.put("Basic ID", basicId);
-
-        // Add MAC address and RSSI to basic ID
-        basicId.put("protocol_version", "F3411.22");
-        basicId.put("MAC", deviceAddress);
-        basicId.put("RSSI", rssi);
-
-        switch (messageType) {
-            case MESSAGE_TYPE_BASIC_ID:
-                if (data.length >= 20) { // Basic ID message size
-                    parseBasicIDMessage(buffer, basicId);
-                }
-                break;
-
-            case MESSAGE_TYPE_LOCATION:
-                JSONObject locationObj = new JSONObject();
-                JSONObject locationMessage = new JSONObject();
-                locationObj.put("Location/Vector Message", locationMessage);
-
-                parseLocationMessage(buffer, locationMessage);
-                messagesArray.put(locationObj);
-                break;
-
-            case MESSAGE_TYPE_SELF_ID:
-                JSONObject selfIdObj = new JSONObject();
-                JSONObject selfIdMessage = new JSONObject();
-                selfIdObj.put("Self-ID Message", selfIdMessage);
-
-                parseSelfIDMessage(buffer, selfIdMessage);
-                messagesArray.put(selfIdObj);
-                break;
-
-            case MESSAGE_TYPE_SYSTEM:
-                JSONObject systemObj = new JSONObject();
-                JSONObject systemMessage = new JSONObject();
-                systemObj.put("System Message", systemMessage);
-
-                parseSystemMessage(buffer, systemMessage);
-                messagesArray.put(systemObj);
-                break;
-
-            case MESSAGE_TYPE_OPERATOR_ID:
-                JSONObject operatorObj = new JSONObject();
-                JSONObject operatorMessage = new JSONObject();
-                operatorObj.put("Operator ID Message", operatorMessage);
-
-                parseOperatorIDMessage(buffer, operatorMessage);
-                messagesArray.put(operatorObj);
-                break;
-        }
-
-        // Always add basic ID
-        messagesArray.put(basicIdObj);
-
-        return messagesArray;
-    }
-
-    private void parseBasicIDMessage(ByteBuffer buffer, JSONObject basicId) throws JSONException {
-        // Skip first byte (already read message type)
-
-        byte idType = buffer.get();
-        byte uaType = buffer.get();
-
-        // Read 20-byte UAS ID field
-        byte[] uasIdBytes = new byte[20];
-        buffer.get(uasIdBytes);
-        String uasId = bytesToHex(uasIdBytes).trim().replace("\0", "");
-
-        // Map ID type
-        String idTypeStr = "Unknown";
-        switch (idType) {
-            case 0:
-                idTypeStr = "None";
-                break;
-            case 1:
-                idTypeStr = "Serial Number (ANSI/CTA-2063-A)";
-                break;
-            case 2:
-                idTypeStr = "CAA Assigned Registration ID";
-                break;
-            case 3:
-                idTypeStr = "UTM (USS) Assigned ID";
-                break;
-            // Add more cases as needed
-        }
-
-        // Map UA type
-        String uaTypeStr = mapUAType(uaType);
-
-        basicId.put("id_type", idTypeStr);
-        basicId.put("ua_type", uaTypeStr);
-        basicId.put("id", uasId);
-    }
-
-    private void parseLocationMessage(ByteBuffer buffer, JSONObject locationMessage) throws JSONException {
-        // Implementation depends on specific format
-        // This is a simplified example - actual parsing would be more complex
-        locationMessage.put("protocol_version", "F3411.22");
-
-        // Skip status byte
-        buffer.get();
-
-        // Height and vertical reference
-        byte heightRef = buffer.get();
-        String heightType = (heightRef == 0) ? "Above Takeoff" : "Above Ground";
-        locationMessage.put("height_type", heightType);
-
-        // Direction segment (E/W)
-        byte directionSegment = buffer.get();
-        String ewDir = (directionSegment == 0) ? "East" : "West";
-        locationMessage.put("ew_dir_segment", ewDir);
-
-        // Speed multiplier (0.25 or 0.75)
-        byte speedMult = buffer.get();
-        String speedMultiplier = (speedMult == 0) ? "0.25" : "0.75";
-        locationMessage.put("speed_multiplier", speedMultiplier);
-
-        // Read basic location info
-        locationMessage.put("latitude", buffer.getInt() / 10000000.0);
-        locationMessage.put("longitude", buffer.getInt() / 10000000.0);
-
-        // Process altitude
-        int altitudeRaw = buffer.getShort() & 0xFFFF;
-        double altitude = altitudeRaw * 0.5;
-        locationMessage.put("geodetic_altitude", altitude);
-
-        // Process height
-        int heightRaw = buffer.getShort() & 0xFFFF;
-        double height = heightRaw * 0.5;
-        locationMessage.put("height_agl", height);
-
-        // Process horizontal and vertical speed
-        short horizontalSpeedRaw = buffer.getShort();
-        double horizontalSpeed = horizontalSpeedRaw * 0.25;
-        locationMessage.put("speed", horizontalSpeed + " m/s");
-
-        short verticalSpeedRaw = buffer.getShort();
-        double verticalSpeed = verticalSpeedRaw * 0.25;
-        locationMessage.put("vert_speed", verticalSpeed + " m/s");
-    }
-
-    private void parseSelfIDMessage(ByteBuffer buffer, JSONObject selfIdMessage) throws JSONException {
-        // Skip status byte
-        buffer.get();
-
-        // Read description type
-        byte descriptionType = buffer.get();
-        selfIdMessage.put("description_type", descriptionType);
-
-        // Read description text (up to 23 bytes)
-        byte[] descBytes = new byte[23];
-        buffer.get(descBytes);
-        String description = new String(descBytes).trim();
-
-        selfIdMessage.put("protocol_version", "F3411.22");
-        selfIdMessage.put("text", description);
-    }
-
-    private void parseSystemMessage(ByteBuffer buffer, JSONObject systemMessage) throws JSONException {
-        // System message format is complex
-        // This is a simplified implementation
-        systemMessage.put("protocol_version", "F3411.22");
-
-        // Skip flags and operational status
-        buffer.get();
-        byte opStatus = buffer.get();
-        String opStatusStr = (opStatus == 0) ? "Undeclared" :
-                (opStatus == 1) ? "Ground" :
-                        (opStatus == 2) ? "Airborne" : "Unknown";
-        systemMessage.put("op_status", opStatusStr);
-
-        // Skip various fields
-        buffer.position(buffer.position() + 4);
-
-        // Read operator location
-        int operatorLatRaw = buffer.getInt();
-        double operatorLat = operatorLatRaw / 10000000.0;
-        systemMessage.put("operator_lat", operatorLat);
-
-        int operatorLonRaw = buffer.getInt();
-        double operatorLon = operatorLonRaw / 10000000.0;
-        systemMessage.put("operator_lon", operatorLon);
-
-        // Area count (for geo-awareness)
-        byte areaCount = buffer.get();
-        systemMessage.put("area_count", areaCount);
-
-        // Area radius
-        short radiusRaw = buffer.getShort();
-        systemMessage.put("area_radius", radiusRaw);
-
-        // Area ceiling and floor
-        short ceilingRaw = buffer.getShort();
-        systemMessage.put("area_ceiling", ceilingRaw * 0.5);
-
-        short floorRaw = buffer.getShort();
-        systemMessage.put("area_floor", floorRaw * 0.5);
-    }
-
-    private void parseOperatorIDMessage(ByteBuffer buffer, JSONObject operatorMessage) throws JSONException {
-        operatorMessage.put("protocol_version", "F3411.22");
-
-        // Skip operator ID type
-        byte operatorIdType = buffer.get();
-
-        // Map operator ID type
-        String operatorIdTypeStr = "Unknown";
-        switch (operatorIdType) {
-            case 0:
-                operatorIdTypeStr = "Operator ID";
-                break;
-            // Add more cases as needed
-        }
-
-        operatorMessage.put("operator_id_type", operatorIdTypeStr);
-
-        // Read operator ID (20 bytes)
-        byte[] operatorIdBytes = new byte[20];
-        buffer.get(operatorIdBytes);
-        String operatorId = new String(operatorIdBytes).trim();
-        operatorMessage.put("operator_id", operatorId);
-    }
-
-    private String mapUAType(byte uaType) {
-        switch (uaType) {
-            case 0: return "None";
-            case 1: return "Aeroplane";
-            case 2: return "Helicopter (or Multirotor)";
-            case 3: return "Gyroplane";
-            case 4: return "Hybrid Lift";
-            case 5: return "Ornithopter";
-            case 6: return "Glider";
-            case 7: return "Kite";
-            case 8: return "Free Balloon";
-            case 9: return "Captive Balloon";
-            case 10: return "Airship";
-            case 11: return "Free Fall/Parachute";
-            case 12: return "Rocket";
-            case 13: return "Tethered Powered Aircraft";
-            case 14: return "Ground Obstacle";
-            case 15: return "Other";
-            default: return "Unknown";
-        }
-    }
-
-    private static String bytesToHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes) {
-            if (b == 0) break; // Stop at null terminator
-            sb.append(String.format("%02X", b));
-        }
-        return sb.toString();
     }
 }
