@@ -137,6 +137,8 @@ public class OnboardDetectionService extends Service {
         }
 
         try {
+            Log.d(TAG, "Processing drone data from source: " + source);
+
             // Add device location to the drone data if available
             if (lastDeviceLocation != null) {
                 addDeviceLocationToData(droneData);
@@ -223,6 +225,7 @@ public class OnboardDetectionService extends Service {
 
     private CoTMessage convertToCoTMessage(String messageType, JSONObject messageData, String source) {
         CoTMessage message = new CoTMessage();
+        Log.d(TAG, "Converting message type: " + messageType + " with data: " + messageData.toString());
 
         try {
             // Common fields
@@ -240,13 +243,32 @@ public class OnboardDetectionService extends Service {
             // Specific message type handling
             switch (messageType) {
                 case "Basic ID":
+                    Log.d(TAG, "Processing Basic ID message");
+
+                    // ID
                     if (messageData.has("id")) {
-                        message.setUid(messageData.getString("id"));
+                        String idValue = messageData.getString("id");
+                        Log.d(TAG, "Raw ID value: '" + idValue + "', length: " + idValue.length());
+
+                        // Check if ID is just zeros or empty
+                        boolean isZeros = idValue.matches("^0+$");
+                        if (!idValue.isEmpty() && !isZeros) {
+                            message.setUid(idValue);
+                            Log.d(TAG, "Using ID value as UID: " + message.getUid());
+                        } else {
+                            Log.d(TAG, "ID is empty or all zeros, falling back to MAC");
+                            if (messageData.has("MAC")) {
+                                message.setUid(messageData.getString("MAC"));
+                                Log.d(TAG, "Using MAC as UID: " + message.getUid());
+                            }
+                        }
                     } else if (messageData.has("MAC")) {
-                        // Use MAC as fallback ID
                         message.setUid(messageData.getString("MAC"));
+                        Log.d(TAG, "No ID field, using MAC as UID: " + message.getUid());
                     } else {
-                        message.setUid("Unknown_" + System.currentTimeMillis());
+                        String generatedUid = source + "_" + System.currentTimeMillis();
+                        message.setUid(generatedUid);
+                        Log.d(TAG, "No ID or MAC, generated UID: " + generatedUid);
                     }
 
                     if (messageData.has("ua_type")) {
@@ -269,9 +291,16 @@ public class OnboardDetectionService extends Service {
                     break;
 
                 case "Location/Vector Message":
+
                     if (messageData.has("latitude") && messageData.has("longitude")) {
-                        message.setLat(String.valueOf(messageData.getDouble("latitude")));
-                        message.setLon(String.valueOf(messageData.getDouble("longitude")));
+                        // Ensure we're getting valid values
+                        double lat = messageData.optDouble("latitude", 0);
+                        double lon = messageData.optDouble("longitude", 0);
+
+                        if (lat != 0 || lon != 0) {
+                            message.setLat(String.valueOf(lat));
+                            message.setLon(String.valueOf(lon));
+                        }
                     }
 
                     if (messageData.has("speed")) {
@@ -339,7 +368,7 @@ public class OnboardDetectionService extends Service {
                         if (opAltStr.contains(" ")) {
                             opAltStr = opAltStr.split(" ")[0];
                         }
-                        // We could store this in a metadata field if needed
+                        // We could store this in a metadata field if needed TODO
                     }
                     break;
 
@@ -366,7 +395,7 @@ public class OnboardDetectionService extends Service {
             return message;
 
         } catch (JSONException e) {
-            Log.e(TAG, "Error converting drone data to CoT Message: " + e.getMessage());
+            Log.e("OnboardDetection", "Error converting drone data: " + e.getMessage());
             return null;
         }
     }

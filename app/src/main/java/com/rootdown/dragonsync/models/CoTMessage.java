@@ -3,6 +3,7 @@ package com.rootdown.dragonsync.models;
 import android.location.Location;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 
@@ -395,6 +396,9 @@ public class CoTMessage implements Parcelable {
     // Helper methods
     public Location getCoordinate() {
         try {
+            if (lat == null || lon == null || lat.isEmpty() || lon.isEmpty()) {
+                return null;
+            }
             double latDouble = Double.parseDouble(lat);
             double lonDouble = Double.parseDouble(lon);
             if (latDouble != 0 || lonDouble != 0) {
@@ -403,7 +407,9 @@ public class CoTMessage implements Parcelable {
                 location.setLongitude(lonDouble);
                 return location;
             }
-        } catch (NumberFormatException e) {}
+        } catch (NumberFormatException e) {
+            Log.e("CoTMessage", "Error parsing coordinates: " + e.getMessage());
+        }
         return null;
     }
 

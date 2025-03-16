@@ -74,6 +74,18 @@ public class DroneListAdapter extends RecyclerView.Adapter<DroneListAdapter.View
         } else {
             holder.droneId.setTextColor(Color.WHITE);
         }
+
+        // Add source label
+        if (message.getType() != null) {
+            if (message.getType().contains("BLE")) {
+                displayId += " [BT]";
+            } else if (message.getType().contains("WiFi")) {
+                displayId += " [WiFi]";
+            } else if (message.getMac() == null) {
+                displayId += "[SDR]";
+            }
+        }
+
         holder.droneId.setText(displayId);
 
         // Set position if available

@@ -8,6 +8,7 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -36,12 +37,12 @@ public class WiFiScanner {
     private static final int VENDOR_TYPE_LENGTH = 1;
     private static final int VENDOR_TYPE_VALUE = 0x0D;  // Open Drone ID Application Code
 
-    private Context context;
-    private WifiManager wifiManager;
+    private final Context context;
+    private final WifiManager wifiManager;
     private boolean isScanning = false;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final OnDroneDetectedListener listener;
-    private BroadcastReceiver wifiScanReceiver;
+    private final BroadcastReceiver wifiScanReceiver;
     private final DroneDataParser dataParser;
 
     // Known drone WiFi SSID patterns
@@ -102,12 +103,20 @@ public class WiFiScanner {
             return true; // Already scanning
         }
 
-        // Register for scan results
-        context.registerReceiver(
-                wifiScanReceiver,
-                new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION),
-                Context.RECEIVER_NOT_EXPORTED
-        );
+        // Make sure we're using the correct context for registration
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.getApplicationContext().registerReceiver(
+                        wifiScanReceiver,
+                        new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION),
+                        Context.RECEIVER_NOT_EXPORTED
+                );
+            }
+            Log.d(TAG, "WiFi scan receiver registered successfully");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to register WiFi scan receiver: " + e.getMessage());
+            return false;
+        }
 
         // Start periodic scanning
         handler.post(scanRunnable);
@@ -134,6 +143,7 @@ public class WiFiScanner {
         @Override
         public void run() {
             if (isScanning) {
+                Log.d(TAG, "🔍 RUNNING SCHEDULED WIFI SCAN");
                 performScan();
                 handler.postDelayed(this, SCAN_INTERVAL);
             }
@@ -142,19 +152,58 @@ public class WiFiScanner {
 
     private void performScan() {
         if (wifiManager != null) {
-            boolean started = wifiManager.startScan();
+            Log.d(TAG, "Attempting to start WiFi scan...");
+            boolean started = false;
+
+            // On newer Android, apps can only scan 4 times in 2 minutes
+            // Let's try to work around this by using cached results when throttled
+            try {
+                started = wifiManager.startScan();
+            } catch (Exception e) {
+                Log.e(TAG, "Exception starting WiFi scan: " + e.getMessage());
+            }
+
             if (!started) {
-                Log.e(TAG, "Failed to start WiFi scan - scan throttling may be active");
+                Log.e(TAG, "Failed to start WiFi scan - likely throttled by Android");
+                // Process cached results instead
+                if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    // TODO: Consider calling
+                    //    ActivityCompat#requestPermissions
+                    // here to request the missing permissions, and then overriding
+                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                    //                                          int[] grantResults)
+                    // to handle the case where the user grants the permission. See the documentation
+                    // for ActivityCompat#requestPermissions for more details.
+                    return;
+                }
+                List<ScanResult> cachedResults = wifiManager.getScanResults();
+                if (cachedResults != null && !cachedResults.isEmpty()) {
+                    Log.d(TAG, "Using " + cachedResults.size() + " cached scan results");
+                    processResults();
+                } else {
+                    Log.d(TAG, "No cached scan results available");
+                }
+            } else {
+                Log.d(TAG, "WiFi scan started successfully");
             }
         }
     }
 
     private void processResults() {
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            Log.e(TAG, "Missing location permission - can't get WiFi scan results");
             return;
         }
 
         List<ScanResult> results = wifiManager.getScanResults();
+
+        Log.d(TAG, "Processing " + (results != null ? results.size() : 0) + " WiFi scan results");
+
+        if (results == null || results.isEmpty()) {
+            Log.d(TAG, "No WiFi scan results found");
+            return;
+        }
+
         for (ScanResult result : results) {
             // Check if it's a drone based on SSID
             if (isDroneWiFi(result)) {
