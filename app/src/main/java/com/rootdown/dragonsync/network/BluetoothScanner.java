@@ -18,15 +18,10 @@ import android.util.Log;
 
 import androidx.core.app.ActivityCompat;
 
-import com.rootdown.dragonsync.models.CoTMessage;
 import com.rootdown.dragonsync.utils.DroneDataParser;
 
 import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -41,14 +36,6 @@ public class BluetoothScanner {
     private static final UUID SERVICE_UUID = UUID.fromString("0000fffa-0000-1000-8000-00805f9b34fb");
     private static final ParcelUuid SERVICE_pUUID = new ParcelUuid(SERVICE_UUID);
     private static final byte[] OPEN_DRONE_ID_AD_CODE = new byte[]{(byte) 0x0D};
-
-    // Message types (from ASTM F3411)
-    private static final byte MESSAGE_TYPE_BASIC_ID = 0x00;
-    private static final byte MESSAGE_TYPE_LOCATION = 0x01;
-    private static final byte MESSAGE_TYPE_AUTH = 0x02;
-    private static final byte MESSAGE_TYPE_SELF_ID = 0x03;
-    private static final byte MESSAGE_TYPE_SYSTEM = 0x04;
-    private static final byte MESSAGE_TYPE_OPERATOR_ID = 0x05;
 
     private Context context;
     private BluetoothAdapter bluetoothAdapter;
@@ -130,12 +117,14 @@ public class BluetoothScanner {
                 bluetoothLeScanner.startScan(filters, settings, scanCallback);
                 isScanning = true;
                 return true;
+            } else {
+                Log.e(TAG, "Missing BLUETOOTH_SCAN permission");
+                return false;
             }
         } catch (Exception e) {
             Log.e(TAG, "Failed to start BLE scan: " + e.getMessage());
             return false;
         }
-        return false;
     }
 
     public void pauseScanning() {
@@ -185,33 +174,114 @@ public class BluetoothScanner {
         String deviceAddress = result.getDevice().getAddress();
         int rssi = result.getRssi();
 
-        // Get drone-specific manufacturer data
+        // Log basic information
+        Log.d(TAG, "Bluetooth device found: " + deviceAddress + ", RSSI: " + rssi);
+
+        // Try different methods to extract OpenDroneID data
+
+        // Check manufacturer specific data for OpenDroneID
         byte[] openDroneIdData = scanRecord.getManufacturerSpecificData(OPENDRONEID_MFG_ID);
         byte[] astmData = scanRecord.getManufacturerSpecificData(ASTM_MFG_ID);
 
         byte[] droneData = null;
+        String source = "";
 
-        // Check manufacturer specific data
         if (openDroneIdData != null) {
             droneData = openDroneIdData;
+            source = "OpenDroneID";
         } else if (astmData != null) {
             droneData = astmData;
+            source = "ASTM";
         } else {
-            // Check if it's in the service data
+            // Try to find it in service data
             droneData = scanRecord.getServiceData(SERVICE_pUUID);
+            source = "Service";
         }
 
         if (droneData != null) {
-            // Parse ASTM F3411 format
+            // We found OpenDroneID data, parse it
             try {
+                Log.d(TAG, "Found drone data from " + source + ": " + deviceAddress);
                 JSONArray messages = dataParser.parseBluetoothData(droneData, deviceAddress, rssi);
                 if (messages.length() > 0) {
                     listener.onDroneDetected(messages);
                     Log.d(TAG, "Drone detected: " + deviceAddress + ", RSSI: " + rssi);
                 }
             } catch (Exception e) {
-                Log.e(TAG, "Error parsing drone data: " + e.getMessage());
+                Log.e(TAG, "Error parsing drone data: " + e.getMessage(), e);
+            }
+        } else {
+            // No explicit drone data found, but check device name as a fallback
+            String deviceName = scanRecord.getDeviceName();
+            if (deviceName != null && isDroneDeviceName(deviceName)) {
+                // Create a basic drone entry based just on the name and address
+                JSONArray basicDroneInfo = createBasicDroneInfo(deviceName, deviceAddress, rssi);
+                if (basicDroneInfo.length() > 0) {
+                    listener.onDroneDetected(basicDroneInfo);
+                    Log.d(TAG, "Drone detected by name: " + deviceName + ", address: " + deviceAddress);
+                }
             }
         }
+    }
+
+    private boolean isDroneDeviceName(String name) {
+        if (name == null) return false;
+
+        String upperName = name.toUpperCase();
+        return upperName.contains("DJI") ||
+                upperName.contains("DRONE") ||
+                upperName.contains("MAVIC") ||
+                upperName.contains("PHANTOM") ||
+                upperName.contains("TELLO") ||
+                upperName.contains("PARROT") ||
+                upperName.contains("ANAFI") ||
+                upperName.contains("SKYDIO") ||
+                upperName.contains("AUTEL") ||
+                upperName.contains("UAV");
+    }
+
+    private JSONArray createBasicDroneInfo(String deviceName, String deviceAddress, int rssi) {
+        // Create a minimal drone information structure when we just have the device name
+        JSONArray messagesArray = new JSONArray();
+
+        try {
+            org.json.JSONObject basicIdObj = new org.json.JSONObject();
+            org.json.JSONObject basicId = new org.json.JSONObject();
+            basicIdObj.put("Basic ID", basicId);
+
+            basicId.put("MAC", deviceAddress);
+            basicId.put("RSSI", rssi);
+            basicId.put("id_type", "Bluetooth Device Name");
+            basicId.put("id", deviceName);
+            basicId.put("ua_type", "Helicopter (or Multirotor)");
+
+            // Try to determine manufacturer
+            String manufacturer = "Unknown";
+            if (deviceName.toUpperCase().contains("DJI")) {
+                manufacturer = "DJI";
+            } else if (deviceName.toUpperCase().contains("PARROT")) {
+                manufacturer = "Parrot";
+            } else if (deviceName.toUpperCase().contains("SKYDIO")) {
+                manufacturer = "Skydio";
+            }
+
+            basicId.put("manufacturer", manufacturer);
+            messagesArray.put(basicIdObj);
+
+            // Add a basic Self-ID message
+            org.json.JSONObject selfIdObj = new org.json.JSONObject();
+            org.json.JSONObject selfId = new org.json.JSONObject();
+            selfIdObj.put("Self-ID Message", selfId);
+            selfId.put("text", deviceName);
+            selfId.put("description_type", 0);
+            selfId.put("MAC", deviceAddress);
+            selfId.put("RSSI", rssi);
+            messagesArray.put(selfIdObj);
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error creating basic drone info: " + e.getMessage());
+        }
+
+        return messagesArray;
     }
 }

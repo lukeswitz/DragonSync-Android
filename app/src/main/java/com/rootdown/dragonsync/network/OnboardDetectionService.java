@@ -137,7 +137,7 @@ public class OnboardDetectionService extends Service {
         }
 
         try {
-            Log.d(TAG, "Processing drone data from source: " + source);
+            Log.d(TAG, "Processing " + droneData.length() + " drone message(s) from source: " + source);
 
             // Add device location to the drone data if available
             if (lastDeviceLocation != null) {
@@ -171,51 +171,62 @@ public class OnboardDetectionService extends Service {
                 long currentTime = System.currentTimeMillis();
                 Long lastDetection = lastDetectionTime.get(uniqueKey);
 
-                // Deduplicate within 2 seconds
-                if (lastDetection != null && (currentTime - lastDetection) < 2000) {
-                    continue;
-                }
+                // Only process if this is a new detection or last one was more than 2 seconds ago
+                boolean shouldProcess = lastDetection == null || (currentTime - lastDetection) >= 2000;
 
-                // Update last detection time
-                lastDetectionTime.put(uniqueKey, currentTime);
+                if (shouldProcess) {
+                    // Update last detection time
+                    lastDetectionTime.put(uniqueKey, currentTime);
 
-                // Convert to CoTMessage
-                CoTMessage message = convertToCoTMessage(messageType, messageData, source);
+                    // Log what we found
+                    Log.d(TAG, "Processing new drone data: " + messageType + " from " + source);
+                    if (!id.isEmpty()) Log.d(TAG, "  ID: " + id);
+                    if (!mac.isEmpty()) Log.d(TAG, "  MAC: " + mac);
 
-                if (message != null) {
-                    // Only estimate location if drone doesn't provide its own coordinates
-                    // AND user has enabled location estimation
-                    if (message.getCoordinate() == null &&
-                            lastDeviceLocation != null &&
-                            message.getRssi() != null &&
-                            settings.isLocationEstimationEnabled()) {
+                    // Convert to CoTMessage
+                    CoTMessage message = convertToCoTMessage(messageType, messageData, source);
 
-                        estimateDroneLocation(message);
-                    }
+                    if (message != null) {
+                        // Only estimate location if drone doesn't provide its own coordinates
+                        // AND user has enabled location estimation
+                        if (message.getCoordinate() == null &&
+                                lastDeviceLocation != null &&
+                                message.getRssi() != null &&
+                                settings.isLocationEstimationEnabled()) {
 
-                    // Set the device (operator) location for display purposes
-                    if (lastDeviceLocation != null) {
-                        message.setPilotLat(String.valueOf(lastDeviceLocation.getLatitude()));
-                        message.setPilotLon(String.valueOf(lastDeviceLocation.getLongitude()));
-                    }
-
-                    // Calculate distance between user and drone if both coordinates are available
-                    if (lastDeviceLocation != null && message.getCoordinate() != null) {
-                        float distanceInMeters = lastDeviceLocation.distanceTo(message.getCoordinate());
-
-                        // Store the calculated distance in the message
-                        if (message.getRawMessage() == null) {
-                            message.setRawMessage(new HashMap<>());
+                            estimateDroneLocation(message);
                         }
-                        message.getRawMessage().put("calculated_distance", distanceInMeters);
-                    }
 
-                    // Broadcast the enhanced telemetry message
-                    Intent telemetryIntent = new Intent("com.rootdown.dragonsync.TELEMETRY");
-                    telemetryIntent.setPackage(getPackageName());
-                    telemetryIntent.putExtra("parsed_message", message);
-                    telemetryIntent.putExtra("raw_message", messageType + ": " + messageData.toString());
-                    sendBroadcast(telemetryIntent);
+                        // Set the device (operator) location for display purposes
+                        if (lastDeviceLocation != null) {
+                            message.setPilotLat(String.valueOf(lastDeviceLocation.getLatitude()));
+                            message.setPilotLon(String.valueOf(lastDeviceLocation.getLongitude()));
+                        }
+
+                        // Calculate distance between user and drone if both coordinates are available
+                        if (lastDeviceLocation != null && message.getCoordinate() != null) {
+                            float distanceInMeters = lastDeviceLocation.distanceTo(message.getCoordinate());
+
+                            // Store the calculated distance in the message
+                            if (message.getRawMessage() == null) {
+                                message.setRawMessage(new HashMap<>());
+                            }
+                            message.getRawMessage().put("calculated_distance", distanceInMeters);
+
+                            // Log the distance
+                            Log.d(TAG, "  Distance: " + distanceInMeters + "m");
+                        }
+
+                        // Broadcast the enhanced telemetry message
+                        Intent telemetryIntent = new Intent("com.rootdown.dragonsync.TELEMETRY");
+                        telemetryIntent.setPackage(getPackageName());
+                        telemetryIntent.putExtra("parsed_message", message);
+                        telemetryIntent.putExtra("raw_message", messageType + ": " + messageData.toString());
+                        sendBroadcast(telemetryIntent);
+
+                        // Log that we sent the broadcast
+                        Log.d(TAG, "Broadcast telemetry message for: " + message.getUid());
+                    }
                 }
             }
         } catch (Exception e) {
@@ -291,7 +302,7 @@ public class OnboardDetectionService extends Service {
                     break;
 
                 case "Location/Vector Message":
-
+                    // Handle location data
                     if (messageData.has("latitude") && messageData.has("longitude")) {
                         // Ensure we're getting valid values
                         double lat = messageData.optDouble("latitude", 0);
@@ -300,6 +311,7 @@ public class OnboardDetectionService extends Service {
                         if (lat != 0 || lon != 0) {
                             message.setLat(String.valueOf(lat));
                             message.setLon(String.valueOf(lon));
+                            Log.d(TAG, "Location data: " + lat + ", " + lon);
                         }
                     }
 
@@ -337,16 +349,35 @@ public class OnboardDetectionService extends Service {
                     }
 
                     if (messageData.has("direction")) {
-                        message.setDirection(String.valueOf(messageData.getDouble("direction")));
+                        message.setDirection(String.valueOf(messageData.get("direction")));
                     }
 
                     if (messageData.has("timestamp")) {
                         // Convert to milliseconds if needed
                         message.setTimestamp(String.valueOf(System.currentTimeMillis()));
                     }
+
+                    // Need a UID for location data too
+                    if (message.getUid() == null && messageData.has("MAC")) {
+                        message.setUid(messageData.getString("MAC"));
+                    } else if (message.getUid() == null) {
+                        message.setUid(source + "_LOC_" + System.currentTimeMillis());
+                    }
                     break;
 
                 case "Self-ID Message":
+                    Log.d(TAG, "Processing Self-ID message");
+
+                    // Set UID from MAC address since Self-ID messages typically don't contain their own ID
+                    if (messageData.has("MAC")) {
+                        message.setUid(messageData.getString("MAC"));
+                        Log.d(TAG, "Using MAC as UID for Self-ID message: " + message.getUid());
+                    } else {
+                        String generatedUid = source + "_" + System.currentTimeMillis();
+                        message.setUid(generatedUid);
+                        Log.d(TAG, "Generated UID for Self-ID message: " + generatedUid);
+                    }
+
                     if (messageData.has("text")) {
                         message.setSelfIDText(messageData.getString("text"));
 
@@ -355,12 +386,19 @@ public class OnboardDetectionService extends Service {
                             message.setDescription(messageData.getString("text"));
                         }
                     }
+
+                    if (messageData.has("description_type")) {
+                        message.setSelfIdType(String.valueOf(messageData.get("description_type")));
+                    }
+
                     break;
 
                 case "System Message":
                     if (messageData.has("operator_lat") && messageData.has("operator_lon")) {
                         message.setPilotLat(String.valueOf(messageData.getDouble("operator_lat")));
                         message.setPilotLon(String.valueOf(messageData.getDouble("operator_lon")));
+                        Log.d(TAG, "Operator location: " + messageData.getDouble("operator_lat") +
+                                ", " + messageData.getDouble("operator_lon"));
                     }
 
                     if (messageData.has("operator_altitude_geo")) {
@@ -368,7 +406,18 @@ public class OnboardDetectionService extends Service {
                         if (opAltStr.contains(" ")) {
                             opAltStr = opAltStr.split(" ")[0];
                         }
-                        // We could store this in a metadata field if needed TODO
+                        // Store in metadata
+                        if (message.getRawMessage() == null) {
+                            message.setRawMessage(new HashMap<>());
+                        }
+                        message.getRawMessage().put("operator_altitude_geo", opAltStr);
+                    }
+
+                    // Need a UID for system data too
+                    if (message.getUid() == null && messageData.has("MAC")) {
+                        message.setUid(messageData.getString("MAC"));
+                    } else if (message.getUid() == null) {
+                        message.setUid(source + "_SYS_" + System.currentTimeMillis());
                     }
                     break;
 
@@ -378,7 +427,14 @@ public class OnboardDetectionService extends Service {
                     }
 
                     if (messageData.has("operator_id_type")) {
-                        message.setOperatorIdType(messageData.getString("operator_id_type"));
+                        message.setOperatorIdType(String.valueOf(messageData.get("operator_id_type")));
+                    }
+
+                    // Need a UID for operator ID data too
+                    if (message.getUid() == null && messageData.has("MAC")) {
+                        message.setUid(messageData.getString("MAC"));
+                    } else if (message.getUid() == null) {
+                        message.setUid(source + "_OP_" + System.currentTimeMillis());
                     }
                     break;
             }
@@ -395,7 +451,7 @@ public class OnboardDetectionService extends Service {
             return message;
 
         } catch (JSONException e) {
-            Log.e("OnboardDetection", "Error converting drone data: " + e.getMessage());
+            Log.e(TAG, "Error converting drone data: " + e.getMessage(), e);
             return null;
         }
     }
@@ -471,12 +527,14 @@ public class OnboardDetectionService extends Service {
             if (lastDeviceLocation.hasAltitude()) {
                 systemMessage.put("operator_altitude_geo", lastDeviceLocation.getAltitude());
             }
+            systemMessage.put("MAC", "device_" + System.currentTimeMillis());
+            systemMessage.put("RSSI", 0);
 
             droneData.put(systemObj);
         }
     }
 
-    // Estimate drone location based on RSSI and device location - For drones without any GPS (DISABLED)
+    // Estimate drone location based on RSSI and device location - For drones without any GPS
     private void estimateDroneLocation(CoTMessage message) {
         if (message.getRssi() == null || lastDeviceLocation == null) return;
 
@@ -532,6 +590,9 @@ public class OnboardDetectionService extends Service {
         }
         rawData.put("location_estimated", true);
         rawData.put("estimated_distance", distance);
+
+        Log.d(TAG, "Estimated drone location: " + (lat + latChange) + ", " + (lon + lonChange) +
+                " (distance: " + distance + "m, bearing: " + bearing + "°)");
     }
 
     private Notification createNotification() {

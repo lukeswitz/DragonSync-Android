@@ -14,7 +14,7 @@ import java.util.Arrays;
 public class DroneDataParser {
     private static final String TAG = "DroneDataParser";
 
-    // Message types
+    // Message types from ASTM F3411
     private static final byte MESSAGE_TYPE_BASIC_ID = 0x00;
     private static final byte MESSAGE_TYPE_LOCATION = 0x01;
     private static final byte MESSAGE_TYPE_AUTH = 0x02;
@@ -34,11 +34,11 @@ public class DroneDataParser {
 
         try {
             // Handle ASTM F3411 format
-            // The data starts with byte 6 in most cases (header + message counter)
-            if (data.length < 7) return messagesArray;
+            // Check if we have minimum data required (1 byte header + some data)
+            if (data.length < 2) return messagesArray;
 
-            // Get message type from first byte
-            int headerByte = data[6] & 0xFF;
+            // Get message type from first byte (top 4 bits)
+            int headerByte = data[0] & 0xFF;
             int messageType = (headerByte >> 4) & 0x0F;
             int messageVersion = headerByte & 0x0F;
 
@@ -77,26 +77,26 @@ public class DroneDataParser {
             }
 
         } catch (Exception e) {
-            Log.e(TAG, "Error parsing Bluetooth data: " + e.getMessage());
+            Log.e(TAG, "Error parsing Bluetooth data: " + e.getMessage(), e);
         }
 
         return messagesArray;
     }
 
     public JSONArray parseWiFiBeaconData(byte[] data, String macAddress, int rssi) {
-        // For WiFi beacons, the parsing is similar but offset may be different
-        // The message starts at position 0 without wrapping header
         JSONArray messagesArray = new JSONArray();
 
         try {
             if (data.length < 1) return messagesArray;
 
-            // Get message type from first byte
+            // Get message type from first byte (top 4 bits)
             int headerByte = data[0] & 0xFF;
             int messageType = (headerByte >> 4) & 0x0F;
             int messageVersion = headerByte & 0x0F;
 
-            // Rest of parsing is similar to Bluetooth but with different offset
+            Log.d(TAG, "WiFi Beacon data: type=" + messageType + ", version=" + messageVersion);
+
+            // Rest of parsing is similar to Bluetooth but with different offset expectations
             switch (messageType) {
                 case MESSAGE_TYPE_BASIC_ID:
                     messagesArray.put(parseBasicIdMessage(data, macAddress, rssi, messageVersion, 0));
@@ -118,12 +118,31 @@ public class DroneDataParser {
                     messagesArray.put(parseOperatorIdMessage(data, macAddress, rssi, messageVersion, 0));
                     break;
 
+                case MESSAGE_TYPE_MESSAGE_PACK:
+                    // Parse message pack
+                    JSONArray packMessages = parseMessagePack(data, macAddress, rssi, messageVersion);
+                    for (int i = 0; i < packMessages.length(); i++) {
+                        messagesArray.put(packMessages.get(i));
+                    }
+                    break;
+
                 default:
                     Log.w(TAG, "Unknown message type in WiFi beacon: " + messageType);
+
+                    // Fallback - add a basic message with the MAC address at minimum
+                    JSONObject fallbackObj = new JSONObject();
+                    JSONObject basicId = new JSONObject();
+                    basicId.put("MAC", macAddress);
+                    basicId.put("RSSI", rssi);
+                    basicId.put("id_type", "WiFi Beacon");
+                    basicId.put("id", macAddress);
+                    basicId.put("ua_type", "Unknown");
+                    fallbackObj.put("Basic ID", basicId);
+                    messagesArray.put(fallbackObj);
             }
 
         } catch (Exception e) {
-            Log.e(TAG, "Error parsing WiFi beacon data: " + e.getMessage());
+            Log.e(TAG, "Error parsing WiFi beacon data: " + e.getMessage(), e);
         }
 
         return messagesArray;
@@ -131,7 +150,7 @@ public class DroneDataParser {
 
     private JSONObject parseBasicIdMessage(byte[] data, String macAddress, int rssi, int version) {
         // Default offset for Bluetooth scanning
-        return parseBasicIdMessage(data, macAddress, rssi, version, 6);
+        return parseBasicIdMessage(data, macAddress, rssi, version, 1);
     }
 
     private JSONObject parseBasicIdMessage(byte[] data, String macAddress, int rssi, int version, int offset) {
@@ -146,8 +165,8 @@ public class DroneDataParser {
             basicId.put("RSSI", rssi);
 
             // Parse ID type and UA type
-            if (data.length >= offset + 2) {
-                int typeByte = data[offset + 1] & 0xFF;
+            if (data.length >= offset + 1) {
+                int typeByte = data[offset] & 0xFF;
                 int idType = (typeByte >> 4) & 0x0F;
                 int uaType = typeByte & 0x0F;
 
@@ -223,8 +242,8 @@ public class DroneDataParser {
             }
 
             // Parse UAS ID (20 bytes)
-            if (data.length >= offset + MAX_ID_BYTE_SIZE + 2) {
-                byte[] uasIdBytes = Arrays.copyOfRange(data, offset + 2, offset + 2 + MAX_ID_BYTE_SIZE);
+            if (data.length >= offset + 1 + MAX_ID_BYTE_SIZE) {
+                byte[] uasIdBytes = Arrays.copyOfRange(data, offset + 1, offset + 1 + MAX_ID_BYTE_SIZE);
                 // Trim null bytes and convert to string
                 String uasId = new String(uasIdBytes, StandardCharsets.UTF_8).trim();
                 basicId.put("id", uasId);
@@ -240,7 +259,7 @@ public class DroneDataParser {
     }
 
     private JSONObject parseLocationMessage(byte[] data, String macAddress, int rssi, int version) {
-        return parseLocationMessage(data, macAddress, rssi, version, 6);
+        return parseLocationMessage(data, macAddress, rssi, version, 1);
     }
 
     private JSONObject parseLocationMessage(byte[] data, String macAddress, int rssi, int version, int offset) {
@@ -251,9 +270,11 @@ public class DroneDataParser {
 
             // Add protocol version
             location.put("protocol_version", "F3411." + (version == 0 ? "19" : (version == 1 ? "22" : "23")));
+            location.put("MAC", macAddress);
+            location.put("RSSI", rssi);
 
             if (data.length >= offset + 1) {
-                int statusByte = data[offset + 1] & 0xFF;
+                int statusByte = data[offset] & 0xFF;
                 int status = (statusByte >> 4) & 0x0F;
                 int heightType = (statusByte >> 2) & 0x01;
                 int ewDirection = (statusByte >> 1) & 0x01;
@@ -291,33 +312,33 @@ public class DroneDataParser {
             }
 
             // Direction
-            if (data.length >= offset + 3) {
-                int direction = data[offset + 2] & 0xFF;
-                // Apply E/W correction
-                int ewDirection = ((data[offset + 1] >> 1) & 0x01);
+            if (data.length >= offset + 2) {
+                int direction = data[offset + 1] & 0xFF;
+                // Apply E/W correction if needed
+                int ewDirection = ((data[offset] >> 1) & 0x01);
                 double finalDirection = (ewDirection == 0) ? direction : direction + 180;
                 if (finalDirection > 360) finalDirection -= 360;
                 location.put("direction", finalDirection);
             }
 
             // Speed (horizontal)
-            if (data.length >= offset + 4) {
-                int speedHori = data[offset + 3] & 0xFF;
-                int speedMult = data[offset + 1] & 0x01;
+            if (data.length >= offset + 3) {
+                int speedHori = data[offset + 2] & 0xFF;
+                int speedMult = data[offset] & 0x01;
                 double speed = speedMult == 0 ? speedHori * 0.25 : (speedHori * 0.75) + (255 * 0.25);
                 location.put("speed", String.format("%.2f m/s", speed));
             }
 
             // Speed (vertical)
-            if (data.length >= offset + 5) {
-                int speedVert = data[offset + 4];
+            if (data.length >= offset + 4) {
+                int speedVert = data[offset + 3];
                 double vspeed = speedVert * 0.5;
                 location.put("vert_speed", String.format("%.2f m/s", vspeed));
             }
 
             // Latitude and Longitude
-            if (data.length >= offset + 13) {
-                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 5, 8).order(ByteOrder.LITTLE_ENDIAN);
+            if (data.length >= offset + 12) {
+                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 4, 8).order(ByteOrder.LITTLE_ENDIAN);
                 int lat = buffer.getInt();
                 int lon = buffer.getInt();
 
@@ -329,32 +350,32 @@ public class DroneDataParser {
             }
 
             // Altitude (pressure)
-            if (data.length >= offset + 15) {
-                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 13, 2).order(ByteOrder.LITTLE_ENDIAN);
+            if (data.length >= offset + 14) {
+                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 12, 2).order(ByteOrder.LITTLE_ENDIAN);
                 int altPressure = buffer.getShort() & 0xFFFF;
                 double pressureAlt = (altPressure / 2.0) - 1000.0;
                 location.put("pressure_altitude", String.format("%.1f m", pressureAlt));
             }
 
             // Altitude (geodetic)
-            if (data.length >= offset + 17) {
-                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 15, 2).order(ByteOrder.LITTLE_ENDIAN);
+            if (data.length >= offset + 16) {
+                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 14, 2).order(ByteOrder.LITTLE_ENDIAN);
                 int altGeodetic = buffer.getShort() & 0xFFFF;
                 double geodeticAlt = (altGeodetic / 2.0) - 1000.0;
                 location.put("geodetic_altitude", String.format("%.1f m", geodeticAlt));
             }
 
             // Height above takeoff/ground
-            if (data.length >= offset + 19) {
-                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 17, 2).order(ByteOrder.LITTLE_ENDIAN);
+            if (data.length >= offset + 18) {
+                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 16, 2).order(ByteOrder.LITTLE_ENDIAN);
                 int height = buffer.getShort() & 0xFFFF;
                 double heightValue = (height / 2.0) - 1000.0;
                 location.put("height_agl", String.format("%.1f m", heightValue));
             }
 
             // Accuracy values
-            if (data.length >= offset + 20) {
-                int accuracyByte = data[offset + 19] & 0xFF;
+            if (data.length >= offset + 19) {
+                int accuracyByte = data[offset + 18] & 0xFF;
                 int horizAcc = accuracyByte & 0x0F;
                 int vertAcc = (accuracyByte >> 4) & 0x0F;
 
@@ -385,8 +406,8 @@ public class DroneDataParser {
                 }
             }
 
-            if (data.length >= offset + 21) {
-                int accByte = data[offset + 20] & 0xFF;
+            if (data.length >= offset + 20) {
+                int accByte = data[offset + 19] & 0xFF;
                 int baroAcc = (accByte >> 4) & 0x0F;
                 int speedAcc = accByte & 0x0F;
 
@@ -418,8 +439,8 @@ public class DroneDataParser {
             }
 
             // Timestamp
-            if (data.length >= offset + 23) {
-                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 21, 2).order(ByteOrder.LITTLE_ENDIAN);
+            if (data.length >= offset + 22) {
+                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 20, 2).order(ByteOrder.LITTLE_ENDIAN);
                 int timestamp = buffer.getShort() & 0xFFFF;
                 int minutes = timestamp / 600;
                 double seconds = (timestamp % 600) / 10.0;
@@ -427,8 +448,8 @@ public class DroneDataParser {
             }
 
             // Time accuracy
-            if (data.length >= offset + 24) {
-                int timeAcc = data[offset + 23] & 0x0F;
+            if (data.length >= offset + 23) {
+                int timeAcc = data[offset + 22] & 0x0F;
                 double accuracy = timeAcc * 0.1;
                 location.put("timestamp_accuracy", String.format("%.1f s", accuracy));
             }
@@ -443,7 +464,7 @@ public class DroneDataParser {
     }
 
     private JSONObject parseSelfIdMessage(byte[] data, String macAddress, int rssi, int version) {
-        return parseSelfIdMessage(data, macAddress, rssi, version, 6);
+        return parseSelfIdMessage(data, macAddress, rssi, version, 1);
     }
 
     private JSONObject parseSelfIdMessage(byte[] data, String macAddress, int rssi, int version, int offset) {
@@ -452,12 +473,14 @@ public class DroneDataParser {
         try {
             JSONObject selfId = new JSONObject();
 
-            // Add protocol version
+            // Add protocol version and transport info
             selfId.put("protocol_version", "F3411." + (version == 0 ? "19" : (version == 1 ? "22" : "23")));
+            selfId.put("MAC", macAddress);
+            selfId.put("RSSI", rssi);
 
             // Description type
-            if (data.length >= offset + 2) {
-                int descType = data[offset + 1] & 0xFF;
+            if (data.length >= offset + 1) {
+                int descType = data[offset] & 0xFF;
 
                 switch (descType) {
                     case 0:
@@ -475,8 +498,8 @@ public class DroneDataParser {
             }
 
             // Description text
-            if (data.length >= offset + 2 + MAX_STRING_BYTE_SIZE) {
-                byte[] descBytes = Arrays.copyOfRange(data, offset + 2, offset + 2 + MAX_STRING_BYTE_SIZE);
+            if (data.length >= offset + 1 + MAX_STRING_BYTE_SIZE) {
+                byte[] descBytes = Arrays.copyOfRange(data, offset + 1, offset + 1 + MAX_STRING_BYTE_SIZE);
                 // Get text until null terminator or end
                 String description = new String(descBytes, StandardCharsets.UTF_8).trim();
                 selfId.put("text", description);
@@ -492,7 +515,7 @@ public class DroneDataParser {
     }
 
     private JSONObject parseSystemMessage(byte[] data, String macAddress, int rssi, int version) {
-        return parseSystemMessage(data, macAddress, rssi, version, 6);
+        return parseSystemMessage(data, macAddress, rssi, version, 1);
     }
 
     private JSONObject parseSystemMessage(byte[] data, String macAddress, int rssi, int version, int offset) {
@@ -501,12 +524,14 @@ public class DroneDataParser {
         try {
             JSONObject system = new JSONObject();
 
-            // Add protocol version
+            // Add protocol version and transport info
             system.put("protocol_version", "F3411." + (version == 0 ? "19" : (version == 1 ? "22" : "23")));
+            system.put("MAC", macAddress);
+            system.put("RSSI", rssi);
 
             // Flags byte
-            if (data.length >= offset + 2) {
-                int flags = data[offset + 1] & 0xFF;
+            if (data.length >= offset + 1) {
+                int flags = data[offset] & 0xFF;
                 int operatorLocationType = flags & 0x03;
                 int classificationType = (flags >> 2) & 0x07;
 
@@ -539,8 +564,8 @@ public class DroneDataParser {
             }
 
             // Operator latitude/longitude
-            if (data.length >= offset + 10) {
-                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 2, 8).order(ByteOrder.LITTLE_ENDIAN);
+            if (data.length >= offset + 9) {
+                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 1, 8).order(ByteOrder.LITTLE_ENDIAN);
                 int pilotLat = buffer.getInt();
                 int pilotLon = buffer.getInt();
 
@@ -552,22 +577,22 @@ public class DroneDataParser {
             }
 
             // Area count
-            if (data.length >= offset + 12) {
-                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 10, 2).order(ByteOrder.LITTLE_ENDIAN);
+            if (data.length >= offset + 11) {
+                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 9, 2).order(ByteOrder.LITTLE_ENDIAN);
                 int areaCount = buffer.getShort() & 0xFFFF;
                 system.put("area_count", areaCount);
             }
 
             // Area radius
-            if (data.length >= offset + 13) {
-                int radius = data[offset + 12] & 0xFF;
+            if (data.length >= offset + 12) {
+                int radius = data[offset + 11] & 0xFF;
                 int areaRadius = radius * 10; // in meters
                 system.put("area_radius", areaRadius);
             }
 
             // Area ceiling and floor
-            if (data.length >= offset + 17) {
-                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 13, 4).order(ByteOrder.LITTLE_ENDIAN);
+            if (data.length >= offset + 16) {
+                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 12, 4).order(ByteOrder.LITTLE_ENDIAN);
                 int ceiling = buffer.getShort() & 0xFFFF;
                 int floor = buffer.getShort() & 0xFFFF;
 
@@ -579,8 +604,8 @@ public class DroneDataParser {
             }
 
             // Category and class
-            if (data.length >= offset + 18) {
-                int catClass = data[offset + 17] & 0xFF;
+            if (data.length >= offset + 17) {
+                int catClass = data[offset + 16] & 0xFF;
                 int category = (catClass >> 4) & 0x0F;
                 int classValue = catClass & 0x0F;
 
@@ -589,8 +614,8 @@ public class DroneDataParser {
             }
 
             // Operator altitude
-            if (data.length >= offset + 20) {
-                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 18, 2).order(ByteOrder.LITTLE_ENDIAN);
+            if (data.length >= offset + 19) {
+                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 17, 2).order(ByteOrder.LITTLE_ENDIAN);
                 int opAlt = buffer.getShort() & 0xFFFF;
 
                 double operatorAlt = (opAlt / 2.0) - 1000.0;
@@ -598,8 +623,8 @@ public class DroneDataParser {
             }
 
             // System timestamp (only in version 2+)
-            if (version >= 2 && data.length >= offset + 24) {
-                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 20, 4).order(ByteOrder.LITTLE_ENDIAN);
+            if (version >= 2 && data.length >= offset + 23) {
+                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 19, 4).order(ByteOrder.LITTLE_ENDIAN);
                 long timestamp = buffer.getInt() & 0xFFFFFFFFL;
                 system.put("system_timestamp", timestamp);
             }
@@ -614,7 +639,7 @@ public class DroneDataParser {
     }
 
     private JSONObject parseOperatorIdMessage(byte[] data, String macAddress, int rssi, int version) {
-        return parseOperatorIdMessage(data, macAddress, rssi, version, 6);
+        return parseOperatorIdMessage(data, macAddress, rssi, version, 1);
     }
 
     private JSONObject parseOperatorIdMessage(byte[] data, String macAddress, int rssi, int version, int offset) {
@@ -623,12 +648,14 @@ public class DroneDataParser {
         try {
             JSONObject operatorId = new JSONObject();
 
-            // Add protocol version
+            // Add protocol version and transport info
             operatorId.put("protocol_version", "F3411." + (version == 0 ? "19" : (version == 1 ? "22" : "23")));
+            operatorId.put("MAC", macAddress);
+            operatorId.put("RSSI", rssi);
 
             // Operator ID type
-            if (data.length >= offset + 2) {
-                int idType = data[offset + 1] & 0xFF;
+            if (data.length >= offset + 1) {
+                int idType = data[offset] & 0xFF;
 
                 switch (idType) {
                     case 0:
@@ -640,8 +667,8 @@ public class DroneDataParser {
             }
 
             // Operator ID (20 bytes)
-            if (data.length >= offset + 2 + MAX_ID_BYTE_SIZE) {
-                byte[] opIdBytes = Arrays.copyOfRange(data, offset + 2, offset + 2 + MAX_ID_BYTE_SIZE);
+            if (data.length >= offset + 1 + MAX_ID_BYTE_SIZE) {
+                byte[] opIdBytes = Arrays.copyOfRange(data, offset + 1, offset + 1 + MAX_ID_BYTE_SIZE);
                 // Get text until null terminator or end
                 String opId = new String(opIdBytes, StandardCharsets.UTF_8).trim();
                 operatorId.put("operator_id", opId);
@@ -660,21 +687,21 @@ public class DroneDataParser {
         JSONArray packMessages = new JSONArray();
 
         try {
-            // Parse message pack header (after the main header)
-            if (data.length < 10) return packMessages;
+            // Parse message pack header
+            if (data.length < 3) return packMessages;
 
             // Message size and count
-            int messageSize = data[7] & 0xFF;
-            int messagesInPack = data[8] & 0xFF;
+            int messageSize = data[1] & 0xFF;
+            int messagesInPack = data[2] & 0xFF;
 
-            if (messageSize <= 0 || messagesInPack <= 0 || messageSize * messagesInPack > data.length - 9) {
+            if (messageSize <= 0 || messagesInPack <= 0 || messageSize * messagesInPack > data.length - 3) {
                 Log.e(TAG, "Invalid message pack: size=" + messageSize + ", count=" + messagesInPack);
                 return packMessages;
             }
 
             // Process each message in the pack
             for (int i = 0; i < messagesInPack; i++) {
-                int offset = 9 + (i * messageSize);
+                int offset = 3 + (i * messageSize);
                 if (offset + messageSize > data.length) break;
 
                 // Get message type
@@ -710,7 +737,7 @@ public class DroneDataParser {
             }
 
         } catch (Exception e) {
-            Log.e(TAG, "Error parsing message pack: " + e.getMessage());
+            Log.e(TAG, "Error parsing message pack: " + e.getMessage(), e);
         }
 
         return packMessages;
