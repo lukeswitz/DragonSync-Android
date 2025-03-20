@@ -164,9 +164,16 @@ public class CoTViewModel extends ViewModel {
     }
 
     public void updateMessage(CoTMessage message) {
+        String uid = message.getUid();
+
         if (message == null || message.getUid() == null || message.getUid().isEmpty()) {
             Log.w(TAG, "Ignoring invalid message with null or empty UID");
             return;
+        } else {
+            // prepend "drone" to it
+            if (!uid.startsWith("drone-")) {
+                message.setUid( "drone-" + uid);
+            }
         }
 
         List<CoTMessage> currentMessages = parsedMessages.getValue();

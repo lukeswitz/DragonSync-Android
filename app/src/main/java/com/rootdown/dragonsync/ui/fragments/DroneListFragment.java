@@ -1,6 +1,7 @@
 package com.rootdown.dragonsync.ui.fragments;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -33,10 +34,16 @@ public class DroneListFragment extends Fragment implements DroneListAdapter.OnDr
 
     private void setupRecyclerView(View view) {
         recyclerView = view.findViewById(R.id.drone_list);
+        if (recyclerView == null) {
+            Log.e("DroneListFragment", "RecyclerView with ID drone_list not found in layout");
+            return;
+        }
+
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
         adapter = new DroneListAdapter(this);
         recyclerView.setAdapter(adapter);
 
+        // Observe view model data
         viewModel.getParsedMessages().observe(getViewLifecycleOwner(),
                 messages -> adapter.updateMessages(messages));
     }

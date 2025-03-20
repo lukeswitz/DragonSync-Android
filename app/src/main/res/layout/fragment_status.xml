@@ -1,74 +1,134 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
+<androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/black">
+    android:background="@color/background_dark"
+    android:fillViewport="true"
+    android:overScrollMode="never">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="@dimen/spacing_md">
 
         <!-- Header with server name and uptime -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:layout_marginBottom="8dp"
-            android:padding="16dp"
-            android:layout_marginTop="25dp">
-
-            <TextView
-                android:id="@+id/system_status_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/system_status"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/white"/>
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="1dp"
-                android:layout_weight="1"/>
-
-            <TextView
-                android:id="@+id/server_name_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textColor="@color/green" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text=" | "
-                android:textColor="#AAAAAA"/>
-
-            <TextView
-                android:id="@+id/uptime_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textSize="16sp"
-                android:textColor="@color/green" />
-        </LinearLayout>
-
-        <!-- Main Metrics Grid - centered layout -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            app:cardBackgroundColor="#1A1A1A"
-            app:cardCornerRadius="8dp">
+            android:layout_marginBottom="@dimen/spacing_md"
+            style="@style/CardStyle.DragonSync">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/spacing_md">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <ImageView
+                        android:layout_width="@dimen/icon_size"
+                        android:layout_height="@dimen/icon_size"
+                        android:src="@android:drawable/stat_sys_upload"
+                        app:tint="@color/accent" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="@string/system_status"
+                        android:textAppearance="@style/TextAppearance.DragonSync.CardTitle"
+                        android:layout_marginStart="@dimen/spacing_sm"/>
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/system_status_chip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/status_online"
+                        style="@style/Chip.DragonSync.Status.Green"/>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="@dimen/spacing_md">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/server"
+                            android:textSize="@dimen/text_size_micro"
+                            android:textColor="@color/on_surface_medium"/>
+
+                        <TextView
+                            android:id="@+id/server_name_text"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="@dimen/text_size_body"
+                            android:textColor="@color/data_text"
+                            android:fontFamily="monospace"
+                            android:text="@string/default_server_name"/>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/uptime"
+                            android:textSize="@dimen/text_size_micro"
+                            android:textColor="@color/on_surface_medium"/>
+
+                        <TextView
+                            android:id="@+id/uptime_text"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="@dimen/text_size_body"
+                            android:textColor="@color/data_text"
+                            android:fontFamily="monospace"
+                            android:text="@string/default_uptime"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Main Metrics Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_md"
+            style="@style/CardStyle.DragonSync">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/spacing_md">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/system_metrics"
+                    android:textAppearance="@style/TextAppearance.DragonSync.CardTitle"
+                    android:layout_marginBottom="@dimen/spacing_md"/>
 
                 <LinearLayout
                     android:id="@+id/main_metrics_container"
@@ -80,125 +140,35 @@
                     <!-- CPU Gauge -->
                     <FrameLayout
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1">
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content">
 
-                        <com.google.android.material.progressindicator.CircularProgressIndicator
-                            android:id="@+id/cpu_progress_bg"
-                            android:layout_width="match_parent"
-                            android:layout_height="100dp"
+                        <com.rootdown.dragonsync.ui.views.CircularGaugeView
+                            android:id="@+id/cpu_gauge"
+                            android:layout_width="@dimen/gauge_size"
+                            android:layout_height="@dimen/gauge_size"
                             android:layout_gravity="center"
-                            app:indicatorSize="100dp"
-                            app:trackThickness="8dp"
-                            app:trackColor="#333333"
-                            app:indicatorColor="#333333"
-                            android:progress="100"
-                            android:max="100"/>
-
-                        <com.google.android.material.progressindicator.CircularProgressIndicator
-                            android:id="@+id/cpu_progress"
-                            android:layout_width="match_parent"
-                            android:layout_height="100dp"
-                            android:layout_gravity="center"
-                            app:indicatorSize="100dp"
-                            app:trackThickness="8dp"
-                            app:trackColor="@android:color/transparent"
-                            app:indicatorColor="@color/green"
-                            android:progress="0"
-                            android:max="100"/>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:layout_gravity="center"
-                            android:gravity="center">
-
-                            <TextView
-                                android:id="@+id/cpu_value_text"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textSize="32sp"
-                                android:textStyle="bold"
-                                android:textColor="@color/green" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textSize="16sp"
-                                android:textColor="@color/green"
-                                android:text="@string/percent_symbol"/>
-                        </LinearLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="bottom|center_horizontal"
-                            android:textSize="16sp"
-                            android:textColor="#AAAAAA"
-                            android:text="@string/cpu_label"/>
+                            app:gaugeTitle="@string/cpu"
+                            app:gaugeValue="@string/default_cpu_value"
+                            app:gaugeUnit="@string/percent_unit"
+                            app:gaugeColor="@color/status_green"/>
                     </FrameLayout>
 
                     <!-- TEMP Gauge -->
                     <FrameLayout
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1">
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content">
 
-                        <com.google.android.material.progressindicator.CircularProgressIndicator
-                            android:id="@+id/temp_progress_bg"
-                            android:layout_width="match_parent"
-                            android:layout_height="100dp"
+                        <com.rootdown.dragonsync.ui.views.CircularGaugeView
+                            android:id="@+id/temp_gauge"
+                            android:layout_width="@dimen/gauge_size"
+                            android:layout_height="@dimen/gauge_size"
                             android:layout_gravity="center"
-                            app:indicatorSize="100dp"
-                            app:trackThickness="8dp"
-                            app:trackColor="#333333"
-                            app:indicatorColor="#333333"
-                            android:progress="100"
-                            android:max="100"/>
-
-                        <com.google.android.material.progressindicator.CircularProgressIndicator
-                            android:id="@+id/temp_progress"
-                            android:layout_width="match_parent"
-                            android:layout_height="100dp"
-                            android:layout_gravity="center"
-                            app:indicatorSize="100dp"
-                            app:trackThickness="8dp"
-                            app:trackColor="@android:color/transparent"
-                            app:indicatorColor="@color/green"
-                            android:progress="0"
-                            android:max="100"/>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:layout_gravity="center"
-                            android:gravity="center">
-
-                            <TextView
-                                android:id="@+id/temp_value_text"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textSize="32sp"
-                                android:textStyle="bold"
-                                android:textColor="@color/green" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textSize="16sp"
-                                android:textColor="@color/green"
-                                android:text="@string/celsius_symbol"/>
-                        </LinearLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="bottom|center_horizontal"
-                            android:textSize="16sp"
-                            android:textColor="#AAAAAA"
-                            android:text="@string/temp_label"/>
+                            app:gaugeTitle="@string/temp"
+                            app:gaugeValue="@string/default_temp_value"
+                            app:gaugeUnit="@string/temp_unit"
+                            app:gaugeColor="@color/status_green"/>
                     </FrameLayout>
                 </LinearLayout>
             </LinearLayout>
@@ -208,155 +178,84 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            app:cardBackgroundColor="#1A1A1A"
-            app:cardCornerRadius="8dp">
+            android:layout_marginBottom="@dimen/spacing_md"
+            style="@style/CardStyle.DragonSync">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="12dp">
+                android:padding="@dimen/spacing_md">
 
-                <TextView
-                    android:id="@+id/sdr_status_title"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/sdr_status"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/white"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="@dimen/spacing_md">
+
+                    <ImageView
+                        android:layout_width="@dimen/icon_size"
+                        android:layout_height="@dimen/icon_size"
+                        android:src="@android:drawable/ic_menu_info_details"
+                        app:tint="@color/accent" />
+
+                    <TextView
+                        android:id="@+id/sdr_status_title"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="@string/sdr_status"
+                        android:textAppearance="@style/TextAppearance.DragonSync.CardTitle"
+                        android:layout_marginStart="@dimen/spacing_sm"/>
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/sdr_online_chip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/status_active"
+                        style="@style/Chip.DragonSync.Status.Green"/>
+                </LinearLayout>
 
                 <LinearLayout
                     android:id="@+id/sdr_metrics_container"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
-                    android:gravity="center"
-                    android:layout_marginTop="16dp">
+                    android:gravity="center">
 
                     <!-- PLUTO Gauge -->
                     <FrameLayout
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1">
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content">
 
-                        <com.google.android.material.progressindicator.CircularProgressIndicator
-                            android:id="@+id/pluto_progress_bg"
-                            android:layout_width="match_parent"
-                            android:layout_height="100dp"
+                        <com.rootdown.dragonsync.ui.views.CircularGaugeView
+                            android:id="@+id/pluto_temp_gauge"
+                            android:layout_width="@dimen/gauge_size"
+                            android:layout_height="@dimen/gauge_size"
                             android:layout_gravity="center"
-                            app:indicatorSize="100dp"
-                            app:trackThickness="8dp"
-                            app:trackColor="#333333"
-                            app:indicatorColor="#333333"
-                            android:progress="100"
-                            android:max="100"/>
-
-                        <com.google.android.material.progressindicator.CircularProgressIndicator
-                            android:id="@+id/pluto_temp_progress"
-                            android:layout_width="match_parent"
-                            android:layout_height="100dp"
-                            android:layout_gravity="center"
-                            app:indicatorSize="100dp"
-                            app:trackThickness="8dp"
-                            app:trackColor="@android:color/transparent"
-                            app:indicatorColor="@color/green"
-                            android:progress="0"
-                            android:max="100"/>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:layout_gravity="center"
-                            android:gravity="center">
-
-                            <TextView
-                                android:id="@+id/pluto_temp_value_text"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textSize="32sp"
-                                android:textStyle="bold"
-                                android:textColor="@color/green" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textSize="16sp"
-                                android:textColor="@color/green"
-                                android:text="@string/celsius_symbol"/>
-                        </LinearLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="bottom|center_horizontal"
-                            android:textSize="16sp"
-                            android:textColor="#AAAAAA"
-                            android:text="@string/pluto_label"/>
+                            app:gaugeTitle="@string/pluto"
+                            app:gaugeValue="@string/default_pluto_value"
+                            app:gaugeUnit="@string/temp_unit"
+                            app:gaugeColor="@color/status_yellow"/>
                     </FrameLayout>
 
                     <!-- ZYNQ Gauge -->
                     <FrameLayout
                         android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1">
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content">
 
-                        <com.google.android.material.progressindicator.CircularProgressIndicator
-                            android:id="@+id/zynq_progress_bg"
-                            android:layout_width="match_parent"
-                            android:layout_height="100dp"
+                        <com.rootdown.dragonsync.ui.views.CircularGaugeView
+                            android:id="@+id/zynq_temp_gauge"
+                            android:layout_width="@dimen/gauge_size"
+                            android:layout_height="@dimen/gauge_size"
                             android:layout_gravity="center"
-                            app:indicatorSize="100dp"
-                            app:trackThickness="8dp"
-                            app:trackColor="#333333"
-                            app:indicatorColor="#333333"
-                            android:progress="100"
-                            android:max="100"/>
-
-                        <com.google.android.material.progressindicator.CircularProgressIndicator
-                            android:id="@+id/zynq_temp_progress"
-                            android:layout_width="match_parent"
-                            android:layout_height="100dp"
-                            android:layout_gravity="center"
-                            app:indicatorSize="100dp"
-                            app:trackThickness="8dp"
-                            app:trackColor="@android:color/transparent"
-                            app:indicatorColor="@color/green"
-                            android:progress="0"
-                            android:max="100"/>
-
-                        <LinearLayout
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:layout_gravity="center"
-                            android:gravity="center">
-
-                            <TextView
-                                android:id="@+id/zynq_temp_value_text"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textSize="32sp"
-                                android:textStyle="bold"
-                                android:textColor="@color/green" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:textSize="16sp"
-                                android:textColor="@color/green"
-                                android:text="@string/celsius_symbol"/>
-                        </LinearLayout>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_gravity="bottom|center_horizontal"
-                            android:textSize="16sp"
-                            android:textColor="#AAAAAA"
-                            android:text="@string/zynq_label"/>
+                            app:gaugeTitle="@string/zynq"
+                            app:gaugeValue="@string/default_zynq_value"
+                            app:gaugeUnit="@string/temp_unit"
+                            app:gaugeColor="@color/status_green"/>
                     </FrameLayout>
                 </LinearLayout>
             </LinearLayout>
@@ -366,41 +265,54 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            app:cardBackgroundColor="#1A1A1A"
-            app:cardCornerRadius="8dp">
+            android:layout_marginBottom="@dimen/spacing_md"
+            style="@style/CardStyle.DragonSync">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="12dp">
+                android:padding="@dimen/spacing_md">
 
-                <TextView
-                    android:id="@+id/location_title"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/location_label"
-                    android:textSize="14sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/white"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="@dimen/spacing_md">
+
+                    <ImageView
+                        android:layout_width="@dimen/icon_size"
+                        android:layout_height="@dimen/icon_size"
+                        android:src="@android:drawable/ic_menu_mylocation"
+                        app:tint="@color/accent" />
+
+                    <TextView
+                        android:id="@+id/location_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/location"
+                        android:textAppearance="@style/TextAppearance.DragonSync.CardTitle"
+                        android:layout_marginStart="@dimen/spacing_sm"/>
+                </LinearLayout>
 
                 <!-- Combined GPS coordinates -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:layout_marginTop="8dp">
+                    android:layout_marginBottom="@dimen/spacing_md">
 
                     <!-- Coordinates display -->
                     <TextView
                         android:id="@+id/coordinates_text"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textSize="16sp"
-                        android:textColor="@color/green"
+                        android:textSize="@dimen/text_size_subtitle"
+                        android:textColor="@color/data_text"
+                        android:text="@string/default_coordinates"
                         android:textAlignment="center"
-                        android:typeface="monospace"/>
+                        android:fontFamily="monospace"/>
 
                     <!-- Altitude and Speed in one row -->
                     <LinearLayout
@@ -408,31 +320,34 @@
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:gravity="center"
-                        android:layout_marginTop="4dp">
+                        android:layout_marginTop="@dimen/spacing_sm">
 
                         <TextView
                             android:id="@+id/altitude_text"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textSize="16sp"
-                            android:textColor="@color/green"
-                            android:layout_marginEnd="16dp"/>
+                            android:textSize="@dimen/text_size_body"
+                            android:textColor="@color/data_text"
+                            android:text="@string/default_altitude"
+                            android:layout_marginEnd="@dimen/spacing_md"
+                            android:fontFamily="monospace"/>
 
                         <TextView
                             android:id="@+id/speed_text"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textSize="16sp"
-                            android:textColor="@color/green"/>
+                            android:textSize="@dimen/text_size_body"
+                            android:textColor="@color/data_text"
+                            android:text="@string/default_speed"
+                            android:fontFamily="monospace"/>
                     </LinearLayout>
                 </LinearLayout>
 
-                <!-- Map with marker -->
-                <FrameLayout
+                <!-- Map with custom touch handling container -->
+                <com.rootdown.dragonsync.ui.views.TouchableMapLayout
                     android:layout_width="match_parent"
-                    android:layout_height="150dp"
-                    android:layout_marginTop="8dp"
-                    android:background="#4F4F4F">
+                    android:layout_height="@dimen/map_height"
+                    android:padding="@dimen/card_stroke_width">
 
                     <com.google.android.gms.maps.MapView
                         android:id="@+id/map_view"
@@ -443,18 +358,19 @@
                     <FrameLayout
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:background="#80A4DEA4"
-                        android:padding="6dp"
+                        android:padding="@dimen/spacing_xs"
                         android:layout_gravity="bottom|center">
 
                         <TextView
                             android:id="@+id/map_station_label"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:text="@string/default_server_name"
                             android:textColor="@color/white"
-                            android:textSize="12sp"/>
+                            android:textSize="@dimen/text_size_caption"
+                            android:fontFamily="monospace"/>
                     </FrameLayout>
-                </FrameLayout>
+                </com.rootdown.dragonsync.ui.views.TouchableMapLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -462,73 +378,138 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="#1A1A1A"
-            app:cardCornerRadius="8dp">
+            style="@style/CardStyle.DragonSync">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="12dp">
+                android:padding="@dimen/spacing_md">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/system_resources"
-                    android:textSize="16sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/white"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="@dimen/spacing_md">
+
+                    <ImageView
+                        android:layout_width="@dimen/icon_size"
+                        android:layout_height="@dimen/icon_size"
+                        android:src="@android:drawable/ic_menu_manage"
+                        app:tint="@color/accent" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/system_resources"
+                        android:textAppearance="@style/TextAppearance.DragonSync.CardTitle"
+                        android:layout_marginStart="@dimen/spacing_sm"/>
+                </LinearLayout>
 
                 <!-- Memory -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/memory_label"
-                    android:textColor="#AAAAAA"
-                    android:textSize="14sp"
-                    android:layout_marginTop="16dp"/>
-
-                <TextView
-                    android:id="@+id/memory_text"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/green"
-                    android:textSize="16sp"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="@dimen/spacing_md">
 
-                <ProgressBar
-                    android:id="@+id/memory_progress"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:progress="0"
-                    android:max="100"
-                    android:progressTint="@color/green"/>
+                    <TextView
+                        android:layout_width="@dimen/label_width"
+                        android:layout_height="wrap_content"
+                        android:text="@string/memory"
+                        android:textColor="@color/on_surface_medium"
+                        android:textSize="@dimen/text_size_caption"/>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/memory_text"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/data_text"
+                            android:textSize="@dimen/text_size_body"
+                            android:text="@string/default_memory"
+                            android:fontFamily="monospace"/>
+
+                        <com.google.android.material.progressindicator.LinearProgressIndicator
+                            android:id="@+id/memory_progress"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:progress="@integer/default_memory_progress"
+                            style="@style/ProgressIndicator.DragonSync.Linear"
+                            app:indicatorColor="@color/status_green"
+                            android:layout_marginTop="@dimen/spacing_xs"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/memory_percent"
+                        android:layout_width="@dimen/percent_label_width"
+                        android:layout_height="wrap_content"
+                        android:text="@string/default_memory_percent"
+                        android:textColor="@color/status_green"
+                        android:textSize="@dimen/text_size_body"
+                        android:fontFamily="monospace"
+                        android:gravity="end"
+                        android:layout_marginStart="@dimen/spacing_sm"/>
+                </LinearLayout>
 
                 <!-- Disk -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/disk_label"
-                    android:textColor="#AAAAAA"
-                    android:textSize="14sp"
-                    android:layout_marginTop="16dp"/>
-
-                <TextView
-                    android:id="@+id/disk_text"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:textColor="@color/green"
-                    android:textSize="16sp"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
-                <ProgressBar
-                    android:id="@+id/disk_progress"
-                    style="?android:attr/progressBarStyleHorizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:progress="0"
-                    android:max="100"
-                    android:progressTint="@color/green"/>
+                    <TextView
+                        android:layout_width="@dimen/label_width"
+                        android:layout_height="wrap_content"
+                        android:text="@string/disk"
+                        android:textColor="@color/on_surface_medium"
+                        android:textSize="@dimen/text_size_caption"/>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/disk_text"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/data_text"
+                            android:textSize="@dimen/text_size_body"
+                            android:text="@string/default_disk"
+                            android:fontFamily="monospace"/>
+
+                        <com.google.android.material.progressindicator.LinearProgressIndicator
+                            android:id="@+id/disk_progress"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:progress="@integer/default_disk_progress"
+                            style="@style/ProgressIndicator.DragonSync.Linear"
+                            app:indicatorColor="@color/status_green"
+                            android:layout_marginTop="@dimen/spacing_xs"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/disk_percent"
+                        android:layout_width="@dimen/percent_label_width"
+                        android:layout_height="wrap_content"
+                        android:text="@string/default_disk_percent"
+                        android:textColor="@color/status_green"
+                        android:textSize="@dimen/text_size_body"
+                        android:fontFamily="monospace"
+                        android:gravity="end"
+                        android:layout_marginStart="@dimen/spacing_sm"/>
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
-</ScrollView>
+</androidx.core.widget.NestedScrollView>

@@ -1,22 +1,233 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="4dp"
+    android:layout_marginHorizontal="2dp"
+    app:cardCornerRadius="@dimen/card_corner_radius_small"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="@color/surface_dark_elevated"
+    app:strokeColor="@color/card_stroke_light"
+    app:strokeWidth="1dp"
+    app:rippleColor="@color/ripple_color">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/drone_list"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:clipToPadding="false"
-        android:padding="8dp"/>
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/clear_button"
-        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="16dp"
-        android:src="@android:drawable/ic_delete"/>
+        android:orientation="vertical"
+        android:padding="@dimen/spacing_md">
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+        <!-- Header Row -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <FrameLayout
+                android:layout_width="40dp"
+                android:layout_height="40dp">
+
+                <ImageView
+                    android:id="@+id/drone_icon"
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_drone"
+                    app:tint="@color/accent" />
+            </FrameLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginStart="@dimen/spacing_sm">
+
+                <TextView
+                    android:id="@+id/drone_id"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="DJI-X724FF3"
+                    android:textAppearance="@style/TextAppearance.DragonSync.ListItemTitle"
+                    android:maxLines="1"
+                    android:ellipsize="end"/>
+
+                <TextView
+                    android:id="@+id/description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="DJI Mavic Mini"
+                    android:textAppearance="@style/TextAppearance.DragonSync.ListItemSubtitle"
+                    android:maxLines="1"
+                    android:ellipsize="end"/>
+            </LinearLayout>
+
+            <!-- Status indicator -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="end">
+
+                <com.google.android.material.card.MaterialCardView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="12dp"
+                    app:cardElevation="0dp"
+                    app:cardBackgroundColor="@color/status_green_10"
+                    app:strokeColor="@color/status_green"
+                    app:strokeWidth="1dp">
+
+                    <TextView
+                        android:id="@+id/rssi"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="-45 dBm"
+                        android:textSize="12sp"
+                        android:textColor="@color/status_green"
+                        android:fontFamily="sans-serif-medium"
+                        android:paddingHorizontal="8dp"
+                        android:paddingVertical="2dp"/>
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView
+                    android:id="@+id/timestamp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="12:45:32"
+                    android:textSize="11sp"
+                    android:textColor="@color/on_surface_medium"
+                    android:layout_marginTop="4dp"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Divider -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider"
+            android:layout_marginVertical="@dimen/spacing_sm"/>
+
+        <!-- Data Grid -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="@dimen/spacing_sm">
+
+            <!-- Position -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="POSITION"
+                    android:textSize="10sp"
+                    android:textColor="@color/on_surface_medium"/>
+
+                <TextView
+                    android:id="@+id/position"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="51.4791°, -0.0013°"
+                    android:textColor="@color/data_text"
+                    android:textSize="12sp"
+                    android:fontFamily="monospace"
+                    android:maxLines="1"
+                    android:ellipsize="end"/>
+            </LinearLayout>
+
+            <!-- Altitude -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ALTITUDE"
+                    android:textSize="10sp"
+                    android:textColor="@color/on_surface_medium"/>
+
+                <TextView
+                    android:id="@+id/altitude"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="120.5 m"
+                    android:textColor="@color/data_text"
+                    android:textSize="12sp"
+                    android:fontFamily="monospace"/>
+            </LinearLayout>
+
+            <!-- Speed -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="SPEED"
+                    android:textSize="10sp"
+                    android:textColor="@color/on_surface_medium"/>
+
+                <TextView
+                    android:id="@+id/speed"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="15.2 m/s"
+                    android:textColor="@color/data_text"
+                    android:textSize="12sp"
+                    android:fontFamily="monospace"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Action Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/details_button"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="36dp"
+                android:text="DETAILS"
+                android:textSize="11sp"
+                app:cornerRadius="18dp"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                app:strokeColor="@color/button_stroke"
+                android:layout_marginEnd="4dp"/>
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/live_map_button"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="36dp"
+                android:text="LIVE MAP"
+                android:textSize="11sp"
+                app:cornerRadius="18dp"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                app:icon="@android:drawable/ic_dialog_map"
+                app:iconSize="14dp"
+                app:iconGravity="textStart"
+                android:paddingStart="12dp"
+                app:strokeColor="@color/accent"
+                android:textColor="@color/accent"
+                app:iconTint="@color/accent"
+                android:layout_marginStart="4dp"/>
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

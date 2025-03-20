@@ -1,24 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">DragonSync</string>
+
+    <!-- Section Titles -->
     <string name="system_status">SYSTEM STATUS</string>
     <string name="active_drones">ACTIVE DRONES</string>
+    <string name="active_drones_count">3 ACTIVE DRONES</string>
     <string name="sdr_status">SDR STATUS</string>
-    <string name="percent_symbol">%</string>
-    <string name="celsius_symbol">°C</string>
-    <string name="cpu_label">CPU</string>
-    <string name="temp_label">TEMP</string>
-    <string name="pluto_label">PLUTO</string>
-    <string name="zynq_label">ZYNQ</string>
-    <string name="location_label">LOCATION</string>
-    <string name="map_description">Map showing device location</string>
+    <string name="location">LOCATION</string>
     <string name="system_resources">SYSTEM RESOURCES</string>
-    <string name="memory_label">MEMORY</string>
-    <string name="disk_label">DISK</string>
-    <string name="altitude_format">ALT %.1fm</string>
-    <string name="speed_format">SPD %.1fm/s</string>\
-    <string name="connection_error">Connection error: %s</string>
-    <string name="location">Location</string>
-    <string name="position_unknown">Position: unknown</string>
-    <string name="altitude_unknown">Altitude: unknown</string>
-    <string name="speed_unknown">Speed: unknown</string>
+    <string name="system_metrics">SYSTEM METRICS</string>
+    <string name="memory">MEMORY</string>
+    <string name="disk">DISK</string>
+    <string name="warnings">WARNINGS</string>
+    <string name="connection">CONNECTION</string>
+    <string name="preferences">PREFERENCES</string>
+    <string name="warning_thresholds">WARNING THRESHOLDS</string>
+
+    <!-- Default values for previews -->
+    <string name="default_coordinates">0.000000°, 0.000000°</string>
+    <string name="default_altitude">ALT 0.0m</string>
+    <string name="default_speed">SPD 0.0m/s</string>
+    <string name="default_server_name">wardragon-000</string>
+    <string name="default_memory">0.0/0.0GB</string>
+    <string name="default_disk">0.0/0.0GB</string>
+    <string name="default_memory_percent">0%</string>
+    <string name="default_disk_percent">0%</string>
+    <string name="default_drone_id">Unknown Drone</string>
+    <string name="default_drone_description">No description</string>
+    <string name="default_rssi">-00 dBm</string>
+    <string name="default_timestamp">00:00:00</string>
+    <string name="default_position">0.000000°, 0.000000°</string>
+    <string name="default_altitude_short">0.0 m</string>
+    <string name="default_speed_short">0.0 m/s</string>
+    <string name="default_uptime">00:00:00</string>
+
+
+    <string name="cpu">CPU</string>
+    <string name="temp">TEMP</string>
+    <string name="pluto">PLUTO</string>
+    <string name="zynq">ZYNQ</string>
+    <string name="default_cpu_value">0.0</string>
+    <string name="default_temp_value">0.0</string>
+    <string name="default_pluto_value">0.0</string>
+    <string name="default_zynq_value">0.0</string>
+    <string name="percent_unit">%</string>
+    <string name="temp_unit">°C</string>
+    <string name="map_description">Map showing device location</string>
+    <integer name="default_memory_progress">35</integer>
+    <integer name="default_disk_progress">29</integer>
+    <dimen name="label_width">60dp</dimen>
+
+    <!-- Status Labels -->
+    <string name="status_online">ONLINE</string>
+    <string name="status_active">ACTIVE</string>
+    <string name="status_inactive">INACTIVE</string>
+    <string name="status_connected">CONNECTED</string>
+    <string name="connection_error">CONNECTION ERROR</string>
+    <string name="status_disconnected">DISCONNECTED</string>
+    <string name="status_error">ERROR</string>
+    <string name="no_warnings">No active warnings</string>
+
+    <!-- Map controls -->
+    <string name="center_on_location">Center on my location</string>
+    <string name="change_map_type">Change map type</string>
+    <string name="show_all_drones">Show all drones</string>
+    <string name="view_all_drones">VIEW ALL DRONES</string>
+    <string name="last_update_format">UPDATED: %1$s</string>
+
+    <!-- Button labels -->
+    <string name="details">DETAILS</string>
+    <string name="live_map">LIVE MAP</string>
+    <string name="export">EXPORT</string>
+    <string name="server">SERVER</string>
+    <string name="uptime">UPTIME</string>
+    <string name="position">POSITION</string>
+    <string name="altitude">ALTITUDE</string>
+    <string name="speed">SPEED</string>
+
+    <!-- Settings -->
+    <string name="enable_notifications">Enable Notifications</string>
+    <string name="spoof_detection">Spoof Detection</string>
+    <string name="keep_screen_on">Keep Screen On</string>
+    <string name="serial_console">Serial Console</string>
+    <string name="system_warnings">System Warnings</string>
+    <string name="location_estimation">Estimate Drone Location</string>
+    <string name="location_estimation_summary">When enabled, estimates drone positions based on signal strength</string>
+
+    <!-- Formats -->
+    <string name="altitude_format">ALT %1$.1fm</string>
+    <string name="speed_format">SPD %1$.1fm/s</string>
+    <string name="coordinates_format">%1$.6f°, %2$.6f°</string>
+    <string name="memory_format">%1$.1f/%2$.1fGB</string>
+    <string name="disk_format">%1$.1f/%2$.1fGB</string>
+    <string name="percentage_format">%1$d%%</string>
+    <string name="rssi_format">%1$d dBm</string>
+    <string name="uptime_format">%1$02d:%2$02d:%3$02d</string>
 </resources>

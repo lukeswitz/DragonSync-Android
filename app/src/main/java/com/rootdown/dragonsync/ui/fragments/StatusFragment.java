@@ -1,8 +1,11 @@
 package com.rootdown.dragonsync.ui.fragments;
 
+import static android.content.ContentValues.TAG;
+
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +24,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 
 import com.rootdown.dragonsync.R;
 import com.rootdown.dragonsync.models.StatusMessage;
+import com.rootdown.dragonsync.ui.views.CircularGaugeView;
 import com.rootdown.dragonsync.viewmodels.ServiceViewModel;
 import com.rootdown.dragonsync.viewmodels.StatusViewModel;
 import com.rootdown.dragonsync.utils.Constants;
@@ -79,24 +83,31 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void initializeViews(View view) {
+        // Server and system status
         serverNameText = view.findViewById(R.id.server_name_text);
         uptimeText = view.findViewById(R.id.uptime_text);
-        cpuValueText = view.findViewById(R.id.cpu_value_text);
-        tempValueText = view.findViewById(R.id.temp_value_text);
-        plutoTempValueText = view.findViewById(R.id.pluto_temp_value_text);
-        zynqTempValueText = view.findViewById(R.id.zynq_temp_value_text);
+
+        // CircularGaugeViews
+        CircularGaugeView cpuGauge = view.findViewById(R.id.cpu_gauge);
+        CircularGaugeView tempGauge = view.findViewById(R.id.temp_gauge);
+        CircularGaugeView plutoTempGauge = view.findViewById(R.id.pluto_temp_gauge);
+        CircularGaugeView zynqTempGauge = view.findViewById(R.id.zynq_temp_gauge);
+
+        // Memory and Disk
         memoryText = view.findViewById(R.id.memory_text);
         diskText = view.findViewById(R.id.disk_text);
+        memoryProgress = view.findViewById(R.id.memory_progress);
+        diskProgress = view.findViewById(R.id.disk_progress);
+
+        // Location
         coordinatesText = view.findViewById(R.id.coordinates_text);
         altitudeText = view.findViewById(R.id.altitude_text);
         speedText = view.findViewById(R.id.speed_text);
 
-        cpuProgress = view.findViewById(R.id.cpu_progress);
-        tempProgress = view.findViewById(R.id.temp_progress);
-        plutoTempProgress = view.findViewById(R.id.pluto_temp_progress);
-        zynqTempProgress = view.findViewById(R.id.zynq_temp_progress);
-        memoryProgress = view.findViewById(R.id.memory_progress);
-        diskProgress = view.findViewById(R.id.disk_progress);
+        // TODO update these gauges and add others
+        // cpuGauge.setValue(cpuPercentage);
+        // cpuGauge.setTitle("CPU");
+        // cpuGauge.setUnit("%");
     }
 
     private void setupObservers() {
@@ -170,6 +181,11 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void updateCpuUsage(double cpuUsage) {
+        if (cpuValueText == null || cpuProgress == null) {
+            Log.e(TAG, "CPU views not initialized");
+            return;
+        }
+
         cpuValueText.setText(String.format(Locale.getDefault(), "%.1f", cpuUsage));
         cpuProgress.setProgress((int)cpuUsage);
 
@@ -186,6 +202,12 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void updateTemperature(double temp) {
+
+        if (tempValueText == null || tempProgress == null) {
+            Log.e(TAG, "Temperature views not initialized");
+            return;
+        }
+
         tempValueText.setText(String.format(Locale.getDefault(), "%.1f", temp));
         tempProgress.setProgress((int)temp);
 
@@ -228,6 +250,12 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void updateSdrStats(StatusMessage.ANTStats antStats) {
+
+        if (plutoTempValueText == null || zynqTempValueText == null) {
+            Log.e(TAG, "SDR Temperature views not initialized");
+            return;
+        }
+
         double plutoTemp = antStats.getPlutoTemp();
         double zynqTemp = antStats.getZynqTemp();
 

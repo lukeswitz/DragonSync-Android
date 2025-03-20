@@ -42,6 +42,8 @@ public class OnboardDetectionService extends Service {
     private DeviceLocationManager locationManager;
     private Location lastDeviceLocation;
     private Map<String, Long> lastDetectionTime = new HashMap<>(); // For filtering duplicate detections
+    private Map<String, String> knownDroneIds = new HashMap<>();
+    private Map<String, String> macToDroneIdMap = new HashMap<>();
 
     @Override
     public void onCreate() {
@@ -144,11 +146,22 @@ public class OnboardDetectionService extends Service {
                 addDeviceLocationToData(droneData);
             }
 
-            // Process each message in the array
+            // First pass: Process only Basic ID messages to establish identities
             for (int i = 0; i < droneData.length(); i++) {
                 JSONObject msgObj = droneData.getJSONObject(i);
+                if (msgObj.has("Basic ID")) {
+                    JSONObject messageData = msgObj.getJSONObject("Basic ID");
+                    CoTMessage message = convertToCoTMessage("Basic ID", messageData, source);
+                    if (message != null && message.getUid() != null) {
+                        // For Basic ID, we do full processing to establish the drone identity
+                        processMessage(message, source, messageData);
+                    }
+                }
+            }
 
-                // Get the appropriate message type and data
+            // Second pass: Process other message types using established identities
+            for (int i = 0; i < droneData.length(); i++) {
+                JSONObject msgObj = droneData.getJSONObject(i);
                 String messageType = null;
                 JSONObject messageData = null;
                 Iterator<String> keys = msgObj.keys();
@@ -157,80 +170,73 @@ public class OnboardDetectionService extends Service {
                     messageData = msgObj.getJSONObject(messageType);
                 }
 
-                if (messageType == null || messageData == null) continue;
+                // Skip Basic ID messages (already processed) and invalid messages
+                if (messageType == null || messageData == null || messageType.equals("Basic ID")) {
+                    continue;
+                }
 
-                // Extract key identifiers
-                String id = messageData.optString("id", "");
-                String mac = messageData.optString("MAC", "");
-
-                // Create a unique key for deduplication
-                String uniqueKey = !id.isEmpty() ? id : mac;
-                uniqueKey = !uniqueKey.isEmpty() ? uniqueKey : String.valueOf(messageData.hashCode());
-
-                // Check if we've recently seen this drone
-                long currentTime = System.currentTimeMillis();
-                Long lastDetection = lastDetectionTime.get(uniqueKey);
-
-                // Only process if this is a new detection or last one was more than 2 seconds ago
-                boolean shouldProcess = lastDetection == null || (currentTime - lastDetection) >= 2000;
-
-                if (shouldProcess) {
-                    // Update last detection time
-                    lastDetectionTime.put(uniqueKey, currentTime);
-
-                    // Log what we found
-                    Log.d(TAG, "Processing new drone data: " + messageType + " from " + source);
-                    if (!id.isEmpty()) Log.d(TAG, "  ID: " + id);
-                    if (!mac.isEmpty()) Log.d(TAG, "  MAC: " + mac);
-
-                    // Convert to CoTMessage
-                    CoTMessage message = convertToCoTMessage(messageType, messageData, source);
-
-                    if (message != null) {
-                        // Only estimate location if drone doesn't provide its own coordinates
-                        // AND user has enabled location estimation
-                        if (message.getCoordinate() == null &&
-                                lastDeviceLocation != null &&
-                                message.getRssi() != null &&
-                                settings.isLocationEstimationEnabled()) {
-
-                            estimateDroneLocation(message);
-                        }
-
-                        // Set the device (operator) location for display purposes
-                        if (lastDeviceLocation != null) {
-                            message.setPilotLat(String.valueOf(lastDeviceLocation.getLatitude()));
-                            message.setPilotLon(String.valueOf(lastDeviceLocation.getLongitude()));
-                        }
-
-                        // Calculate distance between user and drone if both coordinates are available
-                        if (lastDeviceLocation != null && message.getCoordinate() != null) {
-                            float distanceInMeters = lastDeviceLocation.distanceTo(message.getCoordinate());
-
-                            // Store the calculated distance in the message
-                            if (message.getRawMessage() == null) {
-                                message.setRawMessage(new HashMap<>());
-                            }
-                            message.getRawMessage().put("calculated_distance", distanceInMeters);
-
-                            // Log the distance
-                            Log.d(TAG, "  Distance: " + distanceInMeters + "m");
-                        }
-
-                        // Broadcast the enhanced telemetry message
-                        Intent telemetryIntent = new Intent("com.rootdown.dragonsync.TELEMETRY");
-                        telemetryIntent.setPackage(getPackageName());
-                        telemetryIntent.putExtra("parsed_message", message);
-                        telemetryIntent.putExtra("raw_message", messageType + ": " + messageData.toString());
-                        sendBroadcast(telemetryIntent);
-
-                        // Log that we sent the broadcast
-                        Log.d(TAG, "Broadcast telemetry message for: " + message.getUid());
-                    }
+                CoTMessage message = convertToCoTMessage(messageType, messageData, source);
+                if (message != null && message.getUid() != null) {
+                    processMessage(message, source, messageData);
                 }
             }
         } catch (Exception e) {
             Log.e(TAG, "Error processing drone data: " + e.getMessage(), e);
+        }
+    }
+
+    private void processMessage(CoTMessage message, String source, JSONObject messageData) {
+        // Use UID for detection throttling
+        String uniqueKey = message.getUid();
+        if (uniqueKey == null || uniqueKey.isEmpty()) {
+            return; // Skip messages without a valid UID
+        }
+
+        long currentTime = System.currentTimeMillis();
+        Long lastDetection = lastDetectionTime.get(uniqueKey);
+        boolean shouldProcess = lastDetection == null || (currentTime - lastDetection) >= 2000;
+
+        if (shouldProcess) {
+            // Update last detection time
+            lastDetectionTime.put(uniqueKey, currentTime);
+
+            // Only estimate location if drone doesn't provide its own coordinates
+            if (message.getCoordinate() == null &&
+                    lastDeviceLocation != null &&
+                    message.getRssi() != null &&
+                    settings.isLocationEstimationEnabled()) {
+
+                estimateDroneLocation(message);
+            }
+
+            // Set the device (operator) location for display purposes
+            if (lastDeviceLocation != null) {
+                message.setPilotLat(String.valueOf(lastDeviceLocation.getLatitude()));
+                message.setPilotLon(String.valueOf(lastDeviceLocation.getLongitude()));
+            }
+
+            // Calculate distance between user and drone if both coordinates are available
+            if (lastDeviceLocation != null && message.getCoordinate() != null) {
+                float distanceInMeters = lastDeviceLocation.distanceTo(message.getCoordinate());
+
+                // Store the calculated distance in the message
+                if (message.getRawMessage() == null) {
+                    message.setRawMessage(new HashMap<>());
+                }
+                message.getRawMessage().put("calculated_distance", distanceInMeters);
+
+                // Log the distance
+                Log.d(TAG, "  Distance: " + distanceInMeters + "m");
+            }
+
+            // Broadcast the enhanced telemetry message
+            Intent telemetryIntent = new Intent("com.rootdown.dragonsync.TELEMETRY");
+            telemetryIntent.setPackage(getPackageName());
+            telemetryIntent.putExtra("parsed_message", message);
+            telemetryIntent.putExtra("raw_message", "Onboard detection: " + source);
+            sendBroadcast(telemetryIntent);
+
+            Log.d(TAG, "Broadcast telemetry message for: " + message.getUid());
         }
     }
 
@@ -261,26 +267,21 @@ public class OnboardDetectionService extends Service {
                         String idValue = messageData.getString("id");
                         Log.d(TAG, "Raw ID value: '" + idValue + "', length: " + idValue.length());
 
-                        // Check if ID is just zeros or empty
-                        boolean isZeros = idValue.matches("^0+$");
-                        if (!idValue.isEmpty() && !isZeros) {
+                        if (!idValue.isEmpty() && !idValue.matches("^0+$")) {
                             message.setUid(idValue);
-                            Log.d(TAG, "Using ID value as UID: " + message.getUid());
-                        } else {
-                            Log.d(TAG, "ID is empty or all zeros, falling back to MAC");
-                            if (messageData.has("MAC")) {
-                                message.setUid(messageData.getString("MAC"));
-                                Log.d(TAG, "Using MAC as UID: " + message.getUid());
-                            }
+
+//                            // Also store the MAC to ID mapping for other message types (dont need fallback right now)
+//                            if (messageData.has("MAC")) {
+//                                knownDroneIds.put(messageData.getString("MAC"), idValue);
+//                            }
                         }
-                    } else if (messageData.has("MAC")) {
-                        message.setUid(messageData.getString("MAC"));
-                        Log.d(TAG, "No ID field, using MAC as UID: " + message.getUid());
-                    } else {
-                        String generatedUid = source + "_" + System.currentTimeMillis();
-                        message.setUid(generatedUid);
-                        Log.d(TAG, "No ID or MAC, generated UID: " + generatedUid);
                     }
+
+                    // Forget fallback ID for now
+//                    else if (messageData.has("MAC")) {
+//                        message.setUid(messageData.getString("MAC"));
+//                        Log.d(TAG, "No ID field, using MAC as UID: " + message.getUid());
+//                    }
 
                     if (messageData.has("ua_type")) {
                         String uaTypeStr = messageData.getString("ua_type");
@@ -606,18 +607,16 @@ public class OnboardDetectionService extends Service {
     }
 
     private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "DragonSync Onboard Detection",
-                    NotificationManager.IMPORTANCE_LOW
-            );
-            channel.setDescription("Scanning for drones using device radios");
+        NotificationChannel channel = new NotificationChannel(
+                CHANNEL_ID,
+                "DragonSync Onboard Detection",
+                NotificationManager.IMPORTANCE_LOW
+        );
+        channel.setDescription("Scanning for drones using device radios");
 
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            if (notificationManager != null) {
-                notificationManager.createNotificationChannel(channel);
-            }
+        NotificationManager notificationManager = getSystemService(NotificationManager.class);
+        if (notificationManager != null) {
+            notificationManager.createNotificationChannel(channel);
         }
     }
 

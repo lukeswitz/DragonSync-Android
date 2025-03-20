@@ -1,6 +1,7 @@
 package com.rootdown.dragonsync.ui.views;
 
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.util.AttributeSet;
 import android.view.LayoutInflater;
@@ -27,7 +28,24 @@ public class CircularGaugeView extends FrameLayout {
 
     public CircularGaugeView(@NonNull Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
+
+        // Read custom attributes
+        TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.CircularGaugeView);
+
+        String title = a.getString(R.styleable.CircularGaugeView_gaugeTitle);
+        float value = a.getFloat(R.styleable.CircularGaugeView_gaugeValue, 0f);
+        String unit = a.getString(R.styleable.CircularGaugeView_gaugeUnit);
+        int color = a.getColor(R.styleable.CircularGaugeView_gaugeColor, Color.GREEN);
+
+        a.recycle();
+
         init(context);
+
+        // Apply attributes after initialization
+        setTitle(title != null ? title : "");
+        setValue(value);
+        setUnit(unit != null ? unit : "");
+        setColor(color);
     }
 
     public CircularGaugeView(@NonNull Context context, @Nullable AttributeSet attrs, int defStyleAttr) {

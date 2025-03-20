@@ -1,30 +1,133 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/background_dark">
 
-    <com.google.android.gms.maps.MapView
-        android:id="@+id/map_view"
+    <!-- Map container with touch interception handling -->
+    <com.rootdown.dragonsync.ui.views.TouchableMapLayout
+        android:id="@+id/map_container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent">
 
+        <com.google.android.gms.maps.MapView
+            android:id="@+id/map_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+    </com.rootdown.dragonsync.ui.views.TouchableMapLayout>
+
+    <!-- Map Controls Panel -->
     <LinearLayout
-        android:layout_width="match_parent"
+        android:id="@+id/map_controls"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:layout_gravity="bottom">
+        android:layout_margin="@dimen/spacing_md"
+        android:layout_gravity="end|top">
 
-        <Button
-            android:id="@+id/show_drone_list"
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/center_map_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_margin="16dp"
-            android:text="@string/active_drones"
-            android:drawableStart="@drawable/ic_drone"
-            android:drawablePadding="8dp"/>
+            android:layout_marginBottom="@dimen/spacing_sm"
+            app:fabSize="mini"
+            app:backgroundTint="@color/surface_dark_elevated"
+            app:tint="@color/on_surface_high"
+            android:src="@android:drawable/ic_menu_mylocation"
+            android:contentDescription="@string/center_on_location"/>
 
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/map_type_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="@dimen/spacing_sm"
+            app:fabSize="mini"
+            app:backgroundTint="@color/surface_dark_elevated"
+            app:tint="@color/on_surface_high"
+            android:src="@android:drawable/ic_menu_mapmode"
+            android:contentDescription="@string/change_map_type"/>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/fit_drones_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:fabSize="mini"
+            app:backgroundTint="@color/surface_dark_elevated"
+            app:tint="@color/on_surface_high"
+            android:src="@android:drawable/menu_frame"
+            android:contentDescription="@string/show_all_drones"/>
     </LinearLayout>
 
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+    <!-- Info Panel - floating on top -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/map_info_panel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/spacing_md"
+        style="@style/CardStyle.DragonSync.Elevated"
+        android:layout_gravity="top">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="@dimen/spacing_sm">
+
+            <TextView
+                android:id="@+id/active_drones_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/active_drones_count"
+                android:textSize="@dimen/text_size_caption"
+                android:textColor="@color/accent"
+                android:fontFamily="sans-serif-medium"
+                android:drawableStart="@drawable/ic_drone"
+                android:drawablePadding="@dimen/spacing_xs"
+                android:gravity="center_vertical"/>
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1"/>
+
+            <TextView
+                android:id="@+id/last_update_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/last_update_format"
+                android:textSize="@dimen/text_size_micro"
+                android:textColor="@color/on_surface_medium"
+                android:fontFamily="sans-serif"
+                android:gravity="center_vertical"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Bottom sheet-like control panel -->
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom"
+        app:cardCornerRadius="@dimen/card_corner_radius"
+        app:cardBackgroundColor="@color/surface_dark_elevated"
+        app:cardElevation="@dimen/card_elevation_high">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/spacing_md">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/show_drone_list"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/active_drones"
+                app:icon="@drawable/ic_drone"
+                app:iconGravity="textStart"
+                android:paddingVertical="@dimen/button_padding_vertical"
+                app:cornerRadius="@dimen/button_corner_radius"/>
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+</FrameLayout>

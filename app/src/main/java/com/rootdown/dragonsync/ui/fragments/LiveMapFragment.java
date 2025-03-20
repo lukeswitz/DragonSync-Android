@@ -91,6 +91,15 @@ public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
 
         mapView = view.findViewById(R.id.map_view);
         mapView.onCreate(savedInstanceState);
+
+
+        View mapContainer = view.findViewById(R.id.map_view);
+        mapContainer.setOnTouchListener((v, event) -> {
+            // Prevent parent views from intercepting touch events
+            v.getParent().requestDisallowInterceptTouchEvent(true);
+            return false;
+        });
+
         mapView.getMapAsync(this);
 
         view.findViewById(R.id.show_drone_list).setOnClickListener(v -> {

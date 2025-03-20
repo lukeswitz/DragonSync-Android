@@ -3,42 +3,80 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/background_dark"
+    android:fillViewport="true"
+    android:overScrollMode="never">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp"
-        android:layout_marginTop="20dp">
+        android:padding="@dimen/spacing_md">
 
         <!-- System Status Card -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/system_status_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="@dimen/spacing_md"
+            app:cardCornerRadius="@dimen/card_corner_radius"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/surface_dark"
+            app:strokeColor="@color/card_stroke"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/spacing_md">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/system_status"
-                    android:textAppearance="?attr/textAppearanceHeadline6"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="@dimen/spacing_md">
 
-                <GridLayout
-                    android:id="@+id/metrics_grid"
-                    android:layout_width="wrap_content"
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/ic_dialog_info"
+                        app:tint="@color/accent" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="@string/system_status"
+                        android:textAppearance="@style/TextAppearance.DragonSync.CardTitle"
+                        android:layout_marginStart="@dimen/spacing_sm"/>
+
+                    <TextView
+                        android:id="@+id/system_uptime"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="00:42:15"
+                        android:textAppearance="@style/TextAppearance.DragonSync.Mono"
+                        android:padding="@dimen/spacing_xs"
+                        android:src="@android:drawable/ic_menu_add"
+                        android:textColor="@color/status_green"/>
+                </LinearLayout>
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:columnCount="3"
-                    android:layout_marginTop="8dp"
-                    android:layout_gravity="center"/>
+                    android:scrollbars="none"
+                    android:overScrollMode="never">
 
+                    <androidx.gridlayout.widget.GridLayout
+                        android:id="@+id/metrics_grid"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        app:orientation="horizontal" />
+                </HorizontalScrollView>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -47,42 +85,78 @@
             android:id="@+id/drones_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
+            android:layout_marginBottom="@dimen/spacing_md"
+            app:cardCornerRadius="@dimen/card_corner_radius"
             app:cardElevation="4dp"
-            app:cardCornerRadius="8dp">
+            app:cardBackgroundColor="@color/surface_dark"
+            app:strokeColor="@color/card_stroke"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/spacing_md">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/active_drones"
-                    android:textAppearance="?attr/textAppearanceHeadline6"
-                    android:textStyle="bold"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="@dimen/spacing_md">
 
-                <GridLayout
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@drawable/ic_drone"
+                        app:tint="@color/accent" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/active_drones"
+                        android:textAppearance="@style/TextAppearance.DragonSync.CardTitle"
+                        android:layout_marginStart="@dimen/spacing_sm"/>
+                </LinearLayout>
+
+                <!-- Drone Statistics Grid -->
+                <androidx.gridlayout.widget.GridLayout
                     android:id="@+id/drone_stats_grid"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:columnCount="3"
-                    android:useDefaultMargins="true"
-                    android:alignmentMode="alignBounds"
-                    android:layout_marginTop="8dp"
-                    android:gravity="center"/>
+                    app:columnCount="3"
+                    app:useDefaultMargins="true"
+                    android:layout_marginBottom="@dimen/spacing_md"/>
 
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recent_drones_list"
+                <!-- Recent Drones List with Custom Background -->
+                <FrameLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    android:nestedScrollingEnabled="false"
-                    android:scrollbars="none"
-                    android:gravity="start"/>
+                    android:background="@android:drawable/list_selector_background"
+                    android:padding="1dp">
 
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recent_drones_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="@color/list_background"
+                        android:nestedScrollingEnabled="false"
+                        android:padding="@dimen/spacing_xs"
+                        android:clipToPadding="false"/>
+                </FrameLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/view_all_drones"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="@dimen/spacing_sm"
+                    android:text="VIEW ALL DRONES"
+                    android:textSize="12sp"
+                    app:cornerRadius="16dp"
+                    style="@style/Widget.MaterialComponents.Button.TextButton"
+                    app:icon="@android:drawable/ic_menu_more"
+                    app:iconGravity="end"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -91,56 +165,125 @@
             android:id="@+id/sdr_card"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="@dimen/spacing_md"
+            app:cardCornerRadius="@dimen/card_corner_radius"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/surface_dark"
+            app:strokeColor="@color/card_stroke"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/spacing_md">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="@string/sdr_status"
-                    android:textAppearance="?attr/textAppearanceHeadline6"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="@dimen/spacing_md">
 
-                <GridLayout
-                    android:layout_gravity="center"
-                    android:id="@+id/sdr_stats_grid"
-                    android:layout_width="wrap_content"
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/ic_menu_send"
+                        app:tint="@color/accent" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="@string/sdr_status"
+                        android:textAppearance="@style/TextAppearance.DragonSync.CardTitle"
+                        android:layout_marginStart="@dimen/spacing_sm"/>
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/sdr_status_chip"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:text="ACTIVE"
+                        android:textSize="10sp"
+                        app:chipBackgroundColor="@color/status_green_10"
+                        app:chipStrokeColor="@color/status_green"
+                        app:chipStrokeWidth="1dp"
+                        android:textColor="@color/status_green"
+                        app:chipStartPadding="8dp"
+                        app:chipEndPadding="8dp"/>
+                </LinearLayout>
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:columnCount="2"
-                    android:layout_marginTop="8dp"/>
+                    android:scrollbars="none"
+                    android:overScrollMode="never">
 
+                    <androidx.gridlayout.widget.GridLayout
+                        android:id="@+id/sdr_stats_grid"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center"/>
+                </HorizontalScrollView>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
         <!-- Warnings Card -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/warnings_card"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            app:cardCornerRadius="@dimen/card_corner_radius"
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/surface_dark"
+            app:strokeColor="@color/card_stroke"
+            app:strokeWidth="1dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/spacing_md">
 
-                <TextView
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Warnings"
-                    android:textAppearance="?attr/textAppearanceHeadline6"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="@dimen/spacing_md">
+
+                    <ImageView
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:src="@android:drawable/ic_dialog_alert"
+                        app:tint="@color/accent" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Warnings"
+                        android:textAppearance="@style/TextAppearance.DragonSync.CardTitle"
+                        android:layout_marginStart="@dimen/spacing_sm"/>
+                </LinearLayout>
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/warnings_list"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"/>
+                    android:nestedScrollingEnabled="false"
+                    android:background="@android:drawable/list_selector_background"/>
 
+                <TextView
+                    android:id="@+id/no_warnings_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No active warnings"
+                    android:gravity="center"
+                    android:padding="@dimen/spacing_md"
+                    android:textColor="@color/on_surface_medium"
+                    android:textStyle="italic"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
-
     </LinearLayout>
 </androidx.core.widget.NestedScrollView>

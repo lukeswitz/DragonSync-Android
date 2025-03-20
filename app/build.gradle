@@ -58,6 +58,7 @@ dependencies {
     implementation libs.support.annotations
     implementation libs.play.services.maps
     implementation libs.play.services.location
+    implementation libs.androidx.gridlayout
 
     testImplementation libs.junit
     androidTestImplementation libs.androidx.junit

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Spacing system -->
+    <dimen name="spacing_xs">4dp</dimen>
+    <dimen name="spacing_sm">8dp</dimen>
+    <dimen name="spacing_md">16dp</dimen>
+    <dimen name="spacing_lg">24dp</dimen>
+    <dimen name="spacing_xl">32dp</dimen>
+    <dimen name="spacing_xxl">48dp</dimen>
+
+    <!-- Card dimensions -->
+    <dimen name="card_corner_radius">12dp</dimen>
+    <dimen name="card_corner_radius_small">8dp</dimen>
+    <dimen name="card_elevation">4dp</dimen>
+    <dimen name="card_elevation_high">8dp</dimen>
+    <dimen name="card_stroke_width">1dp</dimen>
+
+    <!-- Button dimensions -->
+    <dimen name="button_corner_radius">8dp</dimen>
+    <dimen name="button_height">48dp</dimen>
+    <dimen name="button_height_small">36dp</dimen>
+    <dimen name="button_padding_vertical">12dp</dimen>
+
+    <!-- Text sizes -->
+    <dimen name="text_size_title">18sp</dimen>
+    <dimen name="text_size_subtitle">16sp</dimen>
+    <dimen name="text_size_body">14sp</dimen>
+    <dimen name="text_size_caption">12sp</dimen>
+    <dimen name="text_size_micro">10sp</dimen>
+    <dimen name="percent_label_width">48dp</dimen>
+
+    <!-- Component specific -->
+    <dimen name="fab_size_mini">40dp</dimen>
+    <dimen name="gauge_size">100dp</dimen>
+    <dimen name="icon_size_small">16dp</dimen>
+    <dimen name="icon_size">24dp</dimen>
+    <dimen name="map_height">200dp</dimen>
+    <dimen name="tab_height">48dp</dimen>
+    <dimen name="progress_height">4dp</dimen>
+    <dimen name="progress_corner_radius">2dp</dimen>
+</resources>

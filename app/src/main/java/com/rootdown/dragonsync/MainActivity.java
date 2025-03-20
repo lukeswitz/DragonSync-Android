@@ -4,7 +4,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.os.Build;
 import android.os.Bundle;
 import android.Manifest;
@@ -19,6 +21,7 @@ import android.widget.FrameLayout;
 import android.widget.Toast;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.button.MaterialButton;
 import com.rootdown.dragonsync.models.CoTMessage;
 import com.rootdown.dragonsync.models.StatusMessage;
 import com.rootdown.dragonsync.ui.fragments.DashboardFragment;
@@ -27,7 +30,11 @@ import com.rootdown.dragonsync.ui.fragments.HistoryFragment;
 import com.rootdown.dragonsync.ui.fragments.SettingsFragment;
 import com.rootdown.dragonsync.ui.fragments.StatusFragment;
 
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
+
+import com.rootdown.dragonsync.utils.Constants;
+import com.rootdown.dragonsync.utils.Settings;
 import com.rootdown.dragonsync.viewmodels.CoTViewModel;
 import com.rootdown.dragonsync.viewmodels.StatusViewModel;
 
@@ -36,7 +43,10 @@ public class MainActivity extends FragmentActivity {
     private StatusViewModel statusViewModel;
     private FrameLayout fragmentContainer;
     private BottomNavigationView bottomNav;
+    private MaterialButton connectionIndicator;
     private static final int REQUEST_PERMISSIONS_CODE = 1001;
+    private SharedPreferences.OnSharedPreferenceChangeListener preferenceChangeListener;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +61,54 @@ public class MainActivity extends FragmentActivity {
 
         // Request permissions needed for onboard detection
         checkAndRequestPermissions();
+
+        setupConnectionIndicator();
+    }
+
+
+    private void setupConnectionIndicator() {
+        // Initialize views
+        connectionIndicator = findViewById(R.id.connection_indicator);
+
+        // Initialize settings
+        Settings settings = Settings.getInstance(this);
+
+        // Initial state update
+        updateConnectionIndicator(settings.isListening());
+
+        // Setup a more robust preference change listener
+        preferenceChangeListener = (sharedPreferences, key) -> {
+            if (Constants.KEY_IS_LISTENING.equals(key)) {
+                boolean isListening = sharedPreferences.getBoolean(key, false);
+                runOnUiThread(() -> {
+                    updateConnectionIndicator(isListening);
+                });
+            }
+        };
+
+        // Register the listener
+        settings.registerPreferenceChangeListener(preferenceChangeListener);
+
+        // Make the button clickable to open settings
+        connectionIndicator.setOnClickListener(v -> {
+            bottomNav.setSelectedItemId(R.id.nav_settings);
+        });
+    }
+
+    private void updateConnectionIndicator(boolean isConnected) {
+        if (connectionIndicator == null) return;
+
+        int colorResId = isConnected ? R.color.status_green : R.color.status_red;
+        int color = getResources().getColor(colorResId, null);
+
+        connectionIndicator.setText(isConnected ?
+                getString(R.string.status_connected) :
+                getString(R.string.status_disconnected));
+
+        ColorStateList colorStateList = ColorStateList.valueOf(color);
+        connectionIndicator.setTextColor(color);
+        connectionIndicator.setStrokeColor(colorStateList);
+        connectionIndicator.setIconTint(colorStateList);
     }
 
     private void checkAndRequestPermissions() {
@@ -182,5 +240,13 @@ public class MainActivity extends FragmentActivity {
             return true;
         }
         return false;
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (preferenceChangeListener != null) {
+            Settings.getInstance(this).unregisterPreferenceChangeListener(preferenceChangeListener);
+        }
     }
 }

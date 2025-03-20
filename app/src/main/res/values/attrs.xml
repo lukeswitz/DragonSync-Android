@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="CircularGaugeView">
+        <attr name="gaugeTitle" format="string"/>
+        <attr name="gaugeValue" format="float"/>
+        <attr name="gaugeUnit" format="string"/>
+        <attr name="gaugeColor" format="color"/>
+    </declare-styleable>
+</resources>

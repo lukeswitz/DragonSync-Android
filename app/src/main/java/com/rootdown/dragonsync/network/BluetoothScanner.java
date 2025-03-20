@@ -175,9 +175,7 @@ public class BluetoothScanner {
         int rssi = result.getRssi();
 
         // Log basic information
-        Log.d(TAG, "Bluetooth device found: " + deviceAddress + ", RSSI: " + rssi);
-
-        // Try different methods to extract OpenDroneID data
+//        Log.d(TAG, "Bluetooth device found: " + deviceAddress + ", RSSI: " + rssi);
 
         // Check manufacturer specific data for OpenDroneID
         byte[] openDroneIdData = scanRecord.getManufacturerSpecificData(OPENDRONEID_MFG_ID);

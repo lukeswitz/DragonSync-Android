@@ -154,9 +154,19 @@ public class Settings {
         return prefs.getBoolean(Constants.KEY_IS_LISTENING, false);
     }
 
+
+
     public void setListening(boolean listening) {
         editor.putBoolean(Constants.KEY_IS_LISTENING, listening).apply();
     }
+    public void registerPreferenceChangeListener(SharedPreferences.OnSharedPreferenceChangeListener listener) {
+        prefs.registerOnSharedPreferenceChangeListener(listener);
+    }
+
+    public void unregisterPreferenceChangeListener(SharedPreferences.OnSharedPreferenceChangeListener listener) {
+        prefs.unregisterOnSharedPreferenceChangeListener(listener);
+    }
+
 
     // Warning Thresholds
     public double getCpuWarningThreshold() {

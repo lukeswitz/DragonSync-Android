@@ -1,6 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     // Main app colors
+    <!-- Primary brand colors -->
+    <color name="primary">#3F51B5</color>
+    <color name="primary_dark">#303F9F</color>
+    <color name="primary_light">#C5CAE9</color>
+    <color name="accent">#00BCD4</color>
+
+    <!-- Status colors -->
+    <color name="status_green">#4CAF50</color>
+    <color name="status_yellow">#FFC107</color>
+    <color name="status_red">#F44336</color>
+    <color name="warning_amber">#FFA000</color>
+    <color name="connection_status_color">@color/status_red</color>
+
+    <!-- Status colors with transparency -->
+    <color name="status_green_10">#1A4CAF50</color>
+    <color name="status_yellow_10">#1AFFC107</color>
+    <color name="status_red_10">#1AF44336</color>
+
+    <!-- UI elements -->
+    <color name="background_dark">#121212</color>
+    <color name="surface_dark">#1E1E1E</color>
+    <color name="surface_dark_elevated">#252525</color>
+    <color name="on_surface_high">#DEFFFFFF</color>
+    <color name="on_surface_medium">#99FFFFFF</color>
+    <color name="divider">#1FFFFFFF</color>
+
+    <!-- App-specific colors -->
+    <color name="card_stroke">#333333</color>
+    <color name="card_stroke_light">#444444</color>
+    <color name="list_background">#1A1A1A</color>
+    <color name="data_text">#C3E0E4</color>
+    <color name="progress_track">#1FFFFFFF</color>
+    <color name="button_stroke">#4DFFFFFF</color>
+    <color name="ripple_color">#33FFFFFF</color>
+
+
     <color name="purple_200">#FFBB86FC</color>
     <color name="light_green">#00FF00</color>
     <color name="purple_500">#FF6200EE</color>
@@ -12,7 +48,7 @@
     <color name="red">#F44336</color>
     <color name="orange">#FF9800</color>
     <color name="green">#4CAF50</color>
-    <color name="status_green">#4CAF50</color>
+
 
     <color name="selected_item_dark_mode">#2196F3</color>  <!-- Bright blue -->
 <!--    <color name="selected_item_dark_mode">#00BCD4</color>  &lt;!&ndash; Vibrant teal &ndash;&gt;-->
@@ -25,5 +61,6 @@
     <color name="bottom_nav_text_default">#8E8E8E</color>
     <color name="bottom_nav_icon_selected">#FF3700B3</color>
     <color name="bottom_nav_icon_default">#8E8E8E</color>
+
 
 </resources>

@@ -724,7 +724,7 @@ public class DroneDetailFragment extends Fragment implements OnMapReadyCallback 
             if (hasAdditionalPoints) {
                 // Fit all of them
                 LatLngBounds bounds = boundsBuilder.build();
-                googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 30));
+                googleMap.animateCamera(CameraUpdateFactory.newLatLngBounds(bounds, 20));
             } else {
                 // If we only have the drone position, use a fixed zoom level
                 googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(position, 15f));

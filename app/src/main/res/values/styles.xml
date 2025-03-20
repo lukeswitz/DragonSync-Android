@@ -1,9 +1,99 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="BottomNavigationViewTextStyle" parent="TextAppearance.MaterialComponents.Caption">
-        <item name="android:textSize">13sp</item>
-        <item name="android:typeface">monospace</item>
-        <item name="android:textAllCaps">true</item>
-        <item name="android:textStyle">bold</item>
+    <!-- Card styles -->
+    <style name="CardStyle.DragonSync" parent="Widget.MaterialComponents.CardView">
+        <item name="cardCornerRadius">@dimen/card_corner_radius</item>
+        <item name="cardElevation">@dimen/card_elevation</item>
+        <item name="cardBackgroundColor">@color/surface_dark</item>
+        <item name="strokeColor">@color/card_stroke</item>
+        <item name="strokeWidth">@dimen/card_stroke_width</item>
+    </style>
+
+    <style name="CardStyle.DragonSync.Elevated">
+        <item name="cardBackgroundColor">@color/surface_dark_elevated</item>
+        <item name="cardElevation">@dimen/card_elevation_high</item>
+    </style>
+
+    <!-- Text styles -->
+    <style name="TextAppearance.DragonSync.CardTitle" parent="TextAppearance.MaterialComponents.Headline6">
+        <item name="android:textColor">@color/on_surface_high</item>
+        <item name="android:textSize">@dimen/text_size_title</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="TextAppearance.DragonSync.ListItemTitle" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:textColor">@color/on_surface_high</item>
+        <item name="android:textSize">@dimen/text_size_subtitle</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="TextAppearance.DragonSync.ListItemSubtitle" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textColor">@color/on_surface_medium</item>
+        <item name="android:textSize">@dimen/text_size_caption</item>
+    </style>
+
+    <style name="TextAppearance.DragonSync.Mono" parent="TextAppearance.MaterialComponents.Body2">
+        <item name="android:textColor">@color/data_text</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textSize">@dimen/text_size_body</item>
+    </style>
+
+    <style name="TextAppearance.DragonSync.Tab" parent="TextAppearance.Design.Tab">
+        <item name="android:textSize">@dimen/text_size_caption</item>
+        <item name="textAllCaps">true</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="TextAppearance.DragonSync.BottomNav.Active" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">@dimen/text_size_micro</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="TextAppearance.DragonSync.BottomNav.Inactive" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">@dimen/text_size_micro</item>
+    </style>
+
+    <!-- Button styles -->
+    <style name="Button.DragonSync.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="cornerRadius">@dimen/button_corner_radius</item>
+        <item name="strokeColor">@color/button_stroke</item>
+        <item name="android:textSize">@dimen/text_size_caption</item>
+    </style>
+
+    <style name="Button.DragonSync.Outlined.Accent">
+        <item name="strokeColor">@color/accent</item>
+        <item name="android:textColor">@color/accent</item>
+        <item name="iconTint">@color/accent</item>
+    </style>
+
+    <!-- Progress indicators -->
+    <style name="ProgressIndicator.DragonSync.Linear" parent="Widget.MaterialComponents.LinearProgressIndicator">
+        <item name="trackCornerRadius">@dimen/progress_corner_radius</item>
+        <item name="trackThickness">@dimen/progress_height</item>
+        <item name="trackColor">@color/progress_track</item>
+    </style>
+
+    <!-- Chip styles -->
+    <style name="Chip.DragonSync.Status" parent="Widget.MaterialComponents.Chip.Action">
+        <item name="android:textSize">@dimen/text_size_micro</item>
+        <item name="chipStrokeWidth">@dimen/card_stroke_width</item>
+    </style>
+
+    <style name="Chip.DragonSync.Status.Green">
+        <item name="chipBackgroundColor">@color/status_green_10</item>
+        <item name="chipStrokeColor">@color/status_green</item>
+        <item name="android:textColor">@color/status_green</item>
+    </style>
+
+    <style name="Chip.DragonSync.Status.Yellow">
+        <item name="chipBackgroundColor">@color/status_yellow_10</item>
+        <item name="chipStrokeColor">@color/status_yellow</item>
+        <item name="android:textColor">@color/status_yellow</item>
+    </style>
+
+    <style name="Chip.DragonSync.Status.Red">
+        <item name="chipBackgroundColor">@color/status_red_10</item>
+        <item name="chipStrokeColor">@color/status_red</item>
+        <item name="android:textColor">@color/status_red</item>
     </style>
 </resources>
