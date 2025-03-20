@@ -170,32 +170,27 @@ public class Settings {
 
     // Warning Thresholds
     public double getCpuWarningThreshold() {
-        return prefs.getFloat("cpu_warning_threshold",
-                (float)Constants.DEFAULT_CPU_WARNING_THRESHOLD);
+        return prefs.getFloat("cpu_warning_threshold", 80.0f);
     }
 
     public double getTempWarningThreshold() {
-        return prefs.getFloat("temp_warning_threshold",
-                (float)Constants.DEFAULT_TEMP_WARNING_THRESHOLD);
+        return prefs.getFloat("temp_warning_threshold", 70.0f);
     }
 
     public double getMemoryWarningThreshold() {
-        return prefs.getFloat("memory_warning_threshold",
-                (float)Constants.DEFAULT_MEMORY_WARNING_THRESHOLD);
+        return prefs.getFloat("memory_warning_threshold", 0.85f);
     }
 
     public double getPlutoTempThreshold() {
-        return prefs.getFloat("pluto_temp_threshold",
-                (float)Constants.DEFAULT_PLUTO_TEMP_THRESHOLD);
+        return prefs.getFloat("pluto_temp_threshold", 85.0f);
     }
 
     public double getZynqTempThreshold() {
-        return prefs.getFloat("zynq_temp_threshold",
-                (float)Constants.DEFAULT_ZYNQ_TEMP_THRESHOLD);
+        return prefs.getFloat("zynq_temp_threshold", 85.0f);
     }
 
     public int getProximityThreshold() {
-        return prefs.getInt("proximity_threshold", Constants.DEFAULT_PROXIMITY_THRESHOLD);
+        return prefs.getInt("proximity_threshold", -60);
     }
 
     public void setWarningThresholds(double cpu, double temp, double memory,

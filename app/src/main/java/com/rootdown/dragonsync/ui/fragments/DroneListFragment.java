@@ -1,7 +1,5 @@
 package com.rootdown.dragonsync.ui.fragments;
 
-import static android.content.ContentValues.TAG;
-
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -15,8 +13,6 @@ import com.rootdown.dragonsync.R;
 import com.rootdown.dragonsync.ui.adapters.DroneListAdapter;
 import com.rootdown.dragonsync.viewmodels.CoTViewModel;
 import com.rootdown.dragonsync.models.CoTMessage;
-
-import java.util.List;
 
 public class DroneListFragment extends Fragment implements DroneListAdapter.OnDroneClickListener {
     private CoTViewModel viewModel;
@@ -32,39 +28,8 @@ public class DroneListFragment extends Fragment implements DroneListAdapter.OnDr
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_drone_list, container, false);
-
-        // Find views with null checking
-        recyclerView = view.findViewById(R.id.drone_list);
-        if (recyclerView == null) {
-            Log.e(TAG, "RecyclerView with ID drone_list not found in layout");
-            return view;
-        }
-
-        // Set up recyclerview
-        recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
-
-        // Initialize adapter with proper context
-        adapter = new DroneListAdapter(requireContext(), this);
-        recyclerView.setAdapter(adapter);
-
-        // Set up empty state view
-        emptyStateView = view.findViewById(R.id.empty_state);
-
-        // Observe viewmodel data
-        viewModel.getParsedMessages().observe(getViewLifecycleOwner(), this::updateDroneList);
-
+        setupRecyclerView(view);
         return view;
-    }
-
-    private void updateDroneList(List<CoTMessage> messages) {
-        if (adapter == null) return;
-
-        adapter.updateMessages(messages);
-
-        // Show/hide empty state
-        if (emptyStateView != null) {
-            emptyStateView.setVisibility(messages.isEmpty() ? View.VISIBLE : View.GONE);
-        }
     }
 
     private void setupRecyclerView(View view) {

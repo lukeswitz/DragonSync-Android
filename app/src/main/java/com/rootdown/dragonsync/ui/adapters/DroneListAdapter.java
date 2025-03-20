@@ -1,6 +1,6 @@
 package com.rootdown.dragonsync.ui.adapters;
 
-import android.graphics.Color;
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -23,6 +23,7 @@ import java.util.Locale;
 public class DroneListAdapter extends RecyclerView.Adapter<DroneListAdapter.ViewHolder> {
     private List<CoTMessage> messages = new ArrayList<>();
     private OnDroneClickListener listener;
+    private Context context;
 
     public interface OnDroneClickListener {
         void onDroneClick(CoTMessage message);
@@ -36,7 +37,9 @@ public class DroneListAdapter extends RecyclerView.Adapter<DroneListAdapter.View
         public TextView description;
         public TextView rssi;
         public TextView timestamp;
-        public TextView details;
+        public TextView altitude;
+        public TextView speed;
+        public Button detailsButton;
         public Button liveMapButton;
 
         public ViewHolder(View view) {
@@ -47,8 +50,10 @@ public class DroneListAdapter extends RecyclerView.Adapter<DroneListAdapter.View
             description = view.findViewById(R.id.description);
             rssi = view.findViewById(R.id.rssi);
             timestamp = view.findViewById(R.id.timestamp);
-            details = view.findViewById(R.id.details);
-            liveMapButton = view.findViewById(R.id.live_map_button);  // TODO livemap---
+            altitude = view.findViewById(R.id.altitude);
+            speed = view.findViewById(R.id.speed);
+            detailsButton = view.findViewById(R.id.details_button);
+            liveMapButton = view.findViewById(R.id.live_map_button);
         }
     }
 
@@ -56,9 +61,19 @@ public class DroneListAdapter extends RecyclerView.Adapter<DroneListAdapter.View
         this.listener = listener;
     }
 
+    public DroneListAdapter(Context context, OnDroneClickListener listener) {
+        this.context = context;
+        this.listener = listener;
+    }
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        // Make sure context is set if it wasn't in constructor
+        if (context == null) {
+            context = parent.getContext();
+        }
+
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_drone, parent, false);
         return new ViewHolder(view);
@@ -188,6 +203,14 @@ public class DroneListAdapter extends RecyclerView.Adapter<DroneListAdapter.View
             }
         });
 
+        if (holder.detailsButton != null) {
+            holder.detailsButton.setOnClickListener(v -> {
+                if (listener != null) {
+                    listener.onDroneClick(message);
+                }
+            });
+        }
+
         holder.liveMapButton.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onLiveMapClick(message);
@@ -201,7 +224,7 @@ public class DroneListAdapter extends RecyclerView.Adapter<DroneListAdapter.View
     }
 
     public void updateMessages(List<CoTMessage> newMessages) {
-        messages = newMessages;
+        this.messages = newMessages;
         notifyDataSetChanged();
     }
 }

@@ -25,6 +25,7 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import com.rootdown.dragonsync.R;
 import com.rootdown.dragonsync.models.StatusMessage;
 import com.rootdown.dragonsync.ui.views.CircularGaugeView;
+import com.rootdown.dragonsync.utils.Settings;
 import com.rootdown.dragonsync.viewmodels.ServiceViewModel;
 import com.rootdown.dragonsync.viewmodels.StatusViewModel;
 import com.rootdown.dragonsync.utils.Constants;
@@ -34,7 +35,7 @@ import java.util.Locale;
 public class StatusFragment extends Fragment implements OnMapReadyCallback {
     private StatusViewModel statusViewModel;
     private ServiceViewModel serviceViewModel;
-
+    private Settings settings;
     private TextView serverNameText;
     private TextView uptimeText;
     private TextView cpuValueText;
@@ -63,6 +64,7 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
         super.onCreate(savedInstanceState);
         statusViewModel = new ViewModelProvider(requireActivity()).get(StatusViewModel.class);
         serviceViewModel = new ViewModelProvider(requireActivity()).get(ServiceViewModel.class);
+        settings = Settings.getInstance(requireContext());
     }
 
     @Override
@@ -215,9 +217,9 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
         cpuProgress.setProgress((int)cpuUsage);
 
         int cpuColor;
-        if (cpuUsage > Constants.DEFAULT_CPU_WARNING_THRESHOLD) {
+        if (cpuUsage > settings.getCpuWarningThreshold()) {
             cpuColor = getResources().getColor(R.color.red, null);
-        } else if (cpuUsage > Constants.DEFAULT_CPU_WARNING_THRESHOLD * 0.8) {
+        } else if (cpuUsage > settings.getCpuWarningThreshold() * 0.8) {
             cpuColor = getResources().getColor(R.color.orange, null);
         } else {
             cpuColor = getResources().getColor(R.color.green, null);
@@ -227,7 +229,6 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void updateTemperature(double temp) {
-
         if (tempValueText == null || tempProgress == null) {
             Log.e(TAG, "Temperature views not initialized");
             return;
@@ -237,9 +238,9 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
         tempProgress.setProgress((int)temp);
 
         int tempColor;
-        if (temp > Constants.DEFAULT_TEMP_WARNING_THRESHOLD) {
+        if (temp > settings.getTempWarningThreshold()) {
             tempColor = getResources().getColor(R.color.red, null);
-        } else if (temp > Constants.DEFAULT_TEMP_WARNING_THRESHOLD * 0.8) {
+        } else if (temp > settings.getTempWarningThreshold() * 0.8) {
             tempColor = getResources().getColor(R.color.orange, null);
         } else {
             tempColor = getResources().getColor(R.color.green, null);
@@ -262,9 +263,9 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
                 memoryProgress.setProgress(memPercent);
 
                 int memColor;
-                if (memPercent > Constants.DEFAULT_MEMORY_WARNING_THRESHOLD * 100) {
+                if (memPercent > settings.getMemoryWarningThreshold() * 100) {
                     memColor = getResources().getColor(R.color.red, null);
-                } else if (memPercent > Constants.DEFAULT_MEMORY_WARNING_THRESHOLD * 0.8 * 100) {
+                } else if (memPercent > settings.getMemoryWarningThreshold() * 0.8 * 100) {
                     memColor = getResources().getColor(R.color.orange, null);
                 } else {
                     memColor = getResources().getColor(R.color.green, null);
@@ -275,7 +276,6 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
     }
 
     private void updateSdrStats(StatusMessage.ANTStats antStats) {
-
         if (plutoTempValueText == null || zynqTempValueText == null) {
             Log.e(TAG, "SDR Temperature views not initialized");
             return;
@@ -291,9 +291,9 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
         zynqTempProgress.setProgress((int)zynqTemp);
 
         int plutoColor;
-        if (plutoTemp > Constants.DEFAULT_PLUTO_TEMP_THRESHOLD) {
+        if (plutoTemp > settings.getPlutoTempThreshold()) {
             plutoColor = getResources().getColor(R.color.red, null);
-        } else if (plutoTemp > Constants.DEFAULT_PLUTO_TEMP_THRESHOLD * 0.8) {
+        } else if (plutoTemp > settings.getPlutoTempThreshold() * 0.8) {
             plutoColor = getResources().getColor(R.color.orange, null);
         } else {
             plutoColor = getResources().getColor(R.color.green, null);
@@ -302,9 +302,9 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
         plutoTempValueText.setTextColor(plutoColor);
 
         int zynqColor;
-        if (zynqTemp > Constants.DEFAULT_ZYNQ_TEMP_THRESHOLD) {
+        if (zynqTemp > settings.getZynqTempThreshold()) {
             zynqColor = getResources().getColor(R.color.red, null);
-        } else if (zynqTemp > Constants.DEFAULT_ZYNQ_TEMP_THRESHOLD * 0.8) {
+        } else if (zynqTemp > settings.getZynqTempThreshold() * 0.8) {
             zynqColor = getResources().getColor(R.color.orange, null);
         } else {
             zynqColor = getResources().getColor(R.color.green, null);
