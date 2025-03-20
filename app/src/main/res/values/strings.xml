@@ -17,6 +17,21 @@
     <string name="preferences">PREFERENCES</string>
     <string name="warning_thresholds">WARNING THRESHOLDS</string>
 
+    <string name="server_name_placeholder">System Name</string>
+    <string name="uptime_placeholder">00:00:00</string>
+    <string name="cpu_placeholder">0.0%</string>
+    <string name="memory_placeholder">0.0/0.0 GB</string>
+    <string name="disk_placeholder">0.0/0.0 GB</string>
+    <string name="temp_placeholder">0.0°C</string>
+    <string name="sdr_temp_placeholder">0.0°C</string>
+    <string name="coordinates_placeholder">0.000000°, 0.000000°</string>
+    <string name="format_memory_usage">%1$.1f/%2$.1f GB</string>
+    <string name="format_memory_percent">%1$d%%</string>
+    <string name="format_disk_usage">%1$.1f/%2$.1f GB</string>
+    <string name="format_disk_percent">%1$d%%</string>
+    <string name="sdr_status_active">STATUS\nACTIVE</string>
+    <string name="sdr_status_inactive">STATUS\nINACTIVE</string>
+
     <!-- Default values for previews -->
     <string name="default_coordinates">0.000000°, 0.000000°</string>
     <string name="default_altitude">ALT 0.0m</string>
@@ -51,13 +66,24 @@
     <integer name="default_disk_progress">29</integer>
     <dimen name="label_width">60dp</dimen>
 
+    <!-- Map Markers -->
+    <string name="marker_home">Home</string>
+    <string name="marker_operator">Operator</string>
+    <string name="marker_user">Your Location</string>
+    <string name="format_distance">Distance: %.1fm</string>
+
     <!-- Status Labels -->
     <string name="status_online">ONLINE</string>
     <string name="status_active">ACTIVE</string>
     <string name="status_inactive">INACTIVE</string>
     <string name="status_connected">CONNECTED</string>
-    <string name="connection_error">CONNECTION ERROR</string>
     <string name="status_disconnected">DISCONNECTED</string>
+    <string name="format_uptime">%1$02d:%2$02d:%3$02d</string>
+    <string name="spoofed_drone_prefix">⚠️ %1$s</string>
+    <string name="format_drone_id_bt">%1$s [BT]</string>
+    <string name="format_drone_id_wifi">%1$s [WiFi]</string>
+    <string name="format_drone_id_sdr">%1$s [SDR]</string>
+    <string name="connection_error">CONNECTION ERROR</string>
     <string name="status_error">ERROR</string>
     <string name="no_warnings">No active warnings</string>
 
@@ -78,6 +104,51 @@
     <string name="altitude">ALTITUDE</string>
     <string name="speed">SPEED</string>
 
+    <!-- Dashboard Strings -->
+    <string name="drone_count_tracked">%1$d</string>
+    <string name="drone_count_spoofed">%1$d</string>
+    <string name="drone_count_nearby">%1$d</string>
+    <string name="drone_label_tracked">TRACKED</string>
+    <string name="drone_label_spoofed">SPOOFED</string>
+    <string name="drone_label_nearby">NEARBY</string>
+    <string name="no_drones_message">No drones detected</string>
+    <string name="no_warnings_message">No active warnings</string>
+
+    <!-- Drone Details -->
+    <string name="timestamp_format_pattern">yyyy-MM-dd HH:mm:ss</string>
+    <string name="timestamp_unknown">Unknown</string>
+    <string name="rssi_unknown">Unknown signal strength</string>
+
+    <!-- Position Information -->
+    <string name="position_heading">Position Information</string>
+    <string name="no_position_available">Position unknown</string>
+    <string name="format_altitude_detail">Altitude: %.1f m MSL</string>
+    <string name="format_height_detail">Height: %.1f m AGL</string>
+    <string name="format_speed_detail">Speed: %.1f m/s</string>
+    <string name="format_direction">Direction: %.1f°</string>
+
+    <!-- Warning Messages -->
+    <string name="mac_randomization_title">MAC Address Randomization Detected</string>
+    <string name="mac_randomization_info">This drone has used multiple MAC addresses, which may indicate privacy features or possible spoofing:</string>
+    <string name="spoofing_warning_title">Potential Spoofing Detected</string>
+    <string name="spoofing_default_reason">Unusual movement pattern or unrealistic speed detected.</string>
+    <string name="spoofing_multiple_mac">Multiple MAC addresses observed (%1$d).</string>
+
+    <!-- Signal Sources -->
+    <string name="signal_sources_title">Signal Sources</string>
+    <string name="no_signal_sources">No signal source information available</string>
+    <string name="signal_source_bluetooth">BLUETOOTH</string>
+    <string name="signal_source_wifi">WIFI</string>
+    <string name="signal_source_sdr">SDR</string>
+    <string name="signal_source_unknown">UNKNOWN</string>
+    <string name="signal_source_format">%1$s %2$s: %3$s (%4$d dBm)</string>
+    <string name="signal_source_timestamp">at %1$s</string>
+
+    <!-- System metrics formatting -->
+    <string name="format_cpu">%.1f</string>
+    <string name="format_memory">%.1f</string>
+    <string name="format_temp">%.1f</string>
+
     <!-- Settings -->
     <string name="enable_notifications">Enable Notifications</string>
     <string name="spoof_detection">Spoof Detection</string>
@@ -96,4 +167,27 @@
     <string name="percentage_format">%1$d%%</string>
     <string name="rssi_format">%1$d dBm</string>
     <string name="uptime_format">%1$02d:%2$02d:%3$02d</string>
+
+    <!-- Drone List Item Placeholders -->
+    <string name="drone_id_placeholder">Drone ID</string>
+    <string name="drone_description_placeholder">Drone Model</string>
+    <string name="rssi_placeholder">-- dBm</string>
+    <string name="timestamp_placeholder">--:--:--</string>
+    <string name="position_placeholder">--°, --°</string>
+    <string name="altitude_placeholder">-- m</string>
+    <string name="speed_placeholder">-- m/s</string>
+
+    <!-- Drone List Item Labels -->
+    <string name="position_label">POSITION</string>
+    <string name="altitude_label">ALTITUDE</string>
+    <string name="speed_label">SPEED</string>
+    <string name="details_button">DETAILS</string>
+    <string name="live_map_button">LIVE MAP</string>
+
+    <!-- Format strings -->
+    <string name="format_coordinates">%1$.6f°, %2$.6f°</string>
+    <string name="format_altitude">%1$.1f m</string>
+    <string name="format_speed">%1$.1f m/s</string>
+    <string name="format_rssi">%1$d dBm</string>
+    <string name="format_timestamp">%1$02d:%2$02d:%3$02d</string>
 </resources>

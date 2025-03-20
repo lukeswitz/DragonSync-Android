@@ -226,54 +226,56 @@ public class DashboardFragment extends Fragment {
         if (status == null || status.getSystemStats() == null) return;
 
         // Update CPU gauge
-        updateGauge(systemMetricsGrid, 0, status.getSystemStats().getCpuUsage(), getColorForValue(
+        updateGauge(systemMetricsGrid, 0, status.getSystemStats().getCpuUsage(), getColorForMetric(
                 status.getSystemStats().getCpuUsage(),
-                Constants.DEFAULT_CPU_WARNING_THRESHOLD * 0.8,
-                Constants.DEFAULT_CPU_WARNING_THRESHOLD
+                Constants.CPU_WARNING_THRESHOLD,
+                Constants.CPU_CRITICAL_THRESHOLD
         ));
 
         // Update Memory gauge
         if (status.getSystemStats().getMemory() != null) {
-            double memPercent = ((double)status.getSystemStats().getMemory().getUsed() / status.getSystemStats().getMemory().getTotal()) * 100.0;
-            updateGauge(systemMetricsGrid, 1, memPercent, getColorForValue(
+            double memPercent = ((double)status.getSystemStats().getMemory().getUsed() /
+                    status.getSystemStats().getMemory().getTotal()) * 100.0;
+            updateGauge(systemMetricsGrid, 1, memPercent, getColorForMetric(
                     memPercent,
-                    Constants.DEFAULT_MEMORY_WARNING_THRESHOLD * 0.8 * 100,
-                    Constants.DEFAULT_MEMORY_WARNING_THRESHOLD * 100
+                    Constants.MEMORY_WARNING_THRESHOLD * 100,
+                    Constants.MEMORY_CRITICAL_THRESHOLD * 100
             ));
         }
 
         // Update Temperature gauge
-        updateGauge(systemMetricsGrid, 2, status.getSystemStats().getTemperature(), getColorForValue(
+        updateGauge(systemMetricsGrid, 2, status.getSystemStats().getTemperature(), getColorForMetric(
                 status.getSystemStats().getTemperature(),
-                Constants.DEFAULT_TEMP_WARNING_THRESHOLD * 0.8,
-                Constants.DEFAULT_TEMP_WARNING_THRESHOLD
+                Constants.TEMP_WARNING_THRESHOLD,
+                Constants.TEMP_CRITICAL_THRESHOLD
         ));
 
+        // Update SDR stats if available
         if (status.getAntStats() != null) {
-            updateGauge(sdrStatsGrid, 0, status.getAntStats().getPlutoTemp(), getColorForValue(
+            updateGauge(sdrStatsGrid, 0, status.getAntStats().getPlutoTemp(), getColorForMetric(
                     status.getAntStats().getPlutoTemp(),
-                    Constants.DEFAULT_PLUTO_TEMP_THRESHOLD * 0.8,
-                    Constants.DEFAULT_PLUTO_TEMP_THRESHOLD
+                    Constants.PLUTO_TEMP_WARNING_THRESHOLD,
+                    Constants.PLUTO_TEMP_CRITICAL_THRESHOLD
             ));
 
-            updateGauge(sdrStatsGrid, 1, status.getAntStats().getZynqTemp(), getColorForValue(
+            updateGauge(sdrStatsGrid, 1, status.getAntStats().getZynqTemp(), getColorForMetric(
                     status.getAntStats().getZynqTemp(),
-                    Constants.DEFAULT_ZYNQ_TEMP_THRESHOLD * 0.8,
-                    Constants.DEFAULT_ZYNQ_TEMP_THRESHOLD
+                    Constants.ZYNQ_TEMP_WARNING_THRESHOLD,
+                    Constants.ZYNQ_TEMP_CRITICAL_THRESHOLD
             ));
 
-            // Update status text (third child in the grid)
+            // Update SDR status text
             if (sdrStatsGrid.getChildCount() > 2) {
                 TextView statusText = (TextView) sdrStatsGrid.getChildAt(2);
-                statusText.setText("STATUS\nACTIVE");
-                statusText.setTextColor(Color.GREEN);
+                statusText.setText(getString(R.string.sdr_status_active));
+                statusText.setTextColor(requireContext().getColor(R.color.status_green));
             }
         } else {
             // Set inactive status when no ANT stats available
             if (sdrStatsGrid.getChildCount() > 2) {
                 TextView statusText = (TextView) sdrStatsGrid.getChildAt(2);
-                statusText.setText("STATUS\nINACTIVE");
-                statusText.setTextColor(Color.RED);
+                statusText.setText(getString(R.string.sdr_status_inactive));
+                statusText.setTextColor(requireContext().getColor(R.color.status_red));
             }
         }
     }
@@ -291,15 +293,25 @@ public class DashboardFragment extends Fragment {
             }
 
             // Check if drone is nearby based on RSSI
-            if (drone.getRssi() != null && drone.getRssi() > Constants.DEFAULT_PROXIMITY_THRESHOLD) {
+            if (drone.getRssi() != null && drone.getRssi() > Constants.PROXIMITY_THRESHOLD) {
                 nearbyDrones++;
             }
         }
 
-        // Update counter cards
-        trackedDronesText.setText(String.valueOf(totalDrones));
-        spoofedDronesText.setText(String.valueOf(spoofedDrones));
-        nearbyDronesText.setText(String.valueOf(nearbyDrones));
+        // Update counter cards with dynamic data
+        trackedDronesText.setText(getString(R.string.drone_count_tracked, totalDrones));
+        spoofedDronesText.setText(getString(R.string.drone_count_spoofed, spoofedDrones));
+        nearbyDronesText.setText(getString(R.string.drone_count_nearby, nearbyDrones));
+    }
+
+    private int getColorForMetric(double value, double warningThreshold, double criticalThreshold) {
+        if (value >= criticalThreshold) {
+            return requireContext().getColor(R.color.status_red);
+        } else if (value >= warningThreshold) {
+            return requireContext().getColor(R.color.status_yellow);
+        } else {
+            return requireContext().getColor(R.color.status_green);
+        }
     }
 
     private List<CoTMessage> getRecentMessages(List<CoTMessage> messages, int count) {

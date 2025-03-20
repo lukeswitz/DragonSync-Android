@@ -11,9 +11,11 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 import com.rootdown.dragonsync.R;
 import com.rootdown.dragonsync.models.CoTMessage;
+import com.rootdown.dragonsync.utils.Constants;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -69,48 +71,92 @@ public class DroneListAdapter extends RecyclerView.Adapter<DroneListAdapter.View
         // Set drone ID and indicator for spoofed drones
         String displayId = message.getUid();
         if (message.isSpoofed()) {
-            displayId = "⚠️ " + displayId;
-            holder.droneId.setTextColor(Color.YELLOW);
+            displayId = context.getString(R.string.spoofed_drone_prefix, displayId);
+            holder.droneId.setTextColor(context.getColor(R.color.warning_amber));
         } else {
-            holder.droneId.setTextColor(Color.WHITE);
+            holder.droneId.setTextColor(context.getColor(R.color.on_surface_high));
         }
 
         // Add source label
         if (message.getType() != null) {
             if (message.getType().contains("BLE")) {
-                displayId += " [BT]";
+                displayId = context.getString(R.string.format_drone_id_bt, displayId);
             } else if (message.getType().contains("WiFi")) {
-                displayId += " [WiFi]";
+                displayId = context.getString(R.string.format_drone_id_wifi, displayId);
             } else if (message.getMac() == null) {
-                displayId += "[SDR]";
+                displayId = context.getString(R.string.format_drone_id_sdr, displayId);
             }
         }
 
         holder.droneId.setText(displayId);
-
-        // Set position if available
-        if (message.getCoordinate() != null) {
-            holder.position.setText(String.format(Locale.US, "Lat: %.6f, Lon: %.6f",
-                    message.getCoordinate().getLatitude(),
-                    message.getCoordinate().getLongitude()));
-            holder.position.setVisibility(View.VISIBLE);
-        } else {
-            holder.position.setVisibility(View.GONE);
-        }
 
         // Set description if available
         if (message.getDescription() != null && !message.getDescription().isEmpty()) {
             holder.description.setText(message.getDescription());
             holder.description.setVisibility(View.VISIBLE);
         } else {
+            holder.description.setText(R.string.drone_description_placeholder);
             holder.description.setVisibility(View.GONE);
+        }
+
+        // Set position if available
+        if (message.getCoordinate() != null) {
+            holder.position.setText(context.getString(R.string.format_coordinates,
+                    message.getCoordinate().getLatitude(),
+                    message.getCoordinate().getLongitude()));
+            holder.position.setVisibility(View.VISIBLE);
+        } else {
+            holder.position.setText(R.string.position_placeholder);
+            holder.position.setVisibility(View.GONE);
+        }
+
+        // Set altitude if available
+        if (message.getAlt() != null && !message.getAlt().isEmpty()) {
+            try {
+                double alt = Double.parseDouble(message.getAlt());
+                holder.altitude.setText(context.getString(R.string.format_altitude, alt));
+                holder.altitude.setVisibility(View.VISIBLE);
+            } catch (NumberFormatException e) {
+                holder.altitude.setText(R.string.altitude_placeholder);
+                holder.altitude.setVisibility(View.GONE);
+            }
+        } else {
+            holder.altitude.setText(R.string.altitude_placeholder);
+            holder.altitude.setVisibility(View.GONE);
+        }
+
+        // Set speed if available
+        if (message.getSpeed() != null && !message.getSpeed().isEmpty()) {
+            try {
+                double speed = Double.parseDouble(message.getSpeed());
+                holder.speed.setText(context.getString(R.string.format_speed, speed));
+                holder.speed.setVisibility(View.VISIBLE);
+            } catch (NumberFormatException e) {
+                holder.speed.setText(R.string.speed_placeholder);
+                holder.speed.setVisibility(View.GONE);
+            }
+        } else {
+            holder.speed.setText(R.string.speed_placeholder);
+            holder.speed.setVisibility(View.GONE);
         }
 
         // Set RSSI if available
         if (message.getRssi() != null) {
-            holder.rssi.setText(String.format(Locale.US, "RSSI: %d dBm", message.getRssi()));
+            holder.rssi.setText(context.getString(R.string.format_rssi, message.getRssi()));
+
+            // Set color based on signal strength thresholds from Constants
+            int rssiColor;
+            if (message.getRssi() > Constants.RSSI_GOOD_THRESHOLD) {
+                rssiColor = context.getColor(R.color.status_green);
+            } else if (message.getRssi() > Constants.RSSI_MEDIUM_THRESHOLD) {
+                rssiColor = context.getColor(R.color.status_yellow);
+            } else {
+                rssiColor = context.getColor(R.color.status_red);
+            }
+            holder.rssi.setTextColor(rssiColor);
             holder.rssi.setVisibility(View.VISIBLE);
         } else {
+            holder.rssi.setText(R.string.rssi_placeholder);
             holder.rssi.setVisibility(View.GONE);
         }
 
@@ -119,44 +165,20 @@ public class DroneListAdapter extends RecyclerView.Adapter<DroneListAdapter.View
             try {
                 long timestamp = Long.parseLong(message.getTimestamp());
                 Date date = new Date(timestamp);
-                SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss", Locale.US);
-                holder.timestamp.setText("Time: " + sdf.format(date));
+                Calendar cal = Calendar.getInstance();
+                cal.setTime(date);
+                holder.timestamp.setText(context.getString(R.string.format_timestamp,
+                        cal.get(Calendar.HOUR_OF_DAY),
+                        cal.get(Calendar.MINUTE),
+                        cal.get(Calendar.SECOND)));
                 holder.timestamp.setVisibility(View.VISIBLE);
             } catch (NumberFormatException e) {
-                holder.timestamp.setText("Time: " + message.getTimestamp());
-                holder.timestamp.setVisibility(View.VISIBLE);
+                holder.timestamp.setText(R.string.timestamp_placeholder);
+                holder.timestamp.setVisibility(View.GONE);
             }
         } else {
+            holder.timestamp.setText(R.string.timestamp_placeholder);
             holder.timestamp.setVisibility(View.GONE);
-        }
-
-        // Set additional details like altitude, speed
-        StringBuilder details = new StringBuilder();
-
-        if (message.getAlt() != null && !message.getAlt().isEmpty()) {
-            try {
-                double alt = Double.parseDouble(message.getAlt());
-                details.append(String.format(Locale.US, "Alt: %.1f m", alt));
-            } catch (NumberFormatException e) {
-                // Skip if can't parse
-            }
-        }
-
-        if (message.getSpeed() != null && !message.getSpeed().isEmpty()) {
-            if (details.length() > 0) details.append(", ");
-            try {
-                double speed = Double.parseDouble(message.getSpeed());
-                details.append(String.format(Locale.US, "Speed: %.1f m/s", speed));
-            } catch (NumberFormatException e) {
-                // Skip if can't parse
-            }
-        }
-
-        if (details.length() > 0) {
-            holder.details.setText(details.toString());
-            holder.details.setVisibility(View.VISIBLE);
-        } else {
-            holder.details.setVisibility(View.GONE);
         }
 
         // Set click listeners

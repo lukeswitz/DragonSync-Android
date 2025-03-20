@@ -29,6 +29,22 @@
     <dimen name="text_size_micro">10sp</dimen>
     <dimen name="percent_label_width">48dp</dimen>
 
+    <!-- Map Elements -->
+    <dimen name="flight_path_width">2dp</dimen>
+    <dimen name="connection_line_width">2dp</dimen>
+    <dimen name="marker_size">40dp</dimen>
+    <dimen name="map_info_window_padding">8dp</dimen>
+    <dimen name="map_zoom_default">15dp</dimen>
+    <dimen name="map_padding">100dp</dimen>
+
+    <!-- Drone list item specific -->
+    <dimen name="icon_container_size">40dp</dimen>
+    <dimen name="rssi_indicator_radius">12dp</dimen>
+    <dimen name="divider_height">1dp</dimen>
+    <dimen name="button_corner_radius_small">18dp</dimen>
+    <dimen name="button_icon_size">14dp</dimen>
+    <dimen name="button_icon_padding">12dp</dimen>
+
     <!-- Component specific -->
     <dimen name="fab_size_mini">40dp</dimen>
     <dimen name="gauge_size">100dp</dimen>

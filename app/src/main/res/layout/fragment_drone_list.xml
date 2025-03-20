@@ -47,6 +47,17 @@
                 android:layout_marginStart="@dimen/spacing_sm">
 
                 <TextView
+                    android:id="@+id/empty_state"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/no_drones_message"
+                    android:textColor="@color/on_surface_medium"
+                    android:textSize="@dimen/text_size_body"
+                    android:gravity="center"
+                    android:padding="@dimen/spacing_xl"
+                    android:visibility="gone"/>
+
+                <TextView
                     android:id="@+id/drone_id"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

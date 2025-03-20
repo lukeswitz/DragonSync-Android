@@ -87,11 +87,23 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
         serverNameText = view.findViewById(R.id.server_name_text);
         uptimeText = view.findViewById(R.id.uptime_text);
 
-        // CircularGaugeViews
-        CircularGaugeView cpuGauge = view.findViewById(R.id.cpu_gauge);
-        CircularGaugeView tempGauge = view.findViewById(R.id.temp_gauge);
-        CircularGaugeView plutoTempGauge = view.findViewById(R.id.pluto_temp_gauge);
-        CircularGaugeView zynqTempGauge = view.findViewById(R.id.zynq_temp_gauge);
+        // CPU and Temperature
+        cpuValueText = view.findViewById(R.id.value); // From cpu_gauge
+        tempValueText = view.findViewById(R.id.value); // From temp_gauge
+        cpuProgress = view.findViewById(R.id.progress); // From cpu_gauge
+        tempProgress = view.findViewById(R.id.progress); // From temp_gauge
+
+        // Find the CircularGaugeViews for system metrics
+//        CircularGaugeView cpuGauge = view.findViewById(R.id.cpu_gauge);
+//        CircularGaugeView tempGauge = view.findViewById(R.id.temp_gauge);
+//
+//        // SDR temps
+//        CircularGaugeView plutoTempGauge = view.findViewById(R.id.pluto_temp_gauge);
+//        CircularGaugeView zynqTempGauge = view.findViewById(R.id.zynq_temp_gauge);
+//        plutoTempValueText = view.findViewById(R.id.value);
+//        zynqTempValueText = view.findViewById(R.id.value);
+//        plutoTempProgress = view.findViewById(R.id.progress);
+//        zynqTempProgress = view.findViewById(R.id.progress);
 
         // Memory and Disk
         memoryText = view.findViewById(R.id.memory_text);
@@ -104,12 +116,23 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
         altitudeText = view.findViewById(R.id.altitude_text);
         speedText = view.findViewById(R.id.speed_text);
 
-        // TODO update these gauges and add others
-        // cpuGauge.setValue(cpuPercentage);
-        // cpuGauge.setTitle("CPU");
-        // cpuGauge.setUnit("%");
+//        // Initialize CircularGaugeViews
+//        cpuGauge.setTitle("CPU");
+//        cpuGauge.setUnit("%");
+//        cpuGauge.setValue(0.0);
+//
+//        tempGauge.setTitle("TEMP");
+//        tempGauge.setUnit("°C");
+//        tempGauge.setValue(0.0);
+//
+//        plutoTempGauge.setTitle("PLUTO");
+//        plutoTempGauge.setUnit("°C");
+//        plutoTempGauge.setValue(0.0);
+//
+//        zynqTempGauge.setTitle("ZYNQ");
+//        zynqTempGauge.setUnit("°C");
+//        zynqTempGauge.setValue(0.0);
     }
-
     private void setupObservers() {
         statusViewModel.getStatusMessages().observe(getViewLifecycleOwner(), messages -> {
             if (!messages.isEmpty()) {
@@ -121,6 +144,8 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
 
     private void updateStatusUI(StatusMessage message) {
         if (message == null || message.getSystemStats() == null) return;
+
+
 
         if (message.getSerialNumber() != null) {
             serverNameText.setText(message.getSerialNumber());

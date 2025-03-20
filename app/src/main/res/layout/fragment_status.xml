@@ -121,7 +121,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="@dimen/spacing_md">
+                android:padding="@dimen/spacing_md"
+                android:visibility="gone">
 
                 <TextView
                     android:layout_width="wrap_content"
@@ -177,6 +178,7 @@
         <!-- SDR Status Card -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
+            android:visibility="gone"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/spacing_md"
             style="@style/CardStyle.DragonSync">

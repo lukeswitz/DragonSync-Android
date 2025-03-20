@@ -14,6 +14,12 @@
     <color name="warning_amber">#FFA000</color>
     <color name="connection_status_color">@color/status_red</color>
 
+    <!-- Map Colors -->
+    <color name="flight_path_color">#2196F3</color> <!-- Blue -->
+    <color name="home_connection_color">#FFC107</color> <!-- Yellow -->
+    <color name="operator_connection_color">#4CAF50</color> <!-- Green -->
+    <color name="user_location_color">#03A9F4</color> <!-- Light Blue -->
+
     <!-- Status colors with transparency -->
     <color name="status_green_10">#1A4CAF50</color>
     <color name="status_yellow_10">#1AFFC107</color>

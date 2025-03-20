@@ -30,6 +30,7 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.material.card.MaterialCardView;
 import com.rootdown.dragonsync.R;
 import com.rootdown.dragonsync.models.CoTMessage;
+import com.rootdown.dragonsync.utils.Constants;
 import com.rootdown.dragonsync.viewmodels.CoTViewModel;
 
 import java.text.SimpleDateFormat;
@@ -145,13 +146,14 @@ public class DroneDetailFragment extends Fragment implements OnMapReadyCallback 
 			try {
 				long timestamp = Long.parseLong(message.getTimestamp());
 				Date date = new Date(timestamp);
-				SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US);
+				SimpleDateFormat sdf = new SimpleDateFormat(
+						getString(R.string.timestamp_format_pattern), Locale.getDefault());
 				lastSeen.setText(sdf.format(date));
 			} catch (NumberFormatException e) {
-				lastSeen.setText("Unknown");
+				lastSeen.setText(getString(R.string.timestamp_unknown));
 			}
 		} else {
-			lastSeen.setText("Unknown");
+			lastSeen.setText(getString(R.string.timestamp_unknown));
 		}
 
 		// MAC Address
@@ -164,18 +166,20 @@ public class DroneDetailFragment extends Fragment implements OnMapReadyCallback 
 
 		// RSSI
 		if (message.getRssi() != null) {
-			rssi.setText(String.format(Locale.US, "%d dBm", message.getRssi()));
+			rssi.setText(getString(R.string.format_rssi, message.getRssi()));
 
 			// Set color based on signal strength
-			if (message.getRssi() > -60) {
-				rssi.setTextColor(Color.GREEN);
-			} else if (message.getRssi() > -80) {
-				rssi.setTextColor(Color.YELLOW);
+			int rssiColor;
+			if (message.getRssi() > Constants.RSSI_GOOD_THRESHOLD) {
+				rssiColor = getResources().getColor(R.color.status_green, null);
+			} else if (message.getRssi() > Constants.RSSI_MEDIUM_THRESHOLD) {
+				rssiColor = getResources().getColor(R.color.status_yellow, null);
 			} else {
-				rssi.setTextColor(Color.RED);
+				rssiColor = getResources().getColor(R.color.status_red, null);
 			}
+			rssi.setTextColor(rssiColor);
 		} else {
-			rssi.setText("Unknown");
+			rssi.setText(getString(R.string.rssi_unknown));
 		}
 
 		// Position Information

@@ -98,7 +98,9 @@ public class MainActivity extends FragmentActivity {
     private void updateConnectionIndicator(boolean isConnected) {
         if (connectionIndicator == null) return;
 
-        int colorResId = isConnected ? R.color.status_green : R.color.status_red;
+        int colorResId = isConnected ?
+                R.color.status_green :
+                R.color.status_red;
         int color = getResources().getColor(colorResId, null);
 
         connectionIndicator.setText(isConnected ?
