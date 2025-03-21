@@ -116,7 +116,8 @@
         <!-- Warning Thresholds Section -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content">
+            android:layout_height="wrap_content"
+            android:visibility="gone">
 
             <LinearLayout
                 android:layout_width="match_parent"

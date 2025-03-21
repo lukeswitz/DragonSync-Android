@@ -7,8 +7,11 @@ import android.app.Service;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
+import android.os.Handler;
 import android.os.IBinder;
 import androidx.core.app.NotificationCompat;
+
+import android.os.Looper;
 import android.util.Log;
 
 import com.rootdown.dragonsync.R;
@@ -73,12 +76,12 @@ public class NetworkService extends Service {
                 return START_NOT_STICKY;
             }
 
-            // Otherwise proceed with network modes
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                startForeground(NOTIFICATION_ID, createNotification(),
-                        ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
-            } else {
+            /// Ensure foreground service starts immediately to avoid timeout crash
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForeground(NOTIFICATION_ID, createNotification());
+                new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                    startForeground(NOTIFICATION_ID, createNotification());
+                }, 100);
             }
 
             startNetworkHandlers();

@@ -238,18 +238,17 @@ public class SettingsFragment extends Fragment {
         connectionModeTabs.addOnTabSelectedListener(new TabLayout.OnTabSelectedListener() {
             @Override
             public void onTabSelected(TabLayout.Tab tab) {
+                if (settings.isListening()) {
+                    Toast.makeText(requireContext(), "Disconnect before switching modes.", Toast.LENGTH_SHORT).show();
+                    connectionModeTabs.selectTab(connectionModeTabs.getTabAt(currentMode.ordinal())); // Revert selection
+                    return;
+                }
+
                 ConnectionMode mode = ConnectionMode.values()[tab.getPosition()];
                 settings.setConnectionMode(mode);
                 currentMode = mode;
-
-                // Update UI elements based on selected mode
                 updateUIForConnectionMode(mode);
                 updateHostInput();
-
-                // If currently connected, reconnect with new mode
-                if (settings.isListening()) {
-                    restartConnection();
-                }
             }
 
             @Override
@@ -258,6 +257,7 @@ public class SettingsFragment extends Fragment {
             @Override
             public void onTabReselected(TabLayout.Tab tab) {}
         });
+
 
 
         connectionSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
@@ -386,6 +386,7 @@ public class SettingsFragment extends Fragment {
     private void stopConnection() {
         settings.setListening(false);
         requireContext().stopService(new Intent(requireContext(), NetworkService.class));
+        requireContext().stopService(new Intent(requireContext(), OnboardDetectionService.class)); // Ensure onboard mode is stopped too
         updateConnectionStatusUI(false);
 
         // Notify activity if needed
