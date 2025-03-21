@@ -36,7 +36,7 @@
                     <ImageView
                         android:layout_width="@dimen/icon_size"
                         android:layout_height="@dimen/icon_size"
-                        android:src="@android:drawable/stat_sys_upload" />
+                        android:src="@android:drawable/ic_menu_info_details" />
 
                     <TextView
                         android:layout_width="0dp"
