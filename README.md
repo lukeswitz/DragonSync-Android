@@ -2,14 +2,15 @@
 
 [![Android CI](https://github.com/lukeswitz/DragonSync-Android/actions/workflows/android.yml/badge.svg)](https://github.com/lukeswitz/DragonSync-Android/actions/workflows/android.yml)
 
-Android version of the iOS [app](https://github.com/Root-Down-Digital/DragonSync-iOS)
+**Find the original iOS version [here](https://github.com/Root-Down-Digital/DragonSync-iOS)**
 
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/e8b8098a-53b7-4ac9-9683-6e03559b68e2" width="100%" alt="DragonSync Logo">
+  <img src="https://github.com/user-attachments/assets/e8b8098a-53b7-4ac9-9683-6e03559b68e2" width="80%" alt="DragonSync Logo">
 </div>
 <br>
+
 <div align="center">
-  Real-time drone detection and monitoring, powered by locally-hosted decoding. Enjoy professional-grade detection with advanced signal analysis and tracking. 
+  Real-time drone detection and monitoring, powered by locally-hosted & onboard decoding. Enjoy professional-grade detection and advanced airspace awareness. 
 </div>
 <br>
 
@@ -17,7 +18,7 @@ Android version of the iOS [app](https://github.com/Root-Down-Digital/DragonSync
 ## Requirements
 
 > [!NOTE]
-> *DragonSync will soon use onboard WiFi and BT. For the time being, we rely solely on a more powerful hardware stack:*
+> *DragonSync will soon use onboard WiFi. For the time being, we rely solely on BT and a more powerful hardware stack:*
 
 ### Hardware
 Works with WarDragon Pro right out of the box, otherwise follow the below:
