@@ -35,7 +35,7 @@
                     android:layout_width="@dimen/icon_size"
                     android:layout_height="@dimen/icon_size"
                     android:layout_gravity="center"
-                    android:src="@drawable/ic_drone"
+                    android:src="@drawable/ic_drone_accent"
                     app:tint="@color/accent" />
             </FrameLayout>
 
@@ -73,6 +73,7 @@
                 android:gravity="end">
 
                 <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/rssi_container"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:cardCornerRadius="@dimen/rssi_indicator_radius"

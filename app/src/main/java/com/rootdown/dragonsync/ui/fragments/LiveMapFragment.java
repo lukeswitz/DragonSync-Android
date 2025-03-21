@@ -56,6 +56,7 @@ public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
     private Marker userLocationMarker;
     private boolean isOnboardMode = false;
     private DeviceLocationManager locationManager;
+    private TextView activeDronesCount;
 
     public static LiveMapFragment newInstance(CoTMessage initialMessage) {
         LiveMapFragment fragment = new LiveMapFragment();
@@ -89,6 +90,7 @@ public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_live_map, container, false);
 
+        activeDronesCount = view.findViewById(R.id.active_drones_count);
         mapView = view.findViewById(R.id.map_view);
         mapView.onCreate(savedInstanceState);
 
@@ -192,6 +194,8 @@ public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
 
     private void observeDrones() {
         viewModel.getParsedMessages().observe(getViewLifecycleOwner(), messages -> {
+            updateDroneCount(messages.size());
+
             for (CoTMessage message : messages) {
                 updateDroneOnMap(message);
             }
@@ -200,6 +204,12 @@ public class LiveMapFragment extends Fragment implements OnMapReadyCallback {
                 updateCameraToFitDrones(messages);
             }
         });
+    }
+    
+    private void updateDroneCount(int count) {
+        if (activeDronesCount != null) {
+            activeDronesCount.setText(count + " ACTIVE DRONES");
+        }
     }
 
     private void updateUserLocationOnMap(Location location) {

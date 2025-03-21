@@ -42,8 +42,7 @@
                     <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
-                        android:src="@android:drawable/ic_dialog_info"
-                        app:tint="@color/accent" />
+                        android:src="@android:drawable/ic_menu_manage" />
 
                     <TextView
                         android:layout_width="0dp"
@@ -108,8 +107,7 @@
                     <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
-                        android:src="@drawable/ic_drone"
-                        app:tint="@color/accent" />
+                        android:src="@drawable/ic_drone_white" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -117,6 +115,17 @@
                         android:text="@string/active_drones"
                         android:textAppearance="@style/TextAppearance.DragonSync.CardTitle"
                         android:layout_marginStart="@dimen/spacing_sm"/>
+
+                    <TextView
+                        android:id="@+id/no_drones_message"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:padding="@dimen/spacing_md"
+                        android:text="No drones detected"
+                        android:textColor="@color/on_surface_medium"
+                        android:textStyle="italic"
+                        android:visibility="gone" />
                 </LinearLayout>
 
                 <!-- Drone Statistics Grid -->
@@ -188,8 +197,7 @@
                     <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
-                        android:src="@android:drawable/ic_menu_send"
-                        app:tint="@color/accent" />
+                        android:src="@android:drawable/ic_media_play"/>
 
                     <TextView
                         android:layout_width="0dp"
@@ -256,8 +264,7 @@
                     <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
-                        android:src="@android:drawable/ic_dialog_alert"
-                        app:tint="@color/accent" />
+                        android:src="@android:drawable/ic_dialog_alert" />
 
                     <TextView
                         android:layout_width="wrap_content"

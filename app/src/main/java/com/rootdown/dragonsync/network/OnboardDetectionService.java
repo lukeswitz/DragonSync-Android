@@ -600,7 +600,7 @@ public class OnboardDetectionService extends Service {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle("DragonSync Onboard Detection")
                 .setContentText("Scanning for drones via BT and WiFi...")
-                .setSmallIcon(R.drawable.ic_drone)
+                .setSmallIcon(R.drawable.ic_drone_accent)
                 .setPriority(NotificationCompat.PRIORITY_LOW);
 
         return builder.build();

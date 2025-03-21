@@ -5,7 +5,7 @@
     <!-- Section Titles -->
     <string name="system_status">SYSTEM STATUS</string>
     <string name="active_drones">ACTIVE DRONES</string>
-    <string name="active_drones_count">3 ACTIVE DRONES</string>
+    <string name="active_drones_count_format">%d ACTIVE DRONES</string>
     <string name="sdr_status">SDR STATUS</string>
     <string name="location">LOCATION</string>
     <string name="system_resources">SYSTEM RESOURCES</string>
@@ -133,6 +133,20 @@
     <string name="spoofing_warning_title">Potential Spoofing Detected</string>
     <string name="spoofing_default_reason">Unusual movement pattern or unrealistic speed detected.</string>
     <string name="spoofing_multiple_mac">Multiple MAC addresses observed (%1$d).</string>
+
+    <!-- Drone Tab -->
+    <string name="drone_count_total">%1$d Drones</string>
+    <string name="drone_count_filtered">%1$d / %2$d Drones</string>
+    <string name="drone_filter_all">All</string>
+    <string name="drone_filter_bluetooth">Bluetooth</string>
+    <string name="drone_filter_wifi">WiFi</string>
+    <string name="drone_filter_sdr">SDR</string>
+    <string name="drone_filter_spoofed">Spoofed</string>
+    <string name="sort_by_signal">Sort by Signal</string>
+    <string name="sort_by_recent">Most Recent</string>
+    <string name="action_map_all">Show all on map</string>
+    <string name="search_drones">Search drones</string>
+    <string name="no_drones_detected">No drones detected</string>
 
     <!-- Signal Sources -->
     <string name="signal_sources_title">Signal Sources</string>

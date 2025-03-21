@@ -16,6 +16,8 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.button.MaterialButton;
 import com.rootdown.dragonsync.R;
 import com.rootdown.dragonsync.models.CoTMessage;
 import com.rootdown.dragonsync.models.StatusMessage;
@@ -63,6 +65,20 @@ public class DashboardFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
         initializeViews(view);
         setupObservers();
+
+        // Set up View All Drones button
+        MaterialButton viewAllButton = view.findViewById(R.id.view_all_drones);
+        if (viewAllButton != null) {
+            viewAllButton.setOnClickListener(v -> {
+                // Navigate to Drone List tab
+                if (getActivity() != null) {
+                    BottomNavigationView bottomNav = getActivity().findViewById(R.id.bottom_navigation);
+                    if (bottomNav != null) {
+                        bottomNav.setSelectedItemId(R.id.nav_drones);
+                    }
+                }
+            });
+        }
     }
 
     private void initializeViews(View view) {
@@ -216,9 +232,20 @@ public class DashboardFragment extends Fragment {
         cotViewModel.getParsedMessages().observe(getViewLifecycleOwner(), messages -> {
             updateDroneMetrics(messages);
 
-            // Update the drone list
-            List<CoTMessage> recentMessages = getRecentMessages(messages, 5);
+            // Update the drone list - LIMIT TO JUST 2 FOR PREVIEW
+            List<CoTMessage> recentMessages = getRecentMessages(messages, 1);
             droneListAdapter.updateMessages(recentMessages);
+
+            // Show/hide empty state
+            TextView emptyStateText = getView().findViewById(R.id.no_drones_message);
+            if (emptyStateText != null) {
+                emptyStateText.setVisibility(messages.isEmpty() ? View.VISIBLE : View.GONE);
+            }
+
+            // Show/hide recycler view based on whether we have drones
+            if (recentDronesList != null) {
+                recentDronesList.setVisibility(messages.isEmpty() ? View.GONE : View.VISIBLE);
+            }
         });
     }
 

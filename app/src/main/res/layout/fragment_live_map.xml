@@ -79,11 +79,11 @@
                 android:id="@+id/active_drones_count"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/active_drones_count"
+                android:text="@string/active_drones_count_format"
                 android:textSize="@dimen/text_size_caption"
                 android:textColor="@color/accent"
                 android:fontFamily="sans-serif-medium"
-                android:drawableStart="@drawable/ic_drone"
+                android:drawableStart="@drawable/ic_drone_accent"
                 android:drawablePadding="@dimen/spacing_xs"
                 android:gravity="center_vertical"/>
 

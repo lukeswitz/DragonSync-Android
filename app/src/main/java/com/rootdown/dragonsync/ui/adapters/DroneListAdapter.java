@@ -41,6 +41,7 @@ public class DroneListAdapter extends RecyclerView.Adapter<DroneListAdapter.View
         public TextView speed;
         public Button detailsButton;
         public Button liveMapButton;
+        public com.google.android.material.card.MaterialCardView rssiContainer;
 
         public ViewHolder(View view) {
             super(view);
@@ -49,6 +50,7 @@ public class DroneListAdapter extends RecyclerView.Adapter<DroneListAdapter.View
             position = view.findViewById(R.id.position);
             description = view.findViewById(R.id.description);
             rssi = view.findViewById(R.id.rssi);
+            rssiContainer = view.findViewById(R.id.rssi_container);
             timestamp = view.findViewById(R.id.timestamp);
             altitude = view.findViewById(R.id.altitude);
             speed = view.findViewById(R.id.speed);
@@ -161,14 +163,22 @@ public class DroneListAdapter extends RecyclerView.Adapter<DroneListAdapter.View
 
             // Set color based on signal strength thresholds from Constants
             int rssiColor;
+            int bgColor;
             if (message.getRssi() > Constants.RSSI_GOOD_THRESHOLD) {
                 rssiColor = context.getColor(R.color.status_green);
+                bgColor = context.getColor(R.color.status_green_10);
             } else if (message.getRssi() > Constants.RSSI_MEDIUM_THRESHOLD) {
                 rssiColor = context.getColor(R.color.status_yellow);
+                bgColor = context.getColor(R.color.status_yellow_10);
             } else {
                 rssiColor = context.getColor(R.color.status_red);
+                bgColor = context.getColor(R.color.status_red_10);
             }
+
             holder.rssi.setTextColor(rssiColor);
+            holder.rssiContainer.setStrokeColor(rssiColor);
+            holder.rssiContainer.setCardBackgroundColor(bgColor);
+
             holder.rssi.setVisibility(View.VISIBLE);
         } else {
             holder.rssi.setText(R.string.rssi_placeholder);
