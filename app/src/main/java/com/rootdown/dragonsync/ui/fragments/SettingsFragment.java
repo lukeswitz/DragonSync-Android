@@ -96,7 +96,7 @@ public class SettingsFragment extends Fragment {
 
                 // Show an error message to the user
                 Toast.makeText(requireContext(),
-                        getString(R.string.connection_error, errorMessage),
+                        getString(R.string.connection_error),
                         Toast.LENGTH_LONG).show();
             }
         }
