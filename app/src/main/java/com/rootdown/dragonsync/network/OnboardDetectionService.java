@@ -141,10 +141,10 @@ public class OnboardDetectionService extends Service {
         try {
             Log.d(TAG, "Processing " + droneData.length() + " drone message(s) from source: " + source);
 
-            // Add device location to the drone data if available
-            if (lastDeviceLocation != null) {
-                addDeviceLocationToData(droneData);
-            }
+            // Add device location to the drone data if available - TODO estimate location from other nodes
+//            if (lastDeviceLocation != null) {
+//                addDeviceLocationToData(droneData);
+//            }
 
             // First pass: Process only Basic ID messages to establish identities
             for (int i = 0; i < droneData.length(); i++) {
@@ -267,10 +267,10 @@ public class OnboardDetectionService extends Service {
                         String idValue = messageData.getString("id");
                         Log.d(TAG, "Raw ID value: '" + idValue + "', length: " + idValue.length());
 
-                        if (!idValue.isEmpty() && !idValue.matches("^0+$")) {
+                        if (idValue.matches("^[A-Z0-9]+$") && !idValue.matches("^0+$")) {
                             message.setUid(idValue);
 
-//                            // Also store the MAC to ID mapping for other message types (dont need fallback right now)
+                            // Also store the MAC to ID mapping for other message types (dont need fallback right now)
 //                            if (messageData.has("MAC")) {
 //                                knownDroneIds.put(messageData.getString("MAC"), idValue);
 //                            }
@@ -518,21 +518,21 @@ public class OnboardDetectionService extends Service {
         }
 
         // If no System Message found, create one
-        if (!foundSystemMessage) {
-            JSONObject systemObj = new JSONObject();
-            JSONObject systemMessage = new JSONObject();
-            systemObj.put("System Message", systemMessage);
-
-            systemMessage.put("operator_lat", lastDeviceLocation.getLatitude());
-            systemMessage.put("operator_lon", lastDeviceLocation.getLongitude());
-            if (lastDeviceLocation.hasAltitude()) {
-                systemMessage.put("operator_altitude_geo", lastDeviceLocation.getAltitude());
-            }
-            systemMessage.put("MAC", "device_" + System.currentTimeMillis());
-            systemMessage.put("RSSI", 0);
-
-            droneData.put(systemObj);
-        }
+//        if (!foundSystemMessage) {
+//            JSONObject systemObj = new JSONObject();
+//            JSONObject systemMessage = new JSONObject();
+//            systemObj.put("System Message", systemMessage);
+//
+//            systemMessage.put("operator_lat", lastDeviceLocation.getLatitude());
+//            systemMessage.put("operator_lon", lastDeviceLocation.getLongitude());
+//            if (lastDeviceLocation.hasAltitude()) {
+//                systemMessage.put("operator_altitude_geo", lastDeviceLocation.getAltitude());
+//            }
+//            systemMessage.put("MAC", "device_" + System.currentTimeMillis());
+//            systemMessage.put("RSSI", 0);
+//
+//            droneData.put(systemObj);
+//        }
     }
 
     // Estimate drone location based on RSSI and device location - For drones without any GPS

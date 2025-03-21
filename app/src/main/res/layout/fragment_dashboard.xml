@@ -105,8 +105,8 @@
                     android:layout_marginBottom="@dimen/spacing_md">
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="23dp"
+                        android:layout_height="23dp"
                         android:src="@drawable/ic_drone_white" />
 
                     <TextView
@@ -122,7 +122,6 @@
                         android:layout_height="wrap_content"
                         android:gravity="center"
                         android:padding="@dimen/spacing_md"
-                        android:text="No drones detected"
                         android:textColor="@color/on_surface_medium"
                         android:textStyle="italic"
                         android:visibility="gone" />
@@ -197,7 +196,7 @@
                     <ImageView
                         android:layout_width="24dp"
                         android:layout_height="24dp"
-                        android:src="@android:drawable/ic_media_play"/>
+                        android:src="@android:drawable/ic_menu_info_details"/>
 
                     <TextView
                         android:layout_width="0dp"
@@ -211,12 +210,12 @@
                         android:id="@+id/sdr_status_chip"
                         android:layout_width="wrap_content"
                         android:layout_height="32dp"
-                        android:text="ACTIVE"
+                        android:text="INACTIVE"
                         android:textSize="10sp"
-                        app:chipBackgroundColor="@color/status_green_10"
-                        app:chipStrokeColor="@color/status_green"
+                        app:chipBackgroundColor="@color/status_red_10"
+                        app:chipStrokeColor="@color/status_red"
                         app:chipStrokeWidth="1dp"
-                        android:textColor="@color/status_green"
+                        android:textColor="@color/status_red"
                         app:chipStartPadding="8dp"
                         app:chipEndPadding="8dp"/>
                 </LinearLayout>
@@ -229,10 +228,12 @@
 
                     <androidx.gridlayout.widget.GridLayout
                         android:id="@+id/sdr_stats_grid"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:gravity="center"/>
+                        android:gravity="center"
+                        app:columnCount="3"
+                        android:layout_gravity="center"/>
                 </HorizontalScrollView>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

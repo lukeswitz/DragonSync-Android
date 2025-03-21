@@ -128,17 +128,17 @@ public class DroneDataParser {
 
                 default:
                     Log.w(TAG, "Unknown message type in WiFi beacon: " + messageType);
-
-                    // Fallback - add a basic message with the MAC address at minimum
-                    JSONObject fallbackObj = new JSONObject();
-                    JSONObject basicId = new JSONObject();
-                    basicId.put("MAC", macAddress);
-                    basicId.put("RSSI", rssi);
-                    basicId.put("id_type", "WiFi Beacon");
-                    basicId.put("id", macAddress);
-                    basicId.put("ua_type", "Unknown");
-                    fallbackObj.put("Basic ID", basicId);
-                    messagesArray.put(fallbackObj);
+//
+//                    // Fallback - add a basic message with the MAC address at minimum
+//                    JSONObject fallbackObj = new JSONObject();
+//                    JSONObject basicId = new JSONObject();
+//                    basicId.put("MAC", macAddress);
+//                    basicId.put("RSSI", rssi);
+//                    basicId.put("id_type", "WiFi Beacon");
+//                    basicId.put("id", macAddress);
+//                    basicId.put("ua_type", "Unknown");
+//                    fallbackObj.put("Basic ID", basicId);
+//                    messagesArray.put(fallbackObj);
             }
 
         } catch (Exception e) {

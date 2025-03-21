@@ -78,14 +78,14 @@
     <View
         android:id="@+id/bottom_nav_background"
         android:layout_width="match_parent"
-        android:layout_height="56dp"
+        android:layout_height="86dp"
         android:background="@color/surface_dark"
         app:layout_constraintBottom_toBottomOf="parent"/>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"
         android:layout_width="0dp"
-        android:layout_height="56dp"
+        android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"

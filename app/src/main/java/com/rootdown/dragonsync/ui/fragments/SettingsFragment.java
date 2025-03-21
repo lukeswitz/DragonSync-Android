@@ -181,8 +181,8 @@ public class SettingsFragment extends Fragment {
             // Check if there's an existing info text
             TextView infoText = new TextView(requireContext());
             infoText.setTag("onboard_info_text");
-            infoText.setText("Onboard detection uses your device's Bluetooth and WiFi " +
-                    "to directly detect nearby drones without external hardware.");
+            infoText.setText("Uses your device's Bluetooth and WiFi " +
+                    "to detect nearby drones without external hardware.");
             infoText.setPadding(16, 16, 16, 16);
 
             ViewGroup parent = (ViewGroup) hostInputLayout.getParent();

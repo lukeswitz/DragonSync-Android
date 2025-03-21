@@ -222,7 +222,16 @@ public class CoTViewModel extends ViewModel {
             return -1;
         }
 
-        // First try to match by MAC address if available
+        // First try an RID match for ID
+        if (newMessage.getId() != null && !newMessage.getId().isEmpty()) {
+            for (int i = 0; i < messages.size(); i++) {
+                if (newMessage.getId().equals(messages.get(i).getId())) {
+                    return i;
+                }
+            }
+        }
+
+        // Then try to match by MAC address if available
         if (newMessage.getMac() != null && !newMessage.getMac().isEmpty()) {
             for (int i = 0; i < messages.size(); i++) {
                 if (newMessage.getMac().equals(messages.get(i).getMac())) {

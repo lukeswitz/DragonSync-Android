@@ -111,7 +111,6 @@
     <string name="drone_label_tracked">TRACKED</string>
     <string name="drone_label_spoofed">SPOOFED</string>
     <string name="drone_label_nearby">NEARBY</string>
-    <string name="no_drones_message">No drones detected</string>
     <string name="no_warnings_message">No active warnings</string>
 
     <!-- Drone Details -->
@@ -146,7 +145,7 @@
     <string name="sort_by_recent">Most Recent</string>
     <string name="action_map_all">Show all on map</string>
     <string name="search_drones">Search drones</string>
-    <string name="no_drones_detected">No drones detected</string>
+    <string name="no_drones_detected"></string>
 
     <!-- Signal Sources -->
     <string name="signal_sources_title">Signal Sources</string>

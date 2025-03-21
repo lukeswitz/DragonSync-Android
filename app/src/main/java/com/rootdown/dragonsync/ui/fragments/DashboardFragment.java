@@ -1,6 +1,7 @@
 package com.rootdown.dragonsync.ui.fragments;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Gravity;
@@ -46,6 +47,7 @@ public class DashboardFragment extends Fragment {
     private TextView nearbyDronesText;
 
     private DroneListAdapter droneListAdapter;
+    com.google.android.material.chip.Chip sdrStatusChip;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -85,7 +87,7 @@ public class DashboardFragment extends Fragment {
         systemMetricsGrid = view.findViewById(R.id.metrics_grid);
         droneStatsGrid = view.findViewById(R.id.drone_stats_grid);
         sdrStatsGrid = view.findViewById(R.id.sdr_stats_grid);
-
+        sdrStatusChip = view.findViewById(R.id.sdr_status_chip);
         recentDronesList = view.findViewById(R.id.recent_drones_list);
         recentDronesList.setLayoutManager(new LinearLayoutManager(requireContext()));
         droneListAdapter = new DroneListAdapter(new DroneListAdapter.OnDroneClickListener() {
@@ -208,16 +210,28 @@ public class DashboardFragment extends Fragment {
 
         // PLUTO temperature gauge
         CircularGaugeView plutoGauge = createGauge(requireContext(), "PLUTO", 0, "°C", Color.GREEN);
-        sdrStatsGrid.addView(plutoGauge);
+        GridLayout.LayoutParams plutoParams = new GridLayout.LayoutParams();
+        plutoParams.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, GridLayout.CENTER);
+        plutoParams.rowSpec = GridLayout.spec(GridLayout.UNDEFINED, GridLayout.CENTER);
+        plutoParams.setGravity(Gravity.CENTER);
+        sdrStatsGrid.addView(plutoGauge, plutoParams);
 
         // ZYNQ temperature gauge
         CircularGaugeView zynqGauge = createGauge(requireContext(), "ZYNQ", 0, "°C", Color.GREEN);
-        sdrStatsGrid.addView(zynqGauge);
+        GridLayout.LayoutParams zynqParams = new GridLayout.LayoutParams();
+        zynqParams.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, GridLayout.CENTER);
+        zynqParams.rowSpec = GridLayout.spec(GridLayout.UNDEFINED, GridLayout.CENTER);
+        zynqParams.setGravity(Gravity.CENTER);
+        sdrStatsGrid.addView(zynqGauge, zynqParams);
 
         // SDR status text
         TextView statusText = new TextView(requireContext());
         statusText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-        sdrStatsGrid.addView(statusText);
+        GridLayout.LayoutParams statusParams = new GridLayout.LayoutParams();
+        statusParams.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, GridLayout.CENTER);
+        statusParams.rowSpec = GridLayout.spec(GridLayout.UNDEFINED, GridLayout.CENTER);
+        statusParams.setGravity(Gravity.CENTER);
+        sdrStatsGrid.addView(statusText, statusParams);
     }
 
     private void setupObservers() {
@@ -291,19 +305,20 @@ public class DashboardFragment extends Fragment {
                     Constants.ZYNQ_TEMP_CRITICAL_THRESHOLD
             ));
 
-            // Update SDR status text
-            if (sdrStatsGrid.getChildCount() > 2) {
-                TextView statusText = (TextView) sdrStatsGrid.getChildAt(2);
-                statusText.setText(getString(R.string.sdr_status_active));
-                statusText.setTextColor(requireContext().getColor(R.color.status_green));
-            }
+        }
+        // Update SDR status chip
+        if (status.getAntStats() != null) {
+            // SDR is active
+            sdrStatusChip.setText("ACTIVE");
+            sdrStatusChip.setChipBackgroundColor(ColorStateList.valueOf(getResources().getColor(R.color.status_green_10, null)));
+            sdrStatusChip.setChipStrokeColor(ColorStateList.valueOf(getResources().getColor(R.color.status_green, null)));
+            sdrStatusChip.setTextColor(getResources().getColor(R.color.status_green, null));
         } else {
-            // Set inactive status when no ANT stats available
-            if (sdrStatsGrid.getChildCount() > 2) {
-                TextView statusText = (TextView) sdrStatsGrid.getChildAt(2);
-                statusText.setText(getString(R.string.sdr_status_inactive));
-                statusText.setTextColor(requireContext().getColor(R.color.status_red));
-            }
+            // SDR is inactive
+            sdrStatusChip.setText("INACTIVE");
+            sdrStatusChip.setChipBackgroundColor(ColorStateList.valueOf(getResources().getColor(R.color.status_red_10, null)));
+            sdrStatusChip.setChipStrokeColor(ColorStateList.valueOf(getResources().getColor(R.color.status_red, null)));
+            sdrStatusChip.setTextColor(getResources().getColor(R.color.status_red, null));
         }
     }
 

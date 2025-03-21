@@ -36,8 +36,7 @@
                     <ImageView
                         android:layout_width="@dimen/icon_size"
                         android:layout_height="@dimen/icon_size"
-                        android:src="@drawable/ic_drone_accent"
-                        app:tint="@color/accent" />
+                        android:src="@drawable/ic_drone_accent" />
 
                     <TextView
                         android:layout_width="0dp"
@@ -121,7 +120,6 @@
             android:id="@+id/empty_state"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:text="@string/no_drones_detected"
             android:textColor="@color/on_surface_medium"
             android:textSize="@dimen/text_size_body"
             android:gravity="center"
