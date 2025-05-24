@@ -1,6 +1,8 @@
 package com.rootdown.dragonsync.network;
 
 import android.Manifest;
+import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -8,48 +10,67 @@ import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
+import android.net.wifi.aware.AttachCallback;
+import android.net.wifi.aware.DiscoverySessionCallback;
+import android.net.wifi.aware.IdentityChangedListener;
+import android.net.wifi.aware.PeerHandle;
+import android.net.wifi.aware.SubscribeConfig;
+import android.net.wifi.aware.SubscribeDiscoverySession;
+import android.net.wifi.aware.WifiAwareManager;
+import android.net.wifi.aware.WifiAwareSession;
 import android.os.Build;
 import android.os.CountDownTimer;
-import android.os.Handler;
-import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.rootdown.dragonsync.utils.DroneDataParser;
 
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 public class WiFiScanner {
     private static final String TAG = "WiFiScanner";
-    private static final long SCAN_INTERVAL = 10000; // 10 seconds
-
-    // OpenDroneID Vendor Specific Information Element Constants
+    private static final long SCAN_INTERVAL = 2000; // 2 seconds for WiFi beacon scanning
+    private static final int PERMISSIONS_REQUEST_CODE = 987;
+    // OpenDroneID WiFi Constants
     private static final int CID_LENGTH = 3;
-    private static final int[] DRI_CID = {0xFA, 0x0B, 0xBC};
+    private static final int[] DRI_CID = {0xFA, 0x0B, 0xBC}; // OpenDroneID OUI
     private static final int DRI_START_OFFSET = 4;
     private static final int VENDOR_TYPE_LENGTH = 1;
-    private static final int VENDOR_TYPE_VALUE = 0x0D;
+    private static final int VENDOR_TYPE_VALUE = 0x0D; // OpenDroneID vendor type
+    private static final int VENDOR_SPECIFIC_IE_ID = 221; // Vendor specific information element ID
+    private static final String OPENDRONEID_NAN_SERVICE_NAME = "org.opendroneid.remoteid";
 
     private final Context context;
     private final WifiManager wifiManager;
-    private boolean isScanning = false;
-    private final Handler handler = new Handler(Looper.getMainLooper());
+    private final WifiAwareManager wifiAwareManager;
     private final OnDroneDetectedListener listener;
-    private CountDownTimer countDownTimer;
     private final DroneDataParser dataParser;
 
-    // Stats tracking
+    // WiFi Beacon scanning
+    private boolean isBeaconScanningEnabled = true;
+    private boolean isBeaconScanning = false;
+    private CountDownTimer beaconScanTimer;
+    private BroadcastReceiver wifiScanReceiver;
     private int scanSuccess = 0;
     private int scanFailed = 0;
+
+    // WiFi NaN scanning
+    private boolean isNaNSupported = false;
+    private boolean isNaNScanning = false;
+    private WifiAwareSession wifiAwareSession;
+    private SubscribeDiscoverySession subscribeSession;
+
+
 
     public interface OnDroneDetectedListener {
         void onDroneDetected(JSONArray droneData);
@@ -61,23 +82,185 @@ public class WiFiScanner {
         this.listener = listener;
         this.dataParser = new DroneDataParser();
 
-        if (!context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI)) {
-            Log.e(TAG, "WiFi Scanning is not supported on this device");
-            wifiManager = null;
-            return;
-        }
-
+        // Initialize WiFi Manager for beacon scanning
         wifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-
         if (wifiManager == null) {
             Log.e(TAG, "Could not get WifiManager");
-            return;
+            isBeaconScanningEnabled = false;
         }
 
-        if (!wifiManager.isWifiEnabled()) {
-            Log.d(TAG, "Trying to enable WiFi");
+        // Initialize WiFi Aware Manager for NaN scanning (Android 8.0+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (context.getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE)) {
+                wifiAwareManager = (WifiAwareManager) context.getSystemService(Context.WIFI_AWARE_SERVICE);
+                isNaNSupported = true;
+                Log.d(TAG, "WiFi Aware (NaN) is supported on this device");
+            } else {
+                wifiAwareManager = null;
+                Log.d(TAG, "WiFi Aware (NaN) is not supported on this device");
+            }
+        } else {
+            wifiAwareManager = null;
+            Log.d(TAG, "WiFi Aware requires Android 8.0+ (API 26)");
+        }
+
+        setupWifiBeaconReceiver();
+    }
+
+    public boolean startScanning() {
+        boolean success = false;
+
+        // Check permissions
+        if (!hasRequiredPermissions()) {
+            listener.onError("Missing required permissions for WiFi scanning");
+            return false;
+        }
+
+        // Ensure WiFi is enabled
+        if (wifiManager != null && !wifiManager.isWifiEnabled()) {
+            Log.d(TAG, "Enabling WiFi for scanning");
             wifiManager.setWifiEnabled(true);
         }
+
+        // Start WiFi beacon scanning
+        if (isBeaconScanningEnabled && startBeaconScanning()) {
+            success = true;
+            Log.d(TAG, "WiFi beacon scanning started");
+        }
+
+        // Start WiFi NaN scanning if supported
+        if (isNaNSupported && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && startNaNScanning()) {
+            success = true;
+            Log.d(TAG, "WiFi NaN scanning started");
+        }
+
+        if (!success) {
+            listener.onError("Failed to start any WiFi scanning methods");
+        }
+
+        Log.i(TAG, "🔍 STARTING WIFI REMOTE ID SCAN (Beacon: " + isBeaconScanning + ", NaN: " + isNaNScanning + ")");
+        return success;
+    }
+
+    private boolean startBeaconScanning() {
+        if (!isBeaconScanningEnabled || wifiManager == null) {
+            return false;
+        }
+
+        if (isBeaconScanning) {
+            return true; // Already scanning
+        }
+
+        // Check permissions before starting scan
+        if (!hasRequiredPermissions()) {
+            Log.e(TAG, "Cannot start beacon scanning - missing permissions");
+            listener.onError("Missing required permissions for WiFi beacon scanning");
+            return false;
+        }
+
+        startBeaconScanTimer();
+
+        // Start initial scan with permission check
+        boolean started;
+        try {
+            started = wifiManager.startScan();
+            Log.d(TAG, "Initial WiFi beacon scan started: " + started);
+        } catch (SecurityException e) {
+            Log.e(TAG, "SecurityException starting WiFi scan: " + e.getMessage());
+            listener.onError("Permission denied for WiFi scanning");
+            return false;
+        }
+
+        if (started) {
+            scanSuccess++;
+            isBeaconScanning = true;
+        } else {
+            scanFailed++;
+        }
+
+        return started;
+    }
+
+    @TargetApi(Build.VERSION_CODES.O)
+    private boolean startNaNScanning() {
+        if (!isNaNSupported || wifiAwareManager == null || isNaNScanning) {
+            return false;
+        }
+
+        if (!wifiAwareManager.isAvailable()) {
+            Log.w(TAG, "WiFi Aware is currently not available");
+            return false;
+        }
+
+        try {
+            wifiAwareManager.attach(attachCallback, identityChangedListener, null);
+            return true;
+        } catch (SecurityException e) {
+            Log.e(TAG, "Security exception starting WiFi NaN: " + e.getMessage());
+            listener.onError("Permission denied for WiFi NaN scanning");
+            return false;
+        }
+    }
+
+    public void stopScanning() {
+        stopBeaconScanning();
+        stopNaNScanning();
+        Log.d(TAG, "WiFi scanning stopped");
+    }
+
+    private void stopBeaconScanning() {
+        if (beaconScanTimer != null) {
+            beaconScanTimer.cancel();
+            beaconScanTimer = null;
+        }
+
+        try {
+            if (wifiScanReceiver != null) {
+                context.unregisterReceiver(wifiScanReceiver);
+            }
+        } catch (IllegalArgumentException e) {
+            // Ignore if receiver wasn't registered
+        }
+
+        isBeaconScanning = false;
+        Log.d(TAG, "WiFi beacon scanning stopped");
+    }
+
+    @TargetApi(Build.VERSION_CODES.O)
+    private void stopNaNScanning() {
+        if (subscribeSession != null) {
+            subscribeSession.close();
+            subscribeSession = null;
+        }
+
+        if (wifiAwareSession != null) {
+            wifiAwareSession.close();
+            wifiAwareSession = null;
+        }
+
+        isNaNScanning = false;
+        Log.d(TAG, "WiFi NaN scanning stopped");
+    }
+
+    private void setupWifiBeaconReceiver() {
+        wifiScanReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                boolean success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false);
+                String action = intent.getAction();
+
+                if (success && WifiManager.SCAN_RESULTS_AVAILABLE_ACTION.equals(action)) {
+                    Log.d(TAG, "WiFi beacon scan results available");
+                    processBeaconScanResults();
+                } else {
+                    Log.e(TAG, "WiFi beacon scan was not successful");
+                    scanFailed++;
+                    if (listener != null) {
+                        listener.onError("WiFi beacon scan failed");
+                    }
+                }
+            }
+        };
 
         IntentFilter filter = new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -87,90 +270,16 @@ public class WiFiScanner {
         }
     }
 
-    private final BroadcastReceiver wifiScanReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            boolean success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false);
-            if (success) {
-                Log.d(TAG, "WiFi scan results available");
-                processScanResults();
-            } else {
-                Log.e(TAG, "WiFi scan was not successful");
-                listener.onError("WiFi scan failed");
-            }
-        }
-    };
-
-    public boolean startScanning() {
-        if (wifiManager == null) {
-            Log.e(TAG, "WiFi manager not available");
-            return false;
+    private void startBeaconScanTimer() {
+        if (beaconScanTimer != null) {
+            beaconScanTimer.cancel();
         }
 
-        if (!wifiManager.isWifiEnabled()) {
-            Log.e(TAG, "WiFi is disabled");
-            return false;
-        }
-
-        if (isScanning) {
-            return true;
-        }
-
-        Log.d(TAG, "🔍 STARTING WIFI SCAN FOR DRONES");
-        startCountDownTimer();
-
-        if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            Log.e(TAG, "Missing location permission for WiFi scanning");
-            return false;
-        }
-
-        boolean started = wifiManager.startScan();
-        Log.d(TAG, "Initial WiFi scan started: " + started);
-        if (started) {
-            scanSuccess++;
-        } else {
-            scanFailed++;
-        }
-
-        isScanning = true;
-        return true;
-    }
-
-    public void stopScanning() {
-        if (isScanning) {
-            if (countDownTimer != null) {
-                countDownTimer.cancel();
-                countDownTimer = null;
-            }
-
-            try {
-                context.unregisterReceiver(wifiScanReceiver);
-            } catch (IllegalArgumentException e) {
-                // Ignore if receiver wasn't registered
-            }
-
-            isScanning = false;
-            Log.d(TAG, "WiFi scanning stopped");
-        }
-    }
-
-    private void startCountDownTimer() {
-        if (countDownTimer != null) {
-            countDownTimer.cancel();
-        }
-
-        countDownTimer = new CountDownTimer(Long.MAX_VALUE, SCAN_INTERVAL) {
+        beaconScanTimer = new CountDownTimer(Long.MAX_VALUE, SCAN_INTERVAL) {
             public void onTick(long millisUntilFinished) {
-                if (wifiManager != null && isScanning) {
-                    if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-                            != PackageManager.PERMISSION_GRANTED) {
-                        Log.e(TAG, "Missing location permission for WiFi scanning");
-                        return;
-                    }
-
+                if (wifiManager != null && isBeaconScanning) {
                     boolean started = wifiManager.startScan();
-                    Log.d(TAG, "Periodic WiFi scan started: " + started +
+                    Log.d(TAG, "Periodic WiFi beacon scan started: " + started +
                             " (success: " + scanSuccess + ", failed: " + scanFailed + ")");
 
                     if (started) {
@@ -178,12 +287,9 @@ public class WiFiScanner {
                     } else {
                         scanFailed++;
 
-                        // More aggressive scanning if throttled - try alternate approach
+                        // Handle scan throttling on Android 8+
                         if (scanFailed > 3) {
-                            Log.d(TAG, "Scan throttling detected, trying alternative approach");
-                            handler.postDelayed(() -> {
-                                wifiManager.startScan();
-                            }, 2000);
+                            Log.d(TAG, "WiFi scan throttling detected, adjusting scan strategy");
                         }
                     }
                 }
@@ -195,104 +301,117 @@ public class WiFiScanner {
         }.start();
     }
 
-    private void processScanResults() {
+    private void processBeaconScanResults() {
         if (wifiManager == null) {
             return;
         }
 
+        // Check for location permission before calling getScanResults()
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
-            Log.e(TAG, "Missing location permission - can't get WiFi scan results");
+            Log.e(TAG, "Missing ACCESS_FINE_LOCATION permission - can't get WiFi scan results");
+            listener.onError("Location permission required for WiFi scanning");
             return;
         }
 
-        List<ScanResult> results = wifiManager.getScanResults();
-        Log.d(TAG, "Processing " + (results != null ? results.size() : 0) + " WiFi scan results");
+        List<ScanResult> results;
+        try {
+            results = wifiManager.getScanResults();
+        } catch (SecurityException e) {
+            Log.e(TAG, "SecurityException getting WiFi scan results: " + e.getMessage());
+            listener.onError("Permission denied for WiFi scan results");
+            return;
+        }
+
+        Log.d(TAG, "Processing " + (results != null ? results.size() : 0) + " WiFi beacon scan results");
 
         if (results == null || results.isEmpty()) {
-            Log.d(TAG, "No WiFi scan results found");
+            Log.d(TAG, "No WiFi beacon scan results found");
             return;
         }
 
         for (ScanResult scanResult : results) {
             try {
-                // First check if this is a drone-specific WiFi network
-                if (isDroneWiFi(scanResult)) {
-                    JSONArray droneData = createDroneWiFiData(scanResult);
-                    if (droneData.length() > 0) {
-                        listener.onDroneDetected(droneData);
-                        Log.d(TAG, "Detected drone WiFi: " + scanResult.SSID + ", BSSID: " + scanResult.BSSID);
-                    }
-                }
-
-                // Then check for OpenDroneID information elements regardless of SSID
-                processInformationElements(scanResult);
-
+                processBeaconResult(scanResult);
             } catch (Exception e) {
-                Log.e(TAG, "Error processing scan result: " + e.getMessage(), e);
+                Log.e(TAG, "Error processing beacon scan result: " + e.getMessage(), e);
             }
         }
     }
 
-    private boolean isDroneWiFi(ScanResult scanResult) {
-        if (scanResult.SSID == null || scanResult.SSID.isEmpty()) {
-            return false;
-        }
-
-        String ssid = scanResult.SSID.toUpperCase();
-
-        // Comprehensive list of known drone manufacturers in SSIDs
-        return ssid.contains("DJI") ||
-                ssid.contains("MAVIC") ||
-                ssid.contains("PHANTOM") ||
-                ssid.contains("TELLO") ||
-                ssid.contains("ANAFI") ||
-                ssid.contains("PARROT") ||
-                ssid.contains("SKYDIO") ||
-                ssid.contains("AUTEL") ||
-                ssid.contains("YUNEEC") ||
-                ssid.contains("DRONE") ||
-                ssid.contains("UAV") ||
-                ssid.contains("UAS") ||
-                ssid.contains("COPTER") ||
-                ssid.contains("QUAD") ||
-                ssid.contains("REMOTE ID") ||
-                ssid.contains("DRI_") ||
-                ssid.contains("RID") ||
-                ssid.contains("OPENDRONE");
-    }
-
-    private void processInformationElements(ScanResult scanResult) {
+    private void processBeaconResult(ScanResult scanResult) {
         try {
-            ScanResult.InformationElement[] elements = getInformationElements(scanResult);
-            if (elements == null) return;
-
-            for (ScanResult.InformationElement element : elements) {
-                if (element == null) continue;
-
-                int id = getElementId(element);
-                if (id == 221) { // Vendor-specific IE
-                    byte[] data = getElementData(element);
-                    if (data != null) {
-                        processRemoteIdVendorData(scanResult, ByteBuffer.wrap(data));
+            // Check for OpenDroneID information elements in WiFi beacons
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                // Android 11+ - use public API
+                for (ScanResult.InformationElement element : scanResult.getInformationElements()) {
+                    if (element != null && element.getId() == VENDOR_SPECIFIC_IE_ID) {
+                        ByteBuffer buf = element.getBytes();
+                        if (buf != null) {
+                            processRemoteIdVendorIE(scanResult, buf);
+                        }
                     }
                 }
+            } else {
+                // Android 6-10 - use reflection to access hidden field
+                processInformationElementsReflection(scanResult);
             }
         } catch (Exception e) {
             Log.e(TAG, "Error processing information elements: " + e.getMessage(), e);
         }
     }
 
-    private void processRemoteIdVendorData(ScanResult scanResult, ByteBuffer buffer) {
-        if (buffer == null || buffer.remaining() < CID_LENGTH + VENDOR_TYPE_LENGTH) return;
+    private void processInformationElementsReflection(ScanResult scanResult) {
+        try {
+            // Use reflection to access hidden informationElements field
+            java.lang.reflect.Field field = ScanResult.class.getDeclaredField("informationElements");
+            field.setAccessible(true);
+            ScanResult.InformationElement[] elements = (ScanResult.InformationElement[]) field.get(scanResult);
 
+            if (elements == null) return;
+
+            for (ScanResult.InformationElement element : elements) {
+                if (element == null) continue;
+
+                // Get element ID using reflection
+                java.lang.reflect.Field idField = element.getClass().getDeclaredField("id");
+                idField.setAccessible(true);
+                int id = (int) idField.get(element);
+
+                if (id == VENDOR_SPECIFIC_IE_ID) {
+                    // Get element data using reflection
+                    java.lang.reflect.Field bytesField = element.getClass().getDeclaredField("bytes");
+                    bytesField.setAccessible(true);
+                    byte[] data = (byte[]) bytesField.get(element);
+
+                    if (data != null) {
+                        ByteBuffer buf = ByteBuffer.wrap(data).asReadOnlyBuffer();
+                        processRemoteIdVendorIE(scanResult, buf);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Reflection access to information elements failed: " + e.getMessage());
+        }
+    }
+
+    private void processRemoteIdVendorIE(ScanResult scanResult, ByteBuffer buffer) {
+        if (buffer == null || buffer.remaining() < CID_LENGTH + VENDOR_TYPE_LENGTH) {
+            return;
+        }
+
+        // Reset buffer position and set byte order
+        buffer.rewind();
+        buffer.order(ByteOrder.LITTLE_ENDIAN);
+
+        // Read and verify OpenDroneID header
         byte[] cidBytes = new byte[CID_LENGTH];
         buffer.get(cidBytes, 0, CID_LENGTH);
 
         byte[] vendorType = new byte[VENDOR_TYPE_LENGTH];
         buffer.get(vendorType);
 
-        // Check for OpenDroneID information element pattern
+        // Check for OpenDroneID information element pattern (0xFA 0x0B 0xBC 0x0D)
         if ((cidBytes[0] & 0xFF) == DRI_CID[0] &&
                 (cidBytes[1] & 0xFF) == DRI_CID[1] &&
                 (cidBytes[2] & 0xFF) == DRI_CID[2] &&
@@ -303,149 +422,210 @@ public class WiFiScanner {
             byte[] beaconData = new byte[buffer.remaining()];
             buffer.get(beaconData);
 
-            JSONArray droneData = dataParser.parseWiFiBeaconData(beaconData, scanResult.BSSID, scanResult.level);
-            if (droneData.length() > 0) {
-                listener.onDroneDetected(droneData);
-                Log.d(TAG, "Detected drone Remote ID in beacon: " + scanResult.BSSID +
-                        " (RSSI: " + scanResult.level + "dBm)");
-            }
-        }
-    }
+            Log.i(TAG, "Found OpenDroneID WiFi beacon data: " + scanResult.BSSID +
+                    ", data length: " + beaconData.length +
+                    ", RSSI: " + scanResult.level + "dBm");
 
-    private ScanResult.InformationElement[] getInformationElements(ScanResult scanResult) {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                List<ScanResult.InformationElement> elements = scanResult.getInformationElements();
-                return elements != null ? elements.toArray(new ScanResult.InformationElement[0]) : null;
-            } else {
-                java.lang.reflect.Field field = ScanResult.class.getDeclaredField("informationElements");
-                field.setAccessible(true);
-                return (ScanResult.InformationElement[]) field.get(scanResult);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to get information elements: " + e.getMessage(), e);
-            return null;
-        }
-    }
+            try {
+                // Use the parseOpenDroneIDMessage method for proper OpenDroneID parsing
+                JSONObject droneMessage = dataParser.parseOpenDroneIDMessage(beaconData, scanResult.BSSID, scanResult.level);
 
-    private int getElementId(ScanResult.InformationElement element) {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                return element.getId();
-            } else {
-                java.lang.reflect.Field field = element.getClass().getDeclaredField("id");
-                field.setAccessible(true);
-                return (int) field.get(element);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to get element ID: " + e.getMessage(), e);
-            return -1;
-        }
-    }
+                if (droneMessage != null) {
+                    // Convert single message to array format expected by the listener
+                    JSONArray droneData = new JSONArray();
+                    droneData.put(droneMessage);
 
-    private byte[] getElementData(ScanResult.InformationElement element) {
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                ByteBuffer buffer = element.getBytes();
-                byte[] data = new byte[buffer.remaining()];
-                buffer.get(data);
-                return data;
-            } else {
-                java.lang.reflect.Field field = element.getClass().getDeclaredField("bytes");
-                field.setAccessible(true);
-                return (byte[]) field.get(element);
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Failed to get element data: " + e.getMessage(), e);
-            return null;
-        }
-    }
+                    listener.onDroneDetected(droneData);
+                    Log.d(TAG, "Successfully parsed drone Remote ID from WiFi beacon: " + scanResult.BSSID);
+                } else {
+                    Log.w(TAG, "parseOpenDroneIDMessage returned null for: " + scanResult.BSSID);
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Error parsing OpenDroneID message: " + e.getMessage(), e);
 
-    private JSONArray createDroneWiFiData(ScanResult scanResult) {
-        JSONArray messagesArray = new JSONArray();
-
-        try {
-            JSONObject basicIdObj = new JSONObject();
-            JSONObject basicId = new JSONObject();
-            basicIdObj.put("Basic ID", basicId);
-
-            basicId.put("MAC", scanResult.BSSID);
-            basicId.put("RSSI", scanResult.level);
-
-            String manufacturer = "Unknown";
-            String droneModel = scanResult.SSID;
-            String idType = "WiFi SSID";
-
-            // Detect manufacturer from SSID
-            if (scanResult.SSID.contains("DJI") ||
-                    scanResult.SSID.contains("MAVIC") ||
-                    scanResult.SSID.contains("PHANTOM") ||
-                    scanResult.SSID.contains("TELLO")) {
-                manufacturer = "DJI";
-            } else if (scanResult.SSID.contains("ANAFI") ||
-                    scanResult.SSID.contains("PARROT") ||
-                    scanResult.SSID.contains("BEBOP")) {
-                manufacturer = "Parrot";
-            } else if (scanResult.SSID.contains("SKYDIO")) {
-                manufacturer = "Skydio";
-            } else if (scanResult.SSID.contains("AUTEL")) {
-                manufacturer = "Autel";
-            } else if (scanResult.SSID.contains("YUNEEC")) {
-                manufacturer = "Yuneec";
-            }
-
-            // Try to determine drone model from SSID
-            if (manufacturer.equals("DJI")) {
-                if (scanResult.SSID.contains("MAVIC")) {
-                    droneModel = "DJI Mavic";
-                    if (scanResult.SSID.contains("AIR")) droneModel += " Air";
-                    else if (scanResult.SSID.contains("MINI")) droneModel += " Mini";
-                    else if (scanResult.SSID.contains("PRO")) droneModel += " Pro";
-                } else if (scanResult.SSID.contains("PHANTOM")) {
-                    droneModel = "DJI Phantom";
-                    if (scanResult.SSID.contains("3")) droneModel += " 3";
-                    else if (scanResult.SSID.contains("4")) droneModel += " 4";
-                } else if (scanResult.SSID.contains("TELLO")) {
-                    droneModel = "DJI Tello";
-                } else if (scanResult.SSID.contains("INSPIRE")) {
-                    droneModel = "DJI Inspire";
+                // Fallback to the original parsing method
+                try {
+                    JSONArray droneData = dataParser.parseWiFiBeaconData(beaconData, scanResult.BSSID, scanResult.level);
+                    if (droneData.length() > 0) {
+                        listener.onDroneDetected(droneData);
+                        Log.d(TAG, "Successfully parsed using fallback method: " + scanResult.BSSID);
+                    } else {
+                        Log.w(TAG, "Both parsing methods failed for: " + scanResult.BSSID);
+                    }
+                } catch (Exception fallbackException) {
+                    Log.e(TAG, "Fallback parsing also failed: " + fallbackException.getMessage());
                 }
             }
+        }
+    }
 
-            basicId.put("id_type", idType);
-            basicId.put("id", scanResult.SSID);
-            basicId.put("description", droneModel);
-            basicId.put("ua_type", "Helicopter (or Multirotor)");
-            basicId.put("manufacturer", manufacturer);
+    // WiFi NaN (Neighbor Aware Networking) callbacks
+    @TargetApi(Build.VERSION_CODES.O)
+    private final AttachCallback attachCallback = new AttachCallback() {
+        @Override
+        public void onAttached(WifiAwareSession session) {
+            if (!isNaNSupported) return;
 
-            messagesArray.put(basicIdObj);
+            wifiAwareSession = session;
+            SubscribeConfig config = new SubscribeConfig.Builder()
+                    .setServiceName(OPENDRONEID_NAN_SERVICE_NAME)
+                    .build();
 
-            // Add Self-ID message
-            JSONObject selfIdObj = new JSONObject();
-            JSONObject selfId = new JSONObject();
-            selfIdObj.put("Self-ID Message", selfId);
-            selfId.put("text", droneModel);
-            selfId.put("description_type", 0);
-            selfId.put("MAC", scanResult.BSSID);
-            selfId.put("RSSI", scanResult.level);
-            messagesArray.put(selfIdObj);
+            try {
+                wifiAwareSession.subscribe(config, new DiscoverySessionCallback() {
+                    @Override
+                    public void onSubscribeStarted(@NonNull SubscribeDiscoverySession session) {
+                        subscribeSession = session;
+                        isNaNScanning = true;
+                        Log.i(TAG, "WiFi NaN subscribe started for OpenDroneID service");
+                    }
 
-            // Try to add capabilities data if available
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                JSONObject locObj = new JSONObject();
-                JSONObject location = new JSONObject();
-                locObj.put("Location/Vector Message", location);
-                location.put("MAC", scanResult.BSSID);
-                location.put("RSSI", scanResult.level);
-                // We don't have actual location data yet, but this prepares
-                // for potential additional vendor-specific data parsing in the future
-                messagesArray.put(locObj);
+                    @Override
+                    public void onServiceDiscovered(PeerHandle peerHandle, byte[] serviceSpecificInfo, List<byte[]> matchFilter) {
+                        Log.i(TAG, "WiFi NaN: OpenDroneID service discovered from peer: " + peerHandle.hashCode() +
+                                ", data length: " + serviceSpecificInfo.length);
+
+                        try {
+                            // Try to parse as OpenDroneID message first
+                            JSONObject droneMessage = dataParser.parseOpenDroneIDMessage(serviceSpecificInfo,
+                                    "NaN-" + peerHandle.hashCode(), 0);
+
+                            if (droneMessage != null) {
+                                JSONArray droneData = new JSONArray();
+                                droneData.put(droneMessage);
+                                listener.onDroneDetected(droneData);
+                                Log.d(TAG, "Successfully parsed drone Remote ID from WiFi NaN");
+                            } else {
+                                // Fallback to beacon data parsing
+                                JSONArray droneData = dataParser.parseWiFiBeaconData(serviceSpecificInfo,
+                                        "NaN-" + peerHandle.hashCode(), 0);
+                                if (droneData.length() > 0) {
+                                    listener.onDroneDetected(droneData);
+                                    Log.d(TAG, "Successfully parsed drone Remote ID from WiFi NaN using fallback");
+                                } else {
+                                    Log.w(TAG, "Failed to parse WiFi NaN data with both methods");
+                                }
+                            }
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error parsing WiFi NaN data: " + e.getMessage(), e);
+                        }
+                    }
+
+                    @Override
+                    public void onSessionTerminated() {
+                        subscribeSession = null;
+                        isNaNScanning = false;
+                        Log.w(TAG, "WiFi NaN session terminated");
+                    }
+                }, null);
+
+            } catch (SecurityException e) {
+                Log.e(TAG, "Security exception subscribing to WiFi NaN: " + e.getMessage());
+                listener.onError("Permission denied for WiFi NaN subscription");
             }
-
-        } catch (JSONException e) {
-            Log.e(TAG, "Error creating drone data: " + e.getMessage(), e);
         }
 
-        return messagesArray;
+        @Override
+        public void onAttachFailed() {
+            Log.e(TAG, "WiFi NaN attach failed");
+            listener.onError("WiFi NaN attach failed");
+        }
+    };
+
+    @TargetApi(Build.VERSION_CODES.O)
+    private final IdentityChangedListener identityChangedListener = new IdentityChangedListener() {
+        @Override
+        public void onIdentityChanged(byte[] mac) {
+            Log.d(TAG, "WiFi NaN identity changed, new MAC length: " + mac.length);
+        }
+    };
+
+    private boolean hasRequiredPermissions() {
+        // Check location permission (required for WiFi scanning)
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            Log.e(TAG, "Missing ACCESS_FINE_LOCATION permission");
+            return false;
+        }
+
+        // Check WiFi state permission
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_WIFI_STATE)
+                != PackageManager.PERMISSION_GRANTED) {
+            Log.e(TAG, "Missing ACCESS_WIFI_STATE permission");
+            return false;
+        }
+
+        // Check for Android 13+ WiFi permissions
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.NEARBY_WIFI_DEVICES)
+                    != PackageManager.PERMISSION_GRANTED) {
+                Log.e(TAG, "Missing NEARBY_WIFI_DEVICES permission (Android 13+)");
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // Helper function to build the list of missing permissions.
+    private String[] getMissingPermissions() {
+        List<String> permissionsToRequest = new ArrayList<>();
+
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.ACCESS_FINE_LOCATION);
+        }
+
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_WIFI_STATE) != PackageManager.PERMISSION_GRANTED) {
+            permissionsToRequest.add(Manifest.permission.ACCESS_WIFI_STATE);
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(context, Manifest.permission.NEARBY_WIFI_DEVICES) != PackageManager.PERMISSION_GRANTED) {
+                permissionsToRequest.add(Manifest.permission.NEARBY_WIFI_DEVICES);
+            }
+        }
+
+        // Consider CHANGE_WIFI_STATE as optional and don't block for it
+
+        return permissionsToRequest.toArray(new String[0]);
+    }
+
+    //To be called to start the scanning logic from the activity.
+    public void startScanningWithPermissionCheck(){
+        if (hasRequiredPermissions()) {
+            // start scanning logic, or call other functions
+            Log.i(TAG, "Starting wifi scanner");
+            // startScanning() // your other class method
+        } else{
+            // handle failure
+            Log.i(TAG, "Permissions missing to start wifi scanner");
+        }
+    }
+
+    private boolean hasLocationPermission() {
+        return ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED;
+    }
+
+    // Status methods
+    public boolean isScanning() {
+        return isBeaconScanning || isNaNScanning;
+    }
+
+    public boolean isBeaconScanningActive() {
+        return isBeaconScanning;
+    }
+
+    public boolean isNaNScanningActive() {
+        return isNaNScanning;
+    }
+
+    public boolean isNaNSupported() {
+        return isNaNSupported;
+    }
+
+    public void getScanStats() {
+        Log.d(TAG, "WiFi Scan Stats - Success: " + scanSuccess + ", Failed: " + scanFailed +
+                ", Beacon Active: " + isBeaconScanning + ", NaN Active: " + isNaNScanning);
     }
 }

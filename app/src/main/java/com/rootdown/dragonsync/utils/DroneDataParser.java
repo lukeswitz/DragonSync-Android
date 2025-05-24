@@ -45,23 +45,23 @@ public class DroneDataParser {
             // Create a JSON message based on the type
             switch (messageType) {
                 case MESSAGE_TYPE_BASIC_ID:
-                    messagesArray.put(parseBasicIdMessage(data, macAddress, rssi, messageVersion));
+                    messagesArray.put(parseBasicIdMessage(data, macAddress, rssi, messageVersion, 1));
                     break;
 
                 case MESSAGE_TYPE_LOCATION:
-                    messagesArray.put(parseLocationMessage(data, macAddress, rssi, messageVersion));
+                    messagesArray.put(parseLocationMessage(data, macAddress, rssi, messageVersion, 1));
                     break;
 
                 case MESSAGE_TYPE_SELF_ID:
-                    messagesArray.put(parseSelfIdMessage(data, macAddress, rssi, messageVersion));
+                    messagesArray.put(parseSelfIdMessage(data, macAddress, rssi, messageVersion, 1));
                     break;
 
                 case MESSAGE_TYPE_SYSTEM:
-                    messagesArray.put(parseSystemMessage(data, macAddress, rssi, messageVersion));
+                    messagesArray.put(parseSystemMessage(data, macAddress, rssi, messageVersion, 1));
                     break;
 
                 case MESSAGE_TYPE_OPERATOR_ID:
-                    messagesArray.put(parseOperatorIdMessage(data, macAddress, rssi, messageVersion));
+                    messagesArray.put(parseOperatorIdMessage(data, macAddress, rssi, messageVersion, 1));
                     break;
 
                 case MESSAGE_TYPE_MESSAGE_PACK:
@@ -83,62 +83,42 @@ public class DroneDataParser {
         return messagesArray;
     }
 
-    public JSONArray parseWiFiBeaconData(byte[] data, String macAddress, int rssi) {
+    // Add the missing parseWiFiBeaconData method
+    public JSONArray parseWiFiBeaconData(byte[] beaconData, String bssid, int rssi) {
         JSONArray messagesArray = new JSONArray();
 
         try {
-            if (data.length < 1) return messagesArray;
+            if (beaconData.length < 1) return messagesArray;
 
-            // Get message type from first byte (top 4 bits)
-            int headerByte = data[0] & 0xFF;
+            // Parse the beacon data similar to Bluetooth data
+            int headerByte = beaconData[0] & 0xFF;
             int messageType = (headerByte >> 4) & 0x0F;
             int messageVersion = headerByte & 0x0F;
 
-            Log.d(TAG, "WiFi Beacon data: type=" + messageType + ", version=" + messageVersion);
-
-            // Rest of parsing is similar to Bluetooth but with different offset expectations
+            // Process the message based on type
             switch (messageType) {
                 case MESSAGE_TYPE_BASIC_ID:
-                    messagesArray.put(parseBasicIdMessage(data, macAddress, rssi, messageVersion, 0));
+                    messagesArray.put(parseBasicIdMessage(beaconData, bssid, rssi, messageVersion, 1));
                     break;
 
                 case MESSAGE_TYPE_LOCATION:
-                    messagesArray.put(parseLocationMessage(data, macAddress, rssi, messageVersion, 0));
+                    messagesArray.put(parseLocationMessage(beaconData, bssid, rssi, messageVersion, 1));
                     break;
 
                 case MESSAGE_TYPE_SELF_ID:
-                    messagesArray.put(parseSelfIdMessage(data, macAddress, rssi, messageVersion, 0));
+                    messagesArray.put(parseSelfIdMessage(beaconData, bssid, rssi, messageVersion, 1));
                     break;
 
                 case MESSAGE_TYPE_SYSTEM:
-                    messagesArray.put(parseSystemMessage(data, macAddress, rssi, messageVersion, 0));
+                    messagesArray.put(parseSystemMessage(beaconData, bssid, rssi, messageVersion, 1));
                     break;
 
                 case MESSAGE_TYPE_OPERATOR_ID:
-                    messagesArray.put(parseOperatorIdMessage(data, macAddress, rssi, messageVersion, 0));
-                    break;
-
-                case MESSAGE_TYPE_MESSAGE_PACK:
-                    // Parse message pack
-                    JSONArray packMessages = parseMessagePack(data, macAddress, rssi, messageVersion);
-                    for (int i = 0; i < packMessages.length(); i++) {
-                        messagesArray.put(packMessages.get(i));
-                    }
+                    messagesArray.put(parseOperatorIdMessage(beaconData, bssid, rssi, messageVersion, 1));
                     break;
 
                 default:
-                    Log.w(TAG, "Unknown message type in WiFi beacon: " + messageType);
-//
-//                    // Fallback - add a basic message with the MAC address at minimum
-//                    JSONObject fallbackObj = new JSONObject();
-//                    JSONObject basicId = new JSONObject();
-//                    basicId.put("MAC", macAddress);
-//                    basicId.put("RSSI", rssi);
-//                    basicId.put("id_type", "WiFi Beacon");
-//                    basicId.put("id", macAddress);
-//                    basicId.put("ua_type", "Unknown");
-//                    fallbackObj.put("Basic ID", basicId);
-//                    messagesArray.put(fallbackObj);
+                    Log.w(TAG, "Unknown WiFi beacon message type: " + messageType);
             }
 
         } catch (Exception e) {
@@ -148,9 +128,142 @@ public class DroneDataParser {
         return messagesArray;
     }
 
-    private JSONObject parseBasicIdMessage(byte[] data, String macAddress, int rssi, int version) {
-        // Default offset for Bluetooth scanning
-        return parseBasicIdMessage(data, macAddress, rssi, version, 1);
+    public JSONObject parseOpenDroneIDMessage(byte[] messageData, String bssid, int rssi) {
+        try {
+            JSONObject messageObj = new JSONObject();
+            if (messageData.length < 25) {
+                Log.w(TAG, "OpenDroneID message too short: " + messageData.length + " bytes");
+                return null;
+            }
+
+            ByteBuffer buffer = ByteBuffer.wrap(messageData);
+            buffer.order(ByteOrder.LITTLE_ENDIAN);
+
+            // Read message header
+            int messageType = buffer.get() & 0xFF;
+
+            // Add common fields
+            JSONObject commonData = new JSONObject();
+            commonData.put("MAC", bssid);
+            commonData.put("RSSI", rssi);
+
+            switch (messageType) {
+                case 0x00: // Basic ID
+                    JSONObject basicId = parseBasicIDMessage(buffer, commonData);
+                    if (basicId != null) {
+                        messageObj.put("Basic ID", basicId);
+                    }
+                    break;
+
+                case 0x01: // Location/Vector
+                    JSONObject location = parseLocationMessage(buffer, commonData);
+                    if (location != null) {
+                        messageObj.put("Location/Vector Message", location);
+                    }
+                    break;
+
+                case 0x02: // Authentication
+                    JSONObject auth = parseAuthMessage(buffer, commonData);
+                    if (auth != null) {
+                        messageObj.put("Authentication Message", auth);
+                    }
+                    break;
+
+                case 0x03: // Self-ID
+                    JSONObject selfId = parseSelfIDMessage(buffer, commonData);
+                    if (selfId != null) {
+                        messageObj.put("Self-ID Message", selfId);
+                    }
+                    break;
+
+                case 0x04: // System
+                    JSONObject system = parseSystemMessage(buffer, commonData);
+                    if (system != null) {
+                        messageObj.put("System Message", system);
+                    }
+                    break;
+
+                case 0x05: // Operator ID
+                    JSONObject operator = parseOperatorIDMessage(buffer, commonData);
+                    if (operator != null) {
+                        messageObj.put("Operator ID Message", operator);
+                    }
+                    break;
+
+                case 0x0F: // Message Pack
+                    // For message packs, we should parse multiple messages
+                    // This is more complex and might need special handling
+                    Log.d(TAG, "Message pack detected, using fallback parser");
+                    return null; // Let the fallback method handle this
+
+                default:
+                    Log.w(TAG, "Unknown OpenDroneID message type: " + messageType);
+                    return null;
+            }
+
+            return messageObj;
+
+        } catch (Exception e) {
+            Log.e(TAG, "Error parsing OpenDroneID message: " + e.getMessage(), e);
+            return null;
+        }
+    }
+
+    private JSONObject parseAuthMessage(ByteBuffer buffer, JSONObject commonData) throws Exception {
+        JSONObject auth = new JSONObject();
+        auth.put("MAC", commonData.getString("MAC"));
+        auth.put("RSSI", commonData.getInt("RSSI"));
+
+        int authType = buffer.get() & 0xFF;
+        int pageNumber = buffer.get() & 0xFF;
+        int lastPageIndex = buffer.get() & 0xFF;
+        int length = buffer.get() & 0xFF;
+        long timestamp = buffer.getInt() & 0xFFFFFFFFL;
+
+        // Read auth data (17 bytes)
+        byte[] authData = new byte[17];
+        buffer.get(authData);
+
+        auth.put("auth_type", authType);
+        auth.put("page_number", pageNumber);
+        auth.put("last_page_index", lastPageIndex);
+        auth.put("length", length);
+        auth.put("timestamp_raw", timestamp);
+        auth.put("auth_data", bytesToHex(authData));
+
+        return auth;
+    }
+
+    private JSONObject parseBasicIDMessage(ByteBuffer buffer, JSONObject commonData) throws Exception {
+        JSONObject basicId = new JSONObject();
+        basicId.put("MAC", commonData.getString("MAC"));
+        basicId.put("RSSI", commonData.getInt("RSSI"));
+
+        int idType = buffer.get() & 0xFF;
+        int uaType = buffer.get() & 0xFF;
+
+        // Read ID (20 bytes)
+        byte[] idBytes = new byte[20];
+        buffer.get(idBytes);
+        String id = new String(idBytes, "UTF-8").trim();
+
+        basicId.put("id_type", getIdTypeString(idType));
+        basicId.put("ua_type", getUATypeString(uaType));
+        basicId.put("id", id);
+
+        return basicId;
+    }
+
+    // Add the missing getIdTypeString method
+    private String getIdTypeString(int idType) {
+        switch (idType) {
+            case 0: return "None";
+            case 1: return "Serial Number (ANSI/CTA-2063-A)";
+            case 2: return "CAA Assigned Registration ID";
+            case 3: return "UTM (USS) Assigned ID";
+            case 4: return "Specific Session ID";
+            default: return "Unknown";
+        }
     }
 
     private JSONObject parseBasicIdMessage(byte[] data, String macAddress, int rssi, int version, int offset) {
@@ -258,8 +371,38 @@ public class DroneDataParser {
         return messageObj;
     }
 
-    private JSONObject parseLocationMessage(byte[] data, String macAddress, int rssi, int version) {
-        return parseLocationMessage(data, macAddress, rssi, version, 1);
+    private JSONObject parseLocationMessage(ByteBuffer buffer, JSONObject commonData) throws Exception {
+        JSONObject location = new JSONObject();
+        location.put("MAC", commonData.getString("MAC"));
+        location.put("RSSI", commonData.getInt("RSSI"));
+
+        int status = buffer.get() & 0xFF;
+        int direction = buffer.get() & 0xFF;
+        int speedMultiplier = buffer.get() & 0xFF;
+        int vertSpeedMultiplier = buffer.get() & 0xFF;
+
+        // Read latitude/longitude (4 bytes each)
+        double latitude = buffer.getInt() / 10000000.0;
+        double longitude = buffer.getInt() / 10000000.0;
+
+        // Read altitude/height (2 bytes each)
+        int altitudeRaw = buffer.getShort() & 0xFFFF;
+        int heightRaw = buffer.getShort() & 0xFFFF;
+
+        // Read speeds (1 byte each)
+        int speedRaw = buffer.get() & 0xFF;
+        int vertSpeedRaw = buffer.get() & 0xFF;
+
+        location.put("latitude", latitude);
+        location.put("longitude", longitude);
+        location.put("geodetic_altitude", altitudeRaw - 1000); // Offset by 1000m
+        location.put("height_agl", heightRaw - 1000);
+        location.put("speed", speedRaw * (speedMultiplier == 0 ? 0.25 : speedMultiplier));
+        location.put("vert_speed", (vertSpeedRaw - 63) * 0.5);
+        location.put("direction", direction * 1.4); // Convert to degrees
+        location.put("status", getStatusString(status));
+
+        return location;
     }
 
     private JSONObject parseLocationMessage(byte[] data, String macAddress, int rssi, int version, int offset) {
@@ -463,8 +606,22 @@ public class DroneDataParser {
         return messageObj;
     }
 
-    private JSONObject parseSelfIdMessage(byte[] data, String macAddress, int rssi, int version) {
-        return parseSelfIdMessage(data, macAddress, rssi, version, 1);
+    private JSONObject parseSelfIDMessage(ByteBuffer buffer, JSONObject commonData) throws Exception {
+        JSONObject selfId = new JSONObject();
+        selfId.put("MAC", commonData.getString("MAC"));
+        selfId.put("RSSI", commonData.getInt("RSSI"));
+
+        int descType = buffer.get() & 0xFF;
+
+        // Read description text (23 bytes)
+        byte[] textBytes = new byte[23];
+        buffer.get(textBytes);
+        String text = new String(textBytes, "UTF-8").trim();
+
+        selfId.put("description_type", descType);
+        selfId.put("text", text);
+
+        return selfId;
     }
 
     private JSONObject parseSelfIdMessage(byte[] data, String macAddress, int rssi, int version, int offset) {
@@ -514,119 +671,81 @@ public class DroneDataParser {
         return messageObj;
     }
 
-    private JSONObject parseSystemMessage(byte[] data, String macAddress, int rssi, int version) {
-        return parseSystemMessage(data, macAddress, rssi, version, 1);
+    // Add overloaded method for ByteBuffer (called from parseOpenDroneIDMessage)
+    private JSONObject parseSystemMessage(ByteBuffer buffer, JSONObject commonData) throws Exception {
+        JSONObject system = new JSONObject();
+        system.put("MAC", commonData.getString("MAC"));
+        system.put("RSSI", commonData.getInt("RSSI"));
+
+        int locationType = buffer.get() & 0xFF;
+        int classificationType = buffer.get() & 0xFF;
+
+        // Read operator coordinates (4 bytes each)
+        double operatorLat = buffer.getInt() / 10000000.0;
+        double operatorLon = buffer.getInt() / 10000000.0;
+
+        // Read area information
+        int areaCount = buffer.getShort() & 0xFFFF;
+        int areaRadius = buffer.get() & 0xFF;
+        int areaCeiling = buffer.getShort() & 0xFFFF;
+        int areaFloor = buffer.getShort() & 0xFFFF;
+
+        system.put("operator_lat", operatorLat);
+        system.put("operator_lon", operatorLon);
+        system.put("area_count", areaCount);
+        system.put("area_radius", areaRadius);
+        system.put("area_ceiling", areaCeiling - 1000);
+        system.put("area_floor", areaFloor - 1000);
+        system.put("operator_location_type", getLocationTypeString(locationType));
+        system.put("classification_type", getClassificationString(classificationType));
+
+        return system;
     }
 
+    // Add overloaded method for byte array
     private JSONObject parseSystemMessage(byte[] data, String macAddress, int rssi, int version, int offset) {
         JSONObject messageObj = new JSONObject();
 
         try {
             JSONObject system = new JSONObject();
-
-            // Add protocol version and transport info
             system.put("protocol_version", "F3411." + (version == 0 ? "19" : (version == 1 ? "22" : "23")));
             system.put("MAC", macAddress);
             system.put("RSSI", rssi);
 
-            // Flags byte
-            if (data.length >= offset + 1) {
-                int flags = data[offset] & 0xFF;
-                int operatorLocationType = flags & 0x03;
-                int classificationType = (flags >> 2) & 0x07;
+            // Parse location type and classification
+            if (data.length >= offset + 2) {
+                int locationType = data[offset] & 0xFF;
+                int classificationType = data[offset + 1] & 0xFF;
 
-                // Operator location type
-                switch (operatorLocationType) {
-                    case 0:
-                        system.put("operator_location_type", "Take Off");
-                        break;
-                    case 1:
-                        system.put("operator_location_type", "Live GNSS");
-                        break;
-                    case 2:
-                        system.put("operator_location_type", "Fixed");
-                        break;
-                    default:
-                        system.put("operator_location_type", "Invalid");
-                }
-
-                // Classification type
-                switch (classificationType) {
-                    case 0:
-                        system.put("classification_type", "Undeclared");
-                        break;
-                    case 1:
-                        system.put("classification_type", "EU");
-                        break;
-                    default:
-                        system.put("classification_type", "Reserved");
-                }
+                system.put("operator_location_type", getLocationTypeString(locationType));
+                system.put("classification_type", getClassificationString(classificationType));
             }
 
-            // Operator latitude/longitude
-            if (data.length >= offset + 9) {
-                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 1, 8).order(ByteOrder.LITTLE_ENDIAN);
-                int pilotLat = buffer.getInt();
-                int pilotLon = buffer.getInt();
+            // Parse operator coordinates (latitude and longitude)
+            if (data.length >= offset + 10) {
+                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 2, 8).order(ByteOrder.LITTLE_ENDIAN);
+                int lat = buffer.getInt();
+                int lon = buffer.getInt();
 
-                double latitude = pilotLat * LAT_LONG_MULTIPLIER;
-                double longitude = pilotLon * LAT_LONG_MULTIPLIER;
+                double operatorLat = lat * LAT_LONG_MULTIPLIER;
+                double operatorLon = lon * LAT_LONG_MULTIPLIER;
 
-                system.put("operator_lat", latitude);
-                system.put("operator_lon", longitude);
+                system.put("operator_lat", operatorLat);
+                system.put("operator_lon", operatorLon);
             }
 
-            // Area count
-            if (data.length >= offset + 11) {
-                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 9, 2).order(ByteOrder.LITTLE_ENDIAN);
-                int areaCount = buffer.getShort() & 0xFFFF;
-                system.put("area_count", areaCount);
-            }
-
-            // Area radius
-            if (data.length >= offset + 12) {
-                int radius = data[offset + 11] & 0xFF;
-                int areaRadius = radius * 10; // in meters
-                system.put("area_radius", areaRadius);
-            }
-
-            // Area ceiling and floor
+            // Parse area information
             if (data.length >= offset + 16) {
-                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 12, 4).order(ByteOrder.LITTLE_ENDIAN);
-                int ceiling = buffer.getShort() & 0xFFFF;
-                int floor = buffer.getShort() & 0xFFFF;
+                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 10, 6).order(ByteOrder.LITTLE_ENDIAN);
+                int areaCount = buffer.getShort() & 0xFFFF;
+                int areaRadius = buffer.get() & 0xFF;
+                int areaCeiling = buffer.getShort() & 0xFFFF;
+                int areaFloor = buffer.get() & 0xFF;
 
-                double ceilingAlt = (ceiling / 2.0) - 1000.0;
-                double floorAlt = (floor / 2.0) - 1000.0;
-
-                system.put("area_ceiling", String.format("%.1f m", ceilingAlt));
-                system.put("area_floor", String.format("%.1f m", floorAlt));
-            }
-
-            // Category and class
-            if (data.length >= offset + 17) {
-                int catClass = data[offset + 16] & 0xFF;
-                int category = (catClass >> 4) & 0x0F;
-                int classValue = catClass & 0x0F;
-
-                system.put("category", category);
-                system.put("class", classValue);
-            }
-
-            // Operator altitude
-            if (data.length >= offset + 19) {
-                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 17, 2).order(ByteOrder.LITTLE_ENDIAN);
-                int opAlt = buffer.getShort() & 0xFFFF;
-
-                double operatorAlt = (opAlt / 2.0) - 1000.0;
-                system.put("operator_altitude_geo", String.format("%.1f m", operatorAlt));
-            }
-
-            // System timestamp (only in version 2+)
-            if (version >= 2 && data.length >= offset + 23) {
-                ByteBuffer buffer = ByteBuffer.wrap(data, offset + 19, 4).order(ByteOrder.LITTLE_ENDIAN);
-                long timestamp = buffer.getInt() & 0xFFFFFFFFL;
-                system.put("system_timestamp", timestamp);
+                system.put("area_count", areaCount);
+                system.put("area_radius", areaRadius);
+                system.put("area_ceiling", areaCeiling - 1000);
+                system.put("area_floor", areaFloor - 1000);
             }
 
             messageObj.put("System Message", system);
@@ -638,108 +757,178 @@ public class DroneDataParser {
         return messageObj;
     }
 
-    private JSONObject parseOperatorIdMessage(byte[] data, String macAddress, int rssi, int version) {
-        return parseOperatorIdMessage(data, macAddress, rssi, version, 1);
-    }
+        private JSONObject parseOperatorIDMessage(ByteBuffer buffer, JSONObject commonData) throws Exception {
+            JSONObject operator = new JSONObject();
+            operator.put("MAC", commonData.getString("MAC"));
+            operator.put("RSSI", commonData.getInt("RSSI"));
 
-    private JSONObject parseOperatorIdMessage(byte[] data, String macAddress, int rssi, int version, int offset) {
-        JSONObject messageObj = new JSONObject();
+            int idType = buffer.get() & 0xFF;
 
-        try {
-            JSONObject operatorId = new JSONObject();
+            // Read operator ID (20 bytes)
+            byte[] idBytes = new byte[20];
+            buffer.get(idBytes);
+            String operatorId = new String(idBytes, "UTF-8").trim();
 
-            // Add protocol version and transport info
-            operatorId.put("protocol_version", "F3411." + (version == 0 ? "19" : (version == 1 ? "22" : "23")));
-            operatorId.put("MAC", macAddress);
-            operatorId.put("RSSI", rssi);
+            operator.put("operator_id_type", getOperatorIdTypeString(idType));
+            operator.put("operator_id", operatorId);
 
-            // Operator ID type
-            if (data.length >= offset + 1) {
-                int idType = data[offset] & 0xFF;
-
-                switch (idType) {
-                    case 0:
-                        operatorId.put("operator_id_type", "Operator ID");
-                        break;
-                    default:
-                        operatorId.put("operator_id_type", "Reserved");
-                }
-            }
-
-            // Operator ID (20 bytes)
-            if (data.length >= offset + 1 + MAX_ID_BYTE_SIZE) {
-                byte[] opIdBytes = Arrays.copyOfRange(data, offset + 1, offset + 1 + MAX_ID_BYTE_SIZE);
-                // Get text until null terminator or end
-                String opId = new String(opIdBytes, StandardCharsets.UTF_8).trim();
-                operatorId.put("operator_id", opId);
-            }
-
-            messageObj.put("Operator ID Message", operatorId);
-
-        } catch (JSONException e) {
-            Log.e(TAG, "Error creating Operator ID message: " + e.getMessage());
+            return operator;
         }
 
-        return messageObj;
-    }
+        // Add overloaded method for byte array
+        private JSONObject parseOperatorIdMessage(byte[] data, String macAddress, int rssi, int version, int offset) {
+            JSONObject messageObj = new JSONObject();
 
-    private JSONArray parseMessagePack(byte[] data, String macAddress, int rssi, int version) {
-        JSONArray packMessages = new JSONArray();
+            try {
+                JSONObject operator = new JSONObject();
+                operator.put("protocol_version", "F3411." + (version == 0 ? "19" : (version == 1 ? "22" : "23")));
+                operator.put("MAC", macAddress);
+                operator.put("RSSI", rssi);
 
-        try {
-            // Parse message pack header
-            if (data.length < 3) return packMessages;
-
-            // Message size and count
-            int messageSize = data[1] & 0xFF;
-            int messagesInPack = data[2] & 0xFF;
-
-            if (messageSize <= 0 || messagesInPack <= 0 || messageSize * messagesInPack > data.length - 3) {
-                Log.e(TAG, "Invalid message pack: size=" + messageSize + ", count=" + messagesInPack);
-                return packMessages;
-            }
-
-            // Process each message in the pack
-            for (int i = 0; i < messagesInPack; i++) {
-                int offset = 3 + (i * messageSize);
-                if (offset + messageSize > data.length) break;
-
-                // Get message type
-                int headerByte = data[offset] & 0xFF;
-                int messageType = (headerByte >> 4) & 0x0F;
-                int messageVersion = headerByte & 0x0F;
-
-                // Parse based on type
-                switch (messageType) {
-                    case MESSAGE_TYPE_BASIC_ID:
-                        packMessages.put(parseBasicIdMessage(data, macAddress, rssi, messageVersion, offset));
-                        break;
-
-                    case MESSAGE_TYPE_LOCATION:
-                        packMessages.put(parseLocationMessage(data, macAddress, rssi, messageVersion, offset));
-                        break;
-
-                    case MESSAGE_TYPE_SELF_ID:
-                        packMessages.put(parseSelfIdMessage(data, macAddress, rssi, messageVersion, offset));
-                        break;
-
-                    case MESSAGE_TYPE_SYSTEM:
-                        packMessages.put(parseSystemMessage(data, macAddress, rssi, messageVersion, offset));
-                        break;
-
-                    case MESSAGE_TYPE_OPERATOR_ID:
-                        packMessages.put(parseOperatorIdMessage(data, macAddress, rssi, messageVersion, offset));
-                        break;
-
-                    default:
-                        Log.w(TAG, "Unknown message type in pack: " + messageType);
+                // Parse operator ID type
+                if (data.length >= offset + 1) {
+                    int idType = data[offset] & 0xFF;
+                    operator.put("operator_id_type", getOperatorIdTypeString(idType));
                 }
+
+                // Parse operator ID (20 bytes)
+                if (data.length >= offset + 1 + MAX_ID_BYTE_SIZE) {
+                    byte[] operatorIdBytes = Arrays.copyOfRange(data, offset + 1, offset + 1 + MAX_ID_BYTE_SIZE);
+                    String operatorId = new String(operatorIdBytes, StandardCharsets.UTF_8).trim();
+                    operator.put("operator_id", operatorId);
+                }
+
+                messageObj.put("Operator ID Message", operator);
+
+            } catch (JSONException e) {
+                Log.e(TAG, "Error creating Operator ID message: " + e.getMessage());
             }
 
-        } catch (Exception e) {
-            Log.e(TAG, "Error parsing message pack: " + e.getMessage(), e);
+            return messageObj;
         }
 
-        return packMessages;
+        private JSONArray parseMessagePack(byte[] data, String macAddress, int rssi, int version) {
+            JSONArray packMessages = new JSONArray();
+
+            try {
+                // Parse message pack header
+                if (data.length < 3) return packMessages;
+
+                // Message size and count
+                int messageSize = data[1] & 0xFF;
+                int messagesInPack = data[2] & 0xFF;
+
+                if (messageSize <= 0 || messagesInPack <= 0 || messageSize * messagesInPack > data.length - 3) {
+                    Log.e(TAG, "Invalid message pack: size=" + messageSize + ", count=" + messagesInPack);
+                    return packMessages;
+                }
+
+                // Process each message in the pack
+                for (int i = 0; i < messagesInPack; i++) {
+                    int offset = 3 + (i * messageSize);
+                    if (offset + messageSize > data.length) break;
+
+                    // Get message type
+                    int headerByte = data[offset] & 0xFF;
+                    int messageType = (headerByte >> 4) & 0x0F;
+                    int messageVersion = headerByte & 0x0F;
+
+                    // Parse based on type
+                    switch (messageType) {
+                        case MESSAGE_TYPE_BASIC_ID:
+                            packMessages.put(parseBasicIdMessage(data, macAddress, rssi, messageVersion, offset));
+                            break;
+
+                        case MESSAGE_TYPE_LOCATION:
+                            packMessages.put(parseLocationMessage(data, macAddress, rssi, messageVersion, offset));
+                            break;
+
+                        case MESSAGE_TYPE_SELF_ID:
+                            packMessages.put(parseSelfIdMessage(data, macAddress, rssi, messageVersion, offset));
+                            break;
+
+                        case MESSAGE_TYPE_SYSTEM:
+                            packMessages.put(parseSystemMessage(data, macAddress, rssi, messageVersion, offset));
+                            break;
+
+                        case MESSAGE_TYPE_OPERATOR_ID:
+                            packMessages.put(parseOperatorIdMessage(data, macAddress, rssi, messageVersion, offset));
+                            break;
+
+                        default:
+                            Log.w(TAG, "Unknown message type in pack: " + messageType);
+                    }
+                }
+
+            } catch (Exception e) {
+                Log.e(TAG, "Error parsing message pack: " + e.getMessage(), e);
+            }
+
+            return packMessages;
+        }
+
+        private String getUATypeString(int uaType) {
+            switch (uaType) {
+                case 0: return "None";
+                case 1: return "Aeroplane";
+                case 2: return "Helicopter (or Multirotor)";
+                case 3: return "Gyroplane";
+                case 4: return "VTOL";
+                case 5: return "Ornithopter";
+                case 6: return "Glider";
+                case 7: return "Kite";
+                case 8: return "Free Balloon";
+                case 9: return "Captive Balloon";
+                case 10: return "Airship";
+                case 11: return "Free Fall/Parachute";
+                case 12: return "Rocket";
+                case 13: return "Tethered Powered Aircraft";
+                case 14: return "Ground Obstacle";
+                case 15: return "Other";
+                default: return "Unknown";
+            }
+        }
+
+        private String getStatusString(int status) {
+            switch (status) {
+                case 0: return "Undeclared";
+                case 1: return "Ground";
+                case 2: return "Airborne";
+                case 3: return "Emergency";
+                case 4: return "Remote ID System Failure";
+                default: return "Unknown";
+            }
+        }
+
+        private String getLocationTypeString(int locationType) {
+            switch (locationType) {
+                case 0: return "Takeoff";
+                case 1: return "Live GNSS";
+                case 2: return "Fixed";
+                default: return "Unknown";
+            }
+        }
+
+        private String getClassificationString(int classification) {
+            switch (classification) {
+                case 0: return "Undeclared";
+                case 1: return "EU";
+                default: return "Unknown";
+            }
+        }
+
+        private String getOperatorIdTypeString(int idType) {
+            switch (idType) {
+                case 0: return "CAA Assigned Operator ID";
+                default: return "Unknown";
+            }
+        }
+
+        private String bytesToHex(byte[] bytes) {
+            StringBuilder sb = new StringBuilder();
+            for (byte b : bytes) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        }
     }
-}

@@ -121,6 +121,7 @@ public class MainActivity extends FragmentActivity {
                     Manifest.permission.BLUETOOTH_CONNECT,
                     Manifest.permission.ACCESS_FINE_LOCATION,
                     Manifest.permission.ACCESS_WIFI_STATE,
+                    Manifest.permission.NEARBY_WIFI_DEVICES,
                     Manifest.permission.CHANGE_WIFI_STATE
             }, REQUEST_PERMISSIONS_CODE);
         } else {
@@ -129,6 +130,7 @@ public class MainActivity extends FragmentActivity {
                     Manifest.permission.BLUETOOTH,
                     Manifest.permission.BLUETOOTH_ADMIN,
                     Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.NEARBY_WIFI_DEVICES,
                     Manifest.permission.ACCESS_WIFI_STATE,
                     Manifest.permission.CHANGE_WIFI_STATE
             }, REQUEST_PERMISSIONS_CODE);
