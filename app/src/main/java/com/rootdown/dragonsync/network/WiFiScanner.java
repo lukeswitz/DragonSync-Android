@@ -20,6 +20,8 @@ import android.net.wifi.aware.WifiAwareManager;
 import android.net.wifi.aware.WifiAwareSession;
 import android.os.Build;
 import android.os.CountDownTimer;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -39,7 +41,8 @@ import java.util.List;
 
 public class WiFiScanner {
     private static final String TAG = "WiFiScanner";
-    private static final long SCAN_INTERVAL = 2000; // 2 seconds for WiFi beacon scanning
+    private static final long SCAN_INTERVAL = 30000; // 2 seconds for WiFi beacon scanning
+    private static final int MAX_CONSECUTIVE_FAILURES = 2;
     private static final int PERMISSIONS_REQUEST_CODE = 987;
     // OpenDroneID WiFi Constants
     private static final int CID_LENGTH = 3;
@@ -49,6 +52,8 @@ public class WiFiScanner {
     private static final int VENDOR_TYPE_VALUE = 0x0D; // OpenDroneID vendor type
     private static final int VENDOR_SPECIFIC_IE_ID = 221; // Vendor specific information element ID
     private static final String OPENDRONEID_NAN_SERVICE_NAME = "org.opendroneid.remoteid";
+    private final Handler handler = new Handler(Looper.getMainLooper());
+    private boolean isScanThrottled = false;
 
     private final Context context;
     private final WifiManager wifiManager;
@@ -70,6 +75,7 @@ public class WiFiScanner {
     private WifiAwareSession wifiAwareSession;
     private SubscribeDiscoverySession subscribeSession;
 
+    private IntentFilter wifiScanFilter;
 
 
     public interface OnDroneDetectedListener {
@@ -143,42 +149,64 @@ public class WiFiScanner {
     }
 
     private boolean startBeaconScanning() {
-        if (!isBeaconScanningEnabled || wifiManager == null) {
+        if (!isBeaconScanningEnabled || wifiManager == null || isScanThrottled) {
             return false;
         }
 
-        if (isBeaconScanning) {
-            return true; // Already scanning
+        if (isBeaconScanning) return true;
+
+        if (!hasRequiredPermissions()) {
+            Log.e(TAG, "Missing permissions for beacon scanning");
+            return false;
         }
 
-        // Check permissions before starting scan
-        if (!hasRequiredPermissions()) {
-            Log.e(TAG, "Cannot start beacon scanning - missing permissions");
-            listener.onError("Missing required permissions for WiFi beacon scanning");
+        // Register receiver
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                context.registerReceiver(wifiScanReceiver, wifiScanFilter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                context.registerReceiver(wifiScanReceiver, wifiScanFilter);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error registering WiFi scan receiver: " + e.getMessage());
             return false;
         }
 
         startBeaconScanTimer();
+        return performWifiScan();
+    }
 
-        // Start initial scan with permission check
-        boolean started;
+    private void handleScanThrottling() {
+        scanFailed++;
+        if (scanFailed >= MAX_CONSECUTIVE_FAILURES) {
+            Log.w(TAG, "Scan throttling detected - pausing scans for 120 seconds");
+            isScanThrottled = true;
+            handler.postDelayed(() -> {
+                isScanThrottled = false;
+                scanFailed = 0;
+                startBeaconScanning();
+            }, 120000); // 2 minutes
+        }
+    }
+
+    private boolean performWifiScan() {
+
         try {
-            started = wifiManager.startScan();
-            Log.d(TAG, "Initial WiFi beacon scan started: " + started);
+            boolean started = wifiManager.startScan();
+            if (started) {
+                scanSuccess++;
+                scanFailed = 0; // Reset failure counter on success
+                isBeaconScanning = true;
+            } else {
+                handleScanThrottling();
+            }
+            return started;
         } catch (SecurityException e) {
-            Log.e(TAG, "SecurityException starting WiFi scan: " + e.getMessage());
-            listener.onError("Permission denied for WiFi scanning");
+            Log.e(TAG, "Fatal security exception: " + e.getMessage());
+            listener.onError("Permanent scan permission failure");
+            stopScanning();
             return false;
         }
-
-        if (started) {
-            scanSuccess++;
-            isBeaconScanning = true;
-        } else {
-            scanFailed++;
-        }
-
-        return started;
     }
 
     @TargetApi(Build.VERSION_CODES.O)
@@ -214,12 +242,11 @@ public class WiFiScanner {
             beaconScanTimer = null;
         }
 
+        // Unregister receiver
         try {
-            if (wifiScanReceiver != null) {
-                context.unregisterReceiver(wifiScanReceiver);
-            }
+            context.unregisterReceiver(wifiScanReceiver);
         } catch (IllegalArgumentException e) {
-            // Ignore if receiver wasn't registered
+            Log.d(TAG, "Receiver not registered");
         }
 
         isBeaconScanning = false;
@@ -262,12 +289,7 @@ public class WiFiScanner {
             }
         };
 
-        IntentFilter filter = new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.registerReceiver(wifiScanReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-        } else {
-            context.registerReceiver(wifiScanReceiver, filter);
-        }
+        wifiScanFilter = new IntentFilter(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION);
     }
 
     private void startBeaconScanTimer() {
@@ -277,27 +299,11 @@ public class WiFiScanner {
 
         beaconScanTimer = new CountDownTimer(Long.MAX_VALUE, SCAN_INTERVAL) {
             public void onTick(long millisUntilFinished) {
-                if (wifiManager != null && isBeaconScanning) {
-                    boolean started = wifiManager.startScan();
-                    Log.d(TAG, "Periodic WiFi beacon scan started: " + started +
-                            " (success: " + scanSuccess + ", failed: " + scanFailed + ")");
-
-                    if (started) {
-                        scanSuccess++;
-                    } else {
-                        scanFailed++;
-
-                        // Handle scan throttling on Android 8+
-                        if (scanFailed > 3) {
-                            Log.d(TAG, "WiFi scan throttling detected, adjusting scan strategy");
-                        }
-                    }
+                if (!isScanThrottled) {
+                    performWifiScan();
                 }
             }
-
-            public void onFinish() {
-                // Will not be called with Long.MAX_VALUE
-            }
+            public void onFinish() {}
         }.start();
     }
 
@@ -314,29 +320,34 @@ public class WiFiScanner {
             return;
         }
 
-        List<ScanResult> results;
         try {
-            results = wifiManager.getScanResults();
-        } catch (SecurityException e) {
-            Log.e(TAG, "SecurityException getting WiFi scan results: " + e.getMessage());
-            listener.onError("Permission denied for WiFi scan results");
-            return;
-        }
-
-        Log.d(TAG, "Processing " + (results != null ? results.size() : 0) + " WiFi beacon scan results");
-
-        if (results == null || results.isEmpty()) {
-            Log.d(TAG, "No WiFi beacon scan results found");
-            return;
-        }
-
-        for (ScanResult scanResult : results) {
-            try {
-                processBeaconResult(scanResult);
-            } catch (Exception e) {
-                Log.e(TAG, "Error processing beacon scan result: " + e.getMessage(), e);
+            List<ScanResult> results = wifiManager.getScanResults();
+            if (results == null || results.isEmpty()) {
+                Log.d(TAG, "No scan results (normal on modern Android)");
+                return; // Don't treat empty results as errors
             }
+
+            Log.d(TAG, "Processing " + (results != null ? results.size() : 0) + " WiFi beacon scan results");
+
+            if (results == null || results.isEmpty()) {
+                Log.d(TAG, "No WiFi beacon scan results found");
+                return;
+            }
+
+            for (ScanResult scanResult : results) {
+                try {
+                    processBeaconResult(scanResult);
+                } catch (Exception e) {
+                    Log.e(TAG, "Error processing beacon scan result: " + e.getMessage(), e);
+                }
+            }
+
+        } catch (SecurityException e) {
+            Log.e(TAG, "SecurityException: " + e.getMessage());
+            listener.onError("Permissions revoked during scan");
         }
+
+
     }
 
     private void processBeaconResult(ScanResult scanResult) {
@@ -541,30 +552,15 @@ public class WiFiScanner {
     };
 
     private boolean hasRequiredPermissions() {
-        // Check location permission (required for WiFi scanning)
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-                != PackageManager.PERMISSION_GRANTED) {
-            Log.e(TAG, "Missing ACCESS_FINE_LOCATION permission");
-            return false;
-        }
+        boolean hasFineLocation = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        boolean hasWifiState = ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_WIFI_STATE) == PackageManager.PERMISSION_GRANTED;
+        boolean hasNearby = true;
 
-        // Check WiFi state permission
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_WIFI_STATE)
-                != PackageManager.PERMISSION_GRANTED) {
-            Log.e(TAG, "Missing ACCESS_WIFI_STATE permission");
-            return false;
-        }
-
-        // Check for Android 13+ WiFi permissions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(context, Manifest.permission.NEARBY_WIFI_DEVICES)
-                    != PackageManager.PERMISSION_GRANTED) {
-                Log.e(TAG, "Missing NEARBY_WIFI_DEVICES permission (Android 13+)");
-                return false;
-            }
+            hasNearby = ContextCompat.checkSelfPermission(context, Manifest.permission.NEARBY_WIFI_DEVICES) == PackageManager.PERMISSION_GRANTED;
         }
 
-        return true;
+        return hasFineLocation && hasWifiState && hasNearby;
     }
 
     // Helper function to build the list of missing permissions.
