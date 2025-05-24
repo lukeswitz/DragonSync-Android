@@ -5,7 +5,7 @@
 **Find the original iOS version [here](https://github.com/Root-Down-Digital/DragonSync-iOS)**
 
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/e8b8098a-53b7-4ac9-9683-6e03559b68e2" width="80%" alt="DragonSync Logo">
+  <img src="https://github.com/user-attachments/assets/89c55379-00e1-4118-bce7-0797d5c7da27" width="80%" alt="DragonSync Logo">
 </div>
 <br>
 
