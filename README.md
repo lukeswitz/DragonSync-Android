@@ -1,6 +1,7 @@
 # DragonSync
 
 [![Android CI](https://github.com/lukeswitz/DragonSync-Android/actions/workflows/android.yml/badge.svg)](https://github.com/lukeswitz/DragonSync-Android/actions/workflows/android.yml)
+[![MobSF](https://github.com/lukeswitz/DragonSync-Android/actions/workflows/mobsf.yml/badge.svg)](https://github.com/lukeswitz/DragonSync-Android/actions/workflows/mobsf.yml)
 
 **Find the original iOS version [here](https://github.com/Root-Down-Digital/DragonSync-iOS)**
 
