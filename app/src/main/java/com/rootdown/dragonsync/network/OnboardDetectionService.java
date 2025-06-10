@@ -45,6 +45,10 @@ public class OnboardDetectionService extends Service {
     private Map<String, String> knownDroneIds = new HashMap<>();
     private Map<String, String> macToDroneIdMap = new HashMap<>();
 
+    private Map<String, String> persistentMacToDroneId = new HashMap<>();
+    private Map<String, Long> macLastSeen = new HashMap<>();
+    private static final long MAC_MAPPING_TIMEOUT = 30000; // 30 seconds
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -141,55 +145,164 @@ public class OnboardDetectionService extends Service {
         try {
             Log.d(TAG, "Processing " + droneData.length() + " drone message(s) from source: " + source);
 
-            // Add device location to the drone data if available - TODO estimate location from other nodes
-//            if (lastDeviceLocation != null) {
-//                addDeviceLocationToData(droneData);
-//            }
+            // Clean up old MAC mappings
+            cleanupOldMacMappings();
 
-            // First pass: Process only Basic ID messages to establish identities
+            // Step 1: Collect drone IDs from Basic ID messages and update persistent mapping
+            Map<String, String> sessionMacToDroneId = new HashMap<>();
+            String primaryDroneId = null;
+
             for (int i = 0; i < droneData.length(); i++) {
                 JSONObject msgObj = droneData.getJSONObject(i);
+
                 if (msgObj.has("Basic ID")) {
-                    JSONObject messageData = msgObj.getJSONObject("Basic ID");
-                    CoTMessage message = convertToCoTMessage("Basic ID", messageData, source);
-                    if (message != null && message.getUid() != null) {
-                        // For Basic ID, we do full processing to establish the drone identity
-                        processMessage(message, source, messageData);
+                    JSONObject basicIdData = msgObj.getJSONObject("Basic ID");
+                    if (basicIdData.has("id") && basicIdData.has("MAC")) {
+                        String droneId = basicIdData.getString("id");
+                        String mac = basicIdData.getString("MAC");
+
+                        if (droneId.matches("^[A-Z0-9]+$") && !droneId.matches("^0+$") && droneId.length() >= 6) {
+                            primaryDroneId = droneId;
+                            sessionMacToDroneId.put(mac, droneId);
+
+                            // Update persistent mapping
+                            persistentMacToDroneId.put(mac, droneId);
+                            macLastSeen.put(mac, System.currentTimeMillis());
+
+                            Log.d(TAG, "Found valid drone ID: " + droneId + " for MAC: " + mac);
+                        }
                     }
                 }
             }
 
-            // Second pass: Process other message types using established identities
+            // Step 2: Look for drone ID in Self-ID messages as fallback
+            if (primaryDroneId == null) {
+                for (int i = 0; i < droneData.length(); i++) {
+                    JSONObject msgObj = droneData.getJSONObject(i);
+                    if (msgObj.has("Self-ID Message")) {
+                        JSONObject selfIdData = msgObj.getJSONObject("Self-ID Message");
+                        if (selfIdData.has("text") && selfIdData.has("MAC")) {
+                            String selfIdText = selfIdData.getString("text");
+                            String mac = selfIdData.getString("MAC");
+
+                            if (selfIdText.length() >= 10 && selfIdText.matches(".*[A-Z0-9]{10,}.*")) {
+                                String extractedId = selfIdText.replaceAll("^\\d+", "");
+                                if (extractedId.length() >= 6 && extractedId.matches("^[A-Z0-9]+$")) {
+                                    primaryDroneId = extractedId;
+                                    sessionMacToDroneId.put(mac, primaryDroneId);
+
+                                    // Update persistent mapping
+                                    persistentMacToDroneId.put(mac, primaryDroneId);
+                                    macLastSeen.put(mac, System.currentTimeMillis());
+
+                                    Log.d(TAG, "Extracted drone ID from Self-ID: " + primaryDroneId + " for MAC: " + mac);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Step 3: Process each message with consistent drone ID
             for (int i = 0; i < droneData.length(); i++) {
                 JSONObject msgObj = droneData.getJSONObject(i);
                 String messageType = null;
                 JSONObject messageData = null;
+
                 Iterator<String> keys = msgObj.keys();
                 if (keys.hasNext()) {
                     messageType = keys.next();
                     messageData = msgObj.getJSONObject(messageType);
                 }
 
-                // Skip Basic ID messages (already processed) and invalid messages
-                if (messageType == null || messageData == null || messageType.equals("Basic ID")) {
+                if (messageType == null || messageData == null) {
                     continue;
                 }
 
+                // Skip unknown message types
+                if (!isKnownMessageType(messageType)) {
+                    Log.d(TAG, "Skipping unknown message type: " + messageType);
+                    continue;
+                }
+
+                // Apply drone ID from session or persistent mapping
+                if (messageData.has("MAC")) {
+                    String mac = messageData.getString("MAC");
+                    String droneId = null;
+
+                    // Try session mapping first, then persistent mapping
+                    if (sessionMacToDroneId.containsKey(mac)) {
+                        droneId = sessionMacToDroneId.get(mac);
+                    } else if (persistentMacToDroneId.containsKey(mac)) {
+                        droneId = persistentMacToDroneId.get(mac);
+                        // Update last seen time
+                        macLastSeen.put(mac, System.currentTimeMillis());
+                    }
+
+                    if (droneId != null) {
+                        messageData.put("OVERRIDE_UID", droneId);
+                        Log.d(TAG, "Applied drone ID " + droneId + " to " + messageType + " from MAC " + mac);
+                    }
+                }
+
+                Log.d(TAG, "Processing " + messageType + " with data: " + messageData.toString(2));
                 CoTMessage message = convertToCoTMessage(messageType, messageData, source);
+
                 if (message != null && message.getUid() != null) {
                     processMessage(message, source, messageData);
                 }
             }
+
         } catch (Exception e) {
             Log.e(TAG, "Error processing drone data: " + e.getMessage(), e);
         }
     }
 
+    private void cleanupOldMacMappings() {
+        long currentTime = System.currentTimeMillis();
+        Iterator<Map.Entry<String, Long>> iterator = macLastSeen.entrySet().iterator();
+
+        while (iterator.hasNext()) {
+            Map.Entry<String, Long> entry = iterator.next();
+            if (currentTime - entry.getValue() > MAC_MAPPING_TIMEOUT) {
+                String mac = entry.getKey();
+                persistentMacToDroneId.remove(mac);
+                iterator.remove();
+                Log.d(TAG, "Cleaned up old MAC mapping: " + mac);
+            }
+        }
+    }
+
+    private boolean isKnownMessageType(String messageType) {
+        return messageType.equals("Basic ID") ||
+                messageType.equals("Location/Vector Message") ||
+                messageType.equals("Self-ID Message") ||
+                messageType.equals("System Message") ||
+                messageType.equals("Operator ID Message") ||
+                messageType.equals("Authentication Message") ||
+                messageType.equals("Auth Message");
+    }
+
+
     private void processMessage(CoTMessage message, String source, JSONObject messageData) {
-        // Use UID for detection throttling
+        // Skip messages without RSSI or with NaN MAC addresses
+        if (message.getRssi() == null || message.getRssi() == 0) {
+            Log.d(TAG, "Skipping message without valid RSSI: " + message.getUid());
+            return;
+        }
+
+        // Skip NaN messages (WiFi NaN without proper signal strength)
+        if (message.getUid() != null && message.getUid().contains("NaN-")) {
+            Log.d(TAG, "Skipping NaN message: " + message.getUid());
+            return;
+        }
+
+        // Rest of your existing processMessage code stays the same...
         String uniqueKey = message.getUid();
         if (uniqueKey == null || uniqueKey.isEmpty()) {
-            return; // Skip messages without a valid UID
+            Log.d(TAG, "Skipping message without valid UID");
+            return;
         }
 
         long currentTime = System.currentTimeMillis();
@@ -225,7 +338,6 @@ public class OnboardDetectionService extends Service {
                 }
                 message.getRawMessage().put("calculated_distance", distanceInMeters);
 
-                // Log the distance
                 Log.d(TAG, "  Distance: " + distanceInMeters + "m");
             }
 
@@ -237,6 +349,8 @@ public class OnboardDetectionService extends Service {
             sendBroadcast(telemetryIntent);
 
             Log.d(TAG, "Broadcast telemetry message for: " + message.getUid());
+        } else {
+            Log.d(TAG, "Throttling duplicate detection for: " + uniqueKey);
         }
     }
 
@@ -245,202 +359,59 @@ public class OnboardDetectionService extends Service {
         Log.d(TAG, "Converting message type: " + messageType + " with data: " + messageData.toString());
 
         try {
-            // Common fields
+            // Set common transport fields
             if (messageData.has("MAC")) {
                 message.setMac(messageData.getString("MAC"));
             }
-
             if (messageData.has("RSSI")) {
                 message.setRssi(messageData.getInt("RSSI"));
             }
-
-            // Source information
             message.setType(source + "_ONBOARD");
 
-            // Specific message type handling
+            // Use override UID if provided, otherwise fall back to message-specific logic
+            String overrideUid = messageData.optString("OVERRIDE_UID", null);
+
             switch (messageType) {
                 case "Basic ID":
-                    Log.d(TAG, "Processing Basic ID message");
-
-                    // ID
-                    if (messageData.has("id")) {
-                        String idValue = messageData.getString("id");
-                        Log.d(TAG, "Raw ID value: '" + idValue + "', length: " + idValue.length());
-
-                        if (idValue.matches("^[A-Z0-9]+$") && !idValue.matches("^0+$")) {
-                            message.setUid(idValue);
-
-                            // Also store the MAC to ID mapping for other message types (dont need fallback right now)
-//                            if (messageData.has("MAC")) {
-//                                knownDroneIds.put(messageData.getString("MAC"), idValue);
-//                            }
-                        }
-                    }
-
-                    // Forget fallback ID for now
-//                    else if (messageData.has("MAC")) {
-//                        message.setUid(messageData.getString("MAC"));
-//                        Log.d(TAG, "No ID field, using MAC as UID: " + message.getUid());
-//                    }
-
-                    if (messageData.has("ua_type")) {
-                        String uaTypeStr = messageData.getString("ua_type");
-                        DroneSignature.IdInfo.UAType uaType = mapUAType(uaTypeStr);
-                        message.setUaType(uaType);
-                    }
-
-                    if (messageData.has("id_type")) {
-                        message.setIdType(messageData.getString("id_type"));
-                    }
-
-                    if (messageData.has("description")) {
-                        message.setDescription(messageData.getString("description"));
-                    }
-
-                    if (messageData.has("manufacturer")) {
-                        message.setManufacturer(messageData.getString("manufacturer"));
-                    }
+                    convertBasicIdMessage(message, messageData, overrideUid);
                     break;
 
                 case "Location/Vector Message":
-                    // Handle location data
-                    if (messageData.has("latitude") && messageData.has("longitude")) {
-                        // Ensure we're getting valid values
-                        double lat = messageData.optDouble("latitude", 0);
-                        double lon = messageData.optDouble("longitude", 0);
-
-                        if (lat != 0 || lon != 0) {
-                            message.setLat(String.valueOf(lat));
-                            message.setLon(String.valueOf(lon));
-                            Log.d(TAG, "Location data: " + lat + ", " + lon);
-                        }
-                    }
-
-                    if (messageData.has("speed")) {
-                        String speedStr = messageData.getString("speed");
-                        // Extract numeric part if needed
-                        if (speedStr.contains(" ")) {
-                            speedStr = speedStr.split(" ")[0];
-                        }
-                        message.setSpeed(speedStr);
-                    }
-
-                    if (messageData.has("vert_speed")) {
-                        String vspeedStr = messageData.getString("vert_speed");
-                        if (vspeedStr.contains(" ")) {
-                            vspeedStr = vspeedStr.split(" ")[0];
-                        }
-                        message.setVspeed(vspeedStr);
-                    }
-
-                    if (messageData.has("geodetic_altitude")) {
-                        String altStr = messageData.getString("geodetic_altitude");
-                        if (altStr.contains(" ")) {
-                            altStr = altStr.split(" ")[0];
-                        }
-                        message.setAlt(altStr);
-                    }
-
-                    if (messageData.has("height_agl")) {
-                        String heightStr = messageData.getString("height_agl");
-                        if (heightStr.contains(" ")) {
-                            heightStr = heightStr.split(" ")[0];
-                        }
-                        message.setHeight(heightStr);
-                    }
-
-                    if (messageData.has("direction")) {
-                        message.setDirection(String.valueOf(messageData.get("direction")));
-                    }
-
-                    if (messageData.has("timestamp")) {
-                        // Convert to milliseconds if needed
-                        message.setTimestamp(String.valueOf(System.currentTimeMillis()));
-                    }
-
-                    // Need a UID for location data too
-                    if (message.getUid() == null && messageData.has("MAC")) {
-                        message.setUid(messageData.getString("MAC"));
-                    } else if (message.getUid() == null) {
-                        message.setUid(source + "_LOC_" + System.currentTimeMillis());
-                    }
+                    convertLocationMessage(message, messageData, overrideUid);
                     break;
 
                 case "Self-ID Message":
-                    Log.d(TAG, "Processing Self-ID message");
-
-                    // Set UID from MAC address since Self-ID messages typically don't contain their own ID
-                    if (messageData.has("MAC")) {
-                        message.setUid(messageData.getString("MAC"));
-                        Log.d(TAG, "Using MAC as UID for Self-ID message: " + message.getUid());
-                    } else {
-                        String generatedUid = source + "_" + System.currentTimeMillis();
-                        message.setUid(generatedUid);
-                        Log.d(TAG, "Generated UID for Self-ID message: " + generatedUid);
-                    }
-
-                    if (messageData.has("text")) {
-                        message.setSelfIDText(messageData.getString("text"));
-
-                        // If we don't have a description yet, use self-ID text
-                        if (message.getDescription() == null || message.getDescription().isEmpty()) {
-                            message.setDescription(messageData.getString("text"));
-                        }
-                    }
-
-                    if (messageData.has("description_type")) {
-                        message.setSelfIdType(String.valueOf(messageData.get("description_type")));
-                    }
-
+                    convertSelfIdMessage(message, messageData, overrideUid);
                     break;
 
                 case "System Message":
-                    if (messageData.has("operator_lat") && messageData.has("operator_lon")) {
-                        message.setPilotLat(String.valueOf(messageData.getDouble("operator_lat")));
-                        message.setPilotLon(String.valueOf(messageData.getDouble("operator_lon")));
-                        Log.d(TAG, "Operator location: " + messageData.getDouble("operator_lat") +
-                                ", " + messageData.getDouble("operator_lon"));
-                    }
-
-                    if (messageData.has("operator_altitude_geo")) {
-                        String opAltStr = messageData.getString("operator_altitude_geo");
-                        if (opAltStr.contains(" ")) {
-                            opAltStr = opAltStr.split(" ")[0];
-                        }
-                        // Store in metadata
-                        if (message.getRawMessage() == null) {
-                            message.setRawMessage(new HashMap<>());
-                        }
-                        message.getRawMessage().put("operator_altitude_geo", opAltStr);
-                    }
-
-                    // Need a UID for system data too
-                    if (message.getUid() == null && messageData.has("MAC")) {
-                        message.setUid(messageData.getString("MAC"));
-                    } else if (message.getUid() == null) {
-                        message.setUid(source + "_SYS_" + System.currentTimeMillis());
-                    }
+                    convertSystemMessage(message, messageData, overrideUid);
                     break;
 
                 case "Operator ID Message":
-                    if (messageData.has("operator_id")) {
-                        message.setOperatorId(messageData.getString("operator_id"));
-                    }
-
-                    if (messageData.has("operator_id_type")) {
-                        message.setOperatorIdType(String.valueOf(messageData.get("operator_id_type")));
-                    }
-
-                    // Need a UID for operator ID data too
-                    if (message.getUid() == null && messageData.has("MAC")) {
-                        message.setUid(messageData.getString("MAC"));
-                    } else if (message.getUid() == null) {
-                        message.setUid(source + "_OP_" + System.currentTimeMillis());
-                    }
+                    convertOperatorIdMessage(message, messageData, overrideUid);
                     break;
+
+                case "Authentication Message":
+                case "Auth Message":
+                    convertAuthMessage(message, messageData, overrideUid);
+                    break;
+
+                default:
+                    Log.w(TAG, "Unknown message type: " + messageType);
+                    return null;
             }
 
-            // For any unhandled message fields, store them in raw message data
+            // Validate coordinates if present
+            if (message.getLat() != null && message.getLon() != null) {
+                if (!isValidCoordinate(message.getLat(), message.getLon())) {
+                    Log.w(TAG, "Invalid coordinates detected, clearing: " + message.getLat() + ", " + message.getLon());
+                    message.setLat(null);
+                    message.setLon(null);
+                }
+            }
+
+            // Store raw message data
             Map<String, Object> rawData = new HashMap<>();
             Iterator<String> keys = messageData.keys();
             while (keys.hasNext()) {
@@ -454,6 +425,200 @@ public class OnboardDetectionService extends Service {
         } catch (JSONException e) {
             Log.e(TAG, "Error converting drone data: " + e.getMessage(), e);
             return null;
+        }
+    }
+
+    private boolean isValidCoordinate(String latStr, String lonStr) {
+        try {
+            double lat = Double.parseDouble(latStr);
+            double lon = Double.parseDouble(lonStr);
+
+            // Check if coordinates are within valid Earth bounds
+            return lat >= -90.0 && lat <= 90.0 && lon >= -180.0 && lon <= 180.0 &&
+                    !(lat == 0.0 && lon == 0.0); // Reject null island
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    private void convertBasicIdMessage(CoTMessage message, JSONObject messageData, String overrideUid) throws JSONException {
+        if (overrideUid != null) {
+            message.setUid(overrideUid);
+        } else if (messageData.has("id")) {
+            String idValue = messageData.getString("id");
+            if (idValue.matches("^[A-Z0-9]+$") && !idValue.matches("^0+$") && idValue.length() >= 6) {
+                message.setUid(idValue);
+            } else {
+                message.setUid(messageData.optString("MAC", "UNKNOWN_BASIC"));
+            }
+        } else {
+            message.setUid(messageData.optString("MAC", "UNKNOWN_BASIC"));
+        }
+
+        if (messageData.has("ua_type")) {
+            String uaTypeStr = messageData.getString("ua_type");
+            DroneSignature.IdInfo.UAType uaType = mapUAType(uaTypeStr);
+            message.setUaType(uaType);
+        }
+
+        if (messageData.has("id_type")) {
+            message.setIdType(messageData.getString("id_type"));
+        }
+        if (messageData.has("description")) {
+            message.setDescription(messageData.getString("description"));
+        }
+        if (messageData.has("manufacturer")) {
+            message.setManufacturer(messageData.getString("manufacturer"));
+        }
+    }
+
+    private void convertLocationMessage(CoTMessage message, JSONObject messageData, String overrideUid) throws JSONException {
+        // Use override UID first, then fallback to MAC
+        if (overrideUid != null) {
+            message.setUid(overrideUid);
+        } else {
+            message.setUid(messageData.optString("MAC", "UNKNOWN_LOCATION"));
+        }
+
+        if (messageData.has("latitude") && messageData.has("longitude")) {
+            double lat = messageData.optDouble("latitude", 0);
+            double lon = messageData.optDouble("longitude", 0);
+
+            if (lat != 0 || lon != 0) {
+                message.setLat(String.valueOf(lat));
+                message.setLon(String.valueOf(lon));
+            }
+        }
+
+        // Parse other location fields with unit stripping
+        parseLocationField(message, messageData, "speed", message::setSpeed);
+        parseLocationField(message, messageData, "vert_speed", message::setVspeed);
+        parseLocationField(message, messageData, "geodetic_altitude", message::setAlt);
+        parseLocationField(message, messageData, "height_agl", message::setHeight);
+
+        if (messageData.has("direction")) {
+            message.setDirection(String.valueOf(messageData.get("direction")));
+        }
+
+        message.setTimestamp(String.valueOf(System.currentTimeMillis()));
+    }
+
+    private void convertSelfIdMessage(CoTMessage message, JSONObject messageData, String overrideUid) throws JSONException {
+        if (overrideUid != null) {
+            message.setUid(overrideUid);
+        } else if (messageData.has("text")) {
+            String selfIdText = messageData.getString("text");
+
+            // Extract drone ID from Self-ID text if it looks like a valid drone ID
+            if (selfIdText.length() >= 10 && selfIdText.matches(".*[A-Z0-9]{10,}.*")) {
+                // Remove any leading digits and extract the alphanumeric part
+                String extractedId = selfIdText.replaceAll("^\\d+", "").trim();
+                if (extractedId.length() >= 6 && extractedId.matches("^[A-Z0-9]+$")) {
+                    message.setUid(extractedId);
+                    Log.d(TAG, "Extracted drone ID from Self-ID text: " + extractedId);
+                } else {
+                    message.setUid(messageData.optString("MAC", "UNKNOWN_SELFID"));
+                }
+            } else {
+                message.setUid(messageData.optString("MAC", "UNKNOWN_SELFID"));
+            }
+        } else {
+            message.setUid(messageData.optString("MAC", "UNKNOWN_SELFID"));
+        }
+
+        if (messageData.has("text")) {
+            String selfIdText = messageData.getString("text");
+            message.setSelfIDText(selfIdText);
+
+            if (message.getDescription() == null || message.getDescription().isEmpty()) {
+                message.setDescription(selfIdText);
+            }
+        }
+
+        if (messageData.has("description_type")) {
+            message.setSelfIdType(String.valueOf(messageData.get("description_type")));
+        }
+    }
+
+    private void convertSystemMessage(CoTMessage message, JSONObject messageData, String overrideUid) throws JSONException {
+        if (overrideUid != null) {
+            message.setUid(overrideUid);
+        } else {
+            message.setUid(messageData.optString("MAC", "UNKNOWN_SYSTEM"));
+        }
+
+        if (messageData.has("operator_lat") && messageData.has("operator_lon")) {
+            message.setPilotLat(String.valueOf(messageData.getDouble("operator_lat")));
+            message.setPilotLon(String.valueOf(messageData.getDouble("operator_lon")));
+        }
+
+        if (messageData.has("operator_altitude_geo")) {
+            parseLocationField(message, messageData, "operator_altitude_geo",
+                    value -> {
+                        if (message.getRawMessage() == null) {
+                            message.setRawMessage(new HashMap<>());
+                        }
+                        message.getRawMessage().put("operator_altitude_geo", value);
+                    });
+        }
+    }
+
+    private void convertOperatorIdMessage(CoTMessage message, JSONObject messageData, String overrideUid) throws JSONException {
+        if (overrideUid != null) {
+            message.setUid(overrideUid);
+        } else if (messageData.has("operator_id")) {
+            String operatorId = messageData.getString("operator_id");
+            message.setOperatorId(operatorId);
+            message.setUid(operatorId);
+        } else {
+            message.setUid(messageData.optString("MAC", "UNKNOWN_OPERATOR"));
+        }
+
+        if (messageData.has("operator_id_type")) {
+            message.setOperatorIdType(String.valueOf(messageData.get("operator_id_type")));
+        }
+    }
+
+    private void convertAuthMessage(CoTMessage message, JSONObject messageData, String overrideUid) throws JSONException {
+        // Use override UID if available, otherwise fall back to MAC
+        if (overrideUid != null) {
+            message.setUid(overrideUid);
+        } else {
+            message.setUid(messageData.optString("MAC", "UNKNOWN_AUTH"));
+            Log.d(TAG, "Auth message using MAC fallback: " + message.getUid());
+        }
+
+        if (messageData.has("auth_type")) {
+            message.setAuthType(String.valueOf(messageData.get("auth_type")));
+        }
+        if (messageData.has("page_number")) {
+            message.setAuthPage(String.valueOf(messageData.get("page_number")));
+        }
+        if (messageData.has("last_page_index")) {
+            message.setAuthLength(String.valueOf(messageData.get("last_page_index")));
+        }
+        if (messageData.has("timestamp_raw")) {
+            message.setAuthTimestamp(String.valueOf(messageData.get("timestamp_raw")));
+        }
+        if (messageData.has("auth_data")) {
+            message.setAuthData(messageData.getString("auth_data"));
+        }
+
+        message.setDescription("Authenticated Drone");
+    }
+
+    private void parseLocationField(CoTMessage message, JSONObject messageData, String fieldName,
+                                    java.util.function.Consumer<String> setter) {
+        try {
+            if (messageData.has(fieldName)) {
+                String valueStr = messageData.getString(fieldName);
+                if (valueStr.contains(" ")) {
+                    valueStr = valueStr.split(" ")[0]; // Strip units
+                }
+                setter.accept(valueStr);
+            }
+        } catch (JSONException e) {
+            Log.w(TAG, "Error parsing field " + fieldName + ": " + e.getMessage());
         }
     }
 

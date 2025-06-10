@@ -41,7 +41,7 @@ import java.util.List;
 
 public class WiFiScanner {
     private static final String TAG = "WiFiScanner";
-    private static final long SCAN_INTERVAL = 30000; // 2 seconds for WiFi beacon scanning
+    private static final long SCAN_INTERVAL = 3000; // 3 seconds for WiFi beacon scanning
     private static final int MAX_CONSECUTIVE_FAILURES = 2;
     private static final int PERMISSIONS_REQUEST_CODE = 987;
     // OpenDroneID WiFi Constants
