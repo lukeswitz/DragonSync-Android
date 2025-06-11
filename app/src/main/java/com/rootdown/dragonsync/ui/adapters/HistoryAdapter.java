@@ -37,7 +37,7 @@ public class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHold
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             droneId = itemView.findViewById(R.id.drone_id);
-            timestamp = itemView.findViewById(R.id.timestamp);
+//            timestamp = itemView.findViewById(R.id.timestamp); //TODO last seen
 //            details = itemView.findViewById(R.id.details); // TODO whole history feature
         }
     }

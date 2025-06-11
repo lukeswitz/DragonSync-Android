@@ -32,6 +32,7 @@ public class DroneListAdapter extends RecyclerView.Adapter<DroneListAdapter.View
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         public ImageView droneIcon;
+        public ImageView detectionTypeIcon;
         public TextView droneId;
         public TextView position;
         public TextView description;
@@ -45,13 +46,14 @@ public class DroneListAdapter extends RecyclerView.Adapter<DroneListAdapter.View
 
         public ViewHolder(View view) {
             super(view);
-            droneIcon = view.findViewById(R.id.drone_icon);
+//            droneIcon = view.findViewById(R.id.drone_icon);
+            detectionTypeIcon = view.findViewById(R.id.detection_type_icon);
             droneId = view.findViewById(R.id.drone_id);
             position = view.findViewById(R.id.position);
             description = view.findViewById(R.id.description);
             rssi = view.findViewById(R.id.rssi);
             rssiContainer = view.findViewById(R.id.rssi_container);
-            timestamp = view.findViewById(R.id.timestamp);
+//            timestamp = view.findViewById(R.id.timestamp);
             altitude = view.findViewById(R.id.altitude);
             speed = view.findViewById(R.id.speed);
             detailsButton = view.findViewById(R.id.details_button);
@@ -85,24 +87,45 @@ public class DroneListAdapter extends RecyclerView.Adapter<DroneListAdapter.View
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         CoTMessage message = messages.get(position);
 
-        // Set drone ID and indicator for spoofed drones
+        // Set drone ID and detection type icon
         String displayId = message.getUid();
+        int detectionIcon = R.drawable.ic_bluetooth; // default
+        String detectionLabel = "";
+
+        // Determine detection type and icon
+        if (message.getType() != null) {
+            if (message.getType().contains("BLE")) {
+                detectionIcon = R.drawable.ic_bluetooth;
+                detectionLabel = "BT";
+                displayId = context.getString(R.string.format_drone_id_bt, displayId);
+            } else if (message.getType().contains("WiFi")) {
+                // Check if it's NaN or Beacon
+                if (message.getMac() != null && message.getMac().startsWith("NaN-")) {
+                    detectionIcon = R.drawable.ic_wifi_nan;
+                    detectionLabel = "NaN";
+                    displayId = context.getString(R.string.format_drone_id_wifi, displayId);
+                } else {
+                    detectionIcon = R.drawable.ic_wifi;
+                    detectionLabel = "WiFi";
+                    displayId = context.getString(R.string.format_drone_id_wifi, displayId);
+                }
+            } else if (message.getMac() == null) {
+                detectionIcon = R.drawable.ic_radio_tower;
+                detectionLabel = "SDR";
+                displayId = context.getString(R.string.format_drone_id_sdr, displayId);
+            }
+        }
+
+        // Set detection type icon (add this to ViewHolder first)
+        holder.detectionTypeIcon.setImageResource(detectionIcon);
+        holder.detectionTypeIcon.setContentDescription(detectionLabel + " detection");
+
+        // Set spoofed indicator
         if (message.isSpoofed()) {
             displayId = context.getString(R.string.spoofed_drone_prefix, displayId);
             holder.droneId.setTextColor(context.getColor(R.color.warning_amber));
         } else {
             holder.droneId.setTextColor(context.getColor(R.color.on_surface_high));
-        }
-
-        // Add source label
-        if (message.getType() != null) {
-            if (message.getType().contains("BLE")) {
-                displayId = context.getString(R.string.format_drone_id_bt, displayId);
-            } else if (message.getType().contains("WiFi")) {
-                displayId = context.getString(R.string.format_drone_id_wifi, displayId);
-            } else if (message.getMac() == null) {
-                displayId = context.getString(R.string.format_drone_id_sdr, displayId);
-            }
         }
 
         holder.droneId.setText(displayId);
@@ -115,7 +138,6 @@ public class DroneListAdapter extends RecyclerView.Adapter<DroneListAdapter.View
             holder.description.setText(R.string.drone_description_placeholder);
             holder.description.setVisibility(View.GONE);
         }
-
         // Set position if available
         if (message.getCoordinate() != null) {
             holder.position.setText(context.getString(R.string.format_coordinates,
@@ -186,25 +208,25 @@ public class DroneListAdapter extends RecyclerView.Adapter<DroneListAdapter.View
         }
 
         // Set timestamp if available
-        if (message.getTimestamp() != null && !message.getTimestamp().isEmpty()) {
-            try {
-                long timestamp = Long.parseLong(message.getTimestamp());
-                Date date = new Date(timestamp);
-                Calendar cal = Calendar.getInstance();
-                cal.setTime(date);
-                holder.timestamp.setText(context.getString(R.string.format_timestamp,
-                        cal.get(Calendar.HOUR_OF_DAY),
-                        cal.get(Calendar.MINUTE),
-                        cal.get(Calendar.SECOND)));
-                holder.timestamp.setVisibility(View.VISIBLE);
-            } catch (NumberFormatException e) {
-                holder.timestamp.setText(R.string.timestamp_placeholder);
-                holder.timestamp.setVisibility(View.GONE);
-            }
-        } else {
-            holder.timestamp.setText(R.string.timestamp_placeholder);
-            holder.timestamp.setVisibility(View.GONE);
-        }
+//        if (message.getTimestamp() != null && !message.getTimestamp().isEmpty()) {
+//            try {
+//                long timestamp = Long.parseLong(message.getTimestamp());
+//                Date date = new Date(timestamp);
+//                Calendar cal = Calendar.getInstance();
+//                cal.setTime(date);
+//                holder.timestamp.setText(context.getString(R.string.format_timestamp,
+//                        cal.get(Calendar.HOUR_OF_DAY),
+//                        cal.get(Calendar.MINUTE),
+//                        cal.get(Calendar.SECOND)));
+//                holder.timestamp.setVisibility(View.VISIBLE);
+//            } catch (NumberFormatException e) {
+//                holder.timestamp.setText(R.string.timestamp_placeholder);
+//                holder.timestamp.setVisibility(View.GONE);
+//            }
+//        } else {
+//            holder.timestamp.setText(R.string.timestamp_placeholder);
+//            holder.timestamp.setVisibility(View.GONE);
+//        }
 
         // Set click listeners
         holder.itemView.setOnClickListener(v -> {

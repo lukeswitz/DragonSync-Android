@@ -80,12 +80,22 @@
     <string name="status_disconnected">DISCONNECTED</string>
     <string name="format_uptime">%1$02d:%2$02d:%3$02d</string>
     <string name="spoofed_drone_prefix">⚠️ %1$s</string>
-    <string name="format_drone_id_bt">%1$s [BT]</string>
-    <string name="format_drone_id_wifi">%1$s [WiFi]</string>
-    <string name="format_drone_id_sdr">%1$s [SDR]</string>
+    <string name="format_drone_id_bt">%1$s</string>
+    <string name="format_drone_id_wifi">%1$s</string>
+    <string name="format_drone_id_sdr">%1$s [SDR]📡</string>
     <string name="connection_error">CONNECTION ERROR</string>
     <string name="status_error">ERROR</string>
     <string name="no_warnings">No active warnings</string>
+
+    <!-- Device Capabilities -->
+    <string name="detection_bt_legacy">Bluetooth 4.x Legacy</string>
+    <string name="detection_bt_long_range">Bluetooth 5 Long Range</string>
+    <string name="detection_wifi_beacon">WiFi Beacon</string>
+    <string name="detection_wifi_nan">WiFi NaN</string>
+    <string name="detection_sdr">SDR</string>
+
+    <string name="capabilities_supported">Supported detection methods</string>
+    <string name="capabilities_not_supported">Not supported</string>
 
     <!-- Map controls -->
     <string name="center_on_location">Center on my location</string>

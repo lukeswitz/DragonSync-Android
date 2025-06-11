@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center"
+    android:padding="8dp">
+
+    <!-- Bluetooth Legacy -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="4dp">
+
+        <ImageView
+            android:id="@+id/bt_legacy_indicator"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@android:drawable/checkbox_on_background"
+            />
+
+        <TextView
+            android:id="@+id/bt_legacy_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BT4"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:layout_marginTop="2dp" />
+
+    </LinearLayout>
+
+    <!-- Bluetooth Long Range -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="4dp">
+
+        <ImageView
+            android:id="@+id/bt_long_range_indicator"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@android:drawable/checkbox_on_background"
+            />
+
+        <TextView
+            android:id="@+id/bt_long_range_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="BT5"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:layout_marginTop="2dp" />
+
+    </LinearLayout>
+
+    <!-- WiFi Beacon -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="4dp">
+
+        <ImageView
+            android:id="@+id/wifi_beacon_indicator"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@android:drawable/checkbox_on_background"
+            />
+
+        <TextView
+            android:id="@+id/wifi_beacon_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Beacon"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:layout_marginTop="2dp" />
+
+    </LinearLayout>
+
+    <!-- WiFi NaN -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="4dp">
+
+        <ImageView
+            android:id="@+id/wifi_nan_indicator"
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@android:drawable/checkbox_on_background"
+            />
+
+        <TextView
+            android:id="@+id/wifi_nan_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="NaN"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:layout_marginTop="2dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

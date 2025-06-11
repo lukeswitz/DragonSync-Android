@@ -1,10 +1,13 @@
 package com.rootdown.dragonsync.ui.fragments;
 
+import android.annotation.TargetApi;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.net.wifi.aware.WifiAwareManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -173,17 +176,52 @@ public class SettingsFragment extends Fragment {
         updateUIForConnectionMode(currentMode);
     }
 
+
+    @TargetApi(Build.VERSION_CODES.O)
+    private boolean isWifiNanAvailable() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            return false;
+        }
+
+        if (!requireContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE)) {
+            return false;
+        }
+
+        WifiAwareManager wifiAwareManager = (WifiAwareManager) requireContext()
+                .getSystemService(Context.WIFI_AWARE_SERVICE);
+
+        return wifiAwareManager != null && wifiAwareManager.isAvailable();
+    }
+
     private void updateUIForConnectionMode(ConnectionMode mode) {
         if (mode == ConnectionMode.ONBOARD) {
             // Hide the host input since it's not needed for onboard mode
             hostInputLayout.setVisibility(View.GONE);
 
-            // Check if there's an existing info text
+            // Create info text with WiFi capabilities
             TextView infoText = new TextView(requireContext());
             infoText.setTag("onboard_info_text");
-            infoText.setText("Uses your device's Bluetooth and WiFi " +
-                    "to detect nearby drones without external hardware.");
+
+            String infoMessage = "Uses your device's Bluetooth and WiFi to detect nearby drones without external hardware.\n\n";
+
+            // Check WiFi Aware support
+            if (requireContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE)) {
+                WifiAwareManager wifiAwareManager = (WifiAwareManager) requireContext()
+                        .getSystemService(Context.WIFI_AWARE_SERVICE);
+                if (wifiAwareManager != null && wifiAwareManager.isAvailable()) {
+                    infoMessage += "✅ WiFi NaN supported - All WiFi drone broadcasts\n";
+                } else {
+                    infoMessage += "⚠️ WiFi NaN not available - limited to WiFi Beacon detection\n";
+                }
+            } else {
+                infoMessage += "⚠️ WiFi NaN not supported - limited to WiFi Beacon detection\n";
+            }
+
+            infoMessage += "✅ Bluetooth LE scanning supported";
+
+            infoText.setText(infoMessage);
             infoText.setPadding(16, 16, 16, 16);
+            infoText.setTextSize(12);
 
             ViewGroup parent = (ViewGroup) hostInputLayout.getParent();
             for (int i = 0; i < parent.getChildCount(); i++) {
