@@ -21,7 +21,11 @@
 Use as a standalone sniffer or in conjunction with a hardware stack like WarDragon Pro. 
 
 ### Onboard Detection
-- Android phone with WiFi Nearest Neighbor WiFi scan capabilities & long range BT. Most are compatible, falls back to beacon if NaN is unavailable. 
+- Android phone with WiFi Nearest Neighbor WiFi scan capabilities & long range BT. Most are compatible, falls back to beacon if NaN is unavailable.
+
+- Compatibility Check
+  ![image](https://github.com/user-attachments/assets/b3703dcd-9ce6-4f83-8b7f-453f69345bff)
+
 
 ### SDR & ESP32
 [Refer to the iOS guide](https://github.com/Root-Down-Digital/DragonSync-iOS/blob/main/README.md#hardware-requirements)
