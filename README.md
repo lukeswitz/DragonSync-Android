@@ -17,22 +17,7 @@
 
 ## Requirements
 
-> [!NOTE]
-> *DragonSync will soon use onboard WiFi. For the time being, we rely solely on BT and a more powerful hardware stack:*
-
-### Hardware
-Works with WarDragon Pro right out of the box, otherwise follow the below:
-
-**Required:**
-- Catsniffer or Sonoff flashed with the latest Sniffle FW (Bluetooth)
-- WiFi adapter or ESP32 flashed with the WiFI RID FW (WiFi)
-
-**Optional:**
-- GPS Unit (Status and spoof detection)
-- ANT SDR E200 (DJI decoding of Ocusync and others)
-
-### Software
-*We need to install a few scripts that the app will run on top of.*
+[Refer to the iOS guide](https://github.com/Root-Down-Digital/DragonSync-iOS/blob/main/README.md#hardware-requirements)
 
 ## Quick Start
 
