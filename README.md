@@ -14,12 +14,21 @@
 </div>
 <br>
 
+[Signed APK Releases](https://github.com/lukeswitz/DragonSync-Android/releases)
+
 
 ## Requirements
+Use as a standalone sniffer or in conjunction with a hardware stack like WarDragon Pro. 
 
+### Onboard Detection
+- Android phone with WiFi Nearest Neighbor WiFi scan capabilities & long range BT. Most are compatible, falls back to beacon if NaN is unavailable. 
+
+### SDR & ESP32
 [Refer to the iOS guide](https://github.com/Root-Down-Digital/DragonSync-iOS/blob/main/README.md#hardware-requirements)
 
-## Quick Start
+
+
+## SDR Quick Start
 
 ### 1. Grab the Code
 
