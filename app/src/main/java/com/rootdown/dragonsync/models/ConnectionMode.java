@@ -1,7 +1,7 @@
 package com.rootdown.dragonsync.models;
 
 public enum ConnectionMode {
-    MULTICAST("Anycast"),
+    MULTICAST("Muticast"),
     ZMQ("ZMQ"),
     ONBOARD("Onboard");
 
