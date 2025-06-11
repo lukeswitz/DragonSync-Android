@@ -26,7 +26,7 @@ netty = "4.1.111.Final"
 bouncycastle = "1.78.1"
 commonsIo = "2.16.1"
 commonsCompress = "1.26.2"
-protobufJava = "3.25.4"
+protobufJava = "3.25.5"
 
 [libraries]
 androidx-core = { module = "androidx.core:core", version.ref = "core" }
