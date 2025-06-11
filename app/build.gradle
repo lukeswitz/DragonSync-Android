@@ -67,4 +67,31 @@ dependencies {
     androidTestImplementation libs.androidx.ui.test.junit4
     debugImplementation libs.androidx.ui.tooling
     debugImplementation libs.androidx.ui.test.manifest
+
+    constraints {
+        def nettyVersion = libs.versions.netty
+        def bouncycastleVersion = libs.versions.bouncycastle
+        def commonsIoVersion = libs.versions.commonsIo
+        def commonsCompressVersion = libs.versions.commonsCompress
+        def protobufVersion = libs.versions.protobufJava
+
+        // Force secure versions for all configurations
+        add("implementation", "io.netty:netty-handler:${nettyVersion}")
+        add("implementation", "io.netty:netty-codec-http2:${nettyVersion}")
+        add("implementation", "io.netty:netty-common:${nettyVersion}")
+        add("implementation", "io.netty:netty-codec-http:${nettyVersion}")
+        add(
+                "implementation",
+                "org.bouncycastle:bcprov-jdk18on:${bouncycastleVersion}"
+        )
+        add("implementation", "commons-io:commons-io:${commonsIoVersion}")
+        add(
+                "implementation",
+                "org.apache.commons:commons-compress:${commonsCompressVersion}"
+        )
+        add(
+                "implementation",
+                "com.google.protobuf:protobuf-java:${protobufVersion}"
+        )
+    }
 }

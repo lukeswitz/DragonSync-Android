@@ -22,6 +22,11 @@ supportAnnotations = "28.0.0"
 playServicesMaps = "19.1.0"
 playServicesLocation = "21.3.0"
 gridlayout = "1.0.0"
+netty = "4.1.111.Final"
+bouncycastle = "1.78.1"
+commonsIo = "2.16.1"
+commonsCompress = "1.26.2"
+protobufJava = "3.25.4"
 
 [libraries]
 androidx-core = { module = "androidx.core:core", version.ref = "core" }
