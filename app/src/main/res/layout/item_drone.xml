@@ -40,7 +40,7 @@
                 android:layout_height="20dp"
                 android:layout_marginEnd="8dp"
                 android:src="@drawable/ic_bluetooth"
-                android:tint="@color/accent" />
+                app:tint="@color/accent" />
 
             <!-- Drone ID -->
             <TextView
