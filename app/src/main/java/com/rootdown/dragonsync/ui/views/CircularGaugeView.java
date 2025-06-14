@@ -98,5 +98,8 @@ public class CircularGaugeView extends FrameLayout {
     public void setColor(int color) {
         progress.setIndicatorColor(color);
         valueText.setTextColor(color);
+        titleText.setTextColor(color);
+        unitText.setTextColor(color);
+
     }
 }
