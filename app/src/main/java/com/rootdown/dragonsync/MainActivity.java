@@ -7,17 +7,22 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.Manifest;
 
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 
 import android.support.annotation.NonNull;
 import android.util.Log;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -51,6 +56,17 @@ public class MainActivity extends FragmentActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Enable edge-to-edge display
+        getWindow().setStatusBarColor(Color.TRANSPARENT);
+        getWindow().setFlags(
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+        );
+
+        getWindow().setStatusBarColor(getColor(android.R.color.transparent));
+        getWindow().getDecorView().setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN);
+
         setContentView(R.layout.activity_main);
 
         cotViewModel = new ViewModelProvider(this).get(CoTViewModel.class);
@@ -98,19 +114,30 @@ public class MainActivity extends FragmentActivity {
     private void updateConnectionIndicator(boolean isConnected) {
         if (connectionIndicator == null) return;
 
-        int colorResId = isConnected ?
-                R.color.status_green :
-                R.color.status_red;
-        int color = getResources().getColor(colorResId, null);
+        if (isConnected) {
+            connectionIndicator.setVisibility(View.GONE);
+        } else {
+            connectionIndicator.setVisibility(View.VISIBLE);
 
-        connectionIndicator.setText(isConnected ?
-                getString(R.string.status_connected) :
-                getString(R.string.status_disconnected));
+            // Get status bar height and adjust margin
+            int statusBarHeight = 0;
+            int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+            if (resourceId > 0) {
+                statusBarHeight = getResources().getDimensionPixelSize(resourceId);
+            }
 
-        ColorStateList colorStateList = ColorStateList.valueOf(color);
-        connectionIndicator.setTextColor(color);
-        connectionIndicator.setStrokeColor(colorStateList);
-        connectionIndicator.setIconTint(colorStateList);
+            // Update the top margin to account for status bar
+            ConstraintLayout.LayoutParams params = (ConstraintLayout.LayoutParams) connectionIndicator.getLayoutParams();
+            params.topMargin = statusBarHeight + 40; // 40dp base margin + status bar height
+            connectionIndicator.setLayoutParams(params);
+
+            int color = getResources().getColor(R.color.status_red, null);
+            connectionIndicator.setText(getString(R.string.status_disconnected));
+            ColorStateList colorStateList = ColorStateList.valueOf(color);
+            connectionIndicator.setTextColor(color);
+            connectionIndicator.setStrokeColor(colorStateList);
+            connectionIndicator.setIconTint(colorStateList);
+        }
     }
 
     private void checkAndRequestPermissions() {
@@ -222,18 +249,24 @@ public class MainActivity extends FragmentActivity {
 
     private boolean onNavigationItemSelected(MenuItem item) {
         Fragment fragment = null;
-        Log.d("BottomNav", "Item selected: " + item.getTitle());
+        TextView headerTitle = findViewById(R.id.header_title);
+
         int itemId = item.getItemId();
         if (itemId == R.id.nav_dashboard) {
             fragment = new DashboardFragment();
+            headerTitle.setVisibility(View.GONE); // Hide main title
         } else if (itemId == R.id.nav_drones) {
             fragment = new DroneListFragment();
+            headerTitle.setVisibility(View.GONE);
         } else if (itemId == R.id.nav_status) {
             fragment = new StatusFragment();
+            headerTitle.setVisibility(View.GONE);
         } else if (itemId == R.id.nav_settings) {
             fragment = new SettingsFragment();
+            headerTitle.setVisibility(View.VISIBLE); // Show for settings since it doesn't have its own
         } else if (itemId == R.id.nav_history) {
             fragment = new HistoryFragment();
+            headerTitle.setVisibility(View.GONE);
         }
 
         if (fragment != null) {

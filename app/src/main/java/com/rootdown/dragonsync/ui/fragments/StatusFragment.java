@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import android.widget.ProgressBar;
@@ -68,18 +69,19 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
     }
 
     @Override
-    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_status, container, false);
 
-        initializeViews(view);
-
-        mapView = view.findViewById(R.id.map_view);
-        if (mapView != null) {
-            mapView.onCreate(savedInstanceState);
-            mapView.getMapAsync(this);
-        }
-
-        setupObservers();
+        // Apply status bar insets
+        view.setOnApplyWindowInsetsListener((v, insets) -> {
+            v.setPadding(
+                    v.getPaddingLeft(),
+                    insets.getSystemWindowInsetTop() + 16,
+                    v.getPaddingRight(),
+                    v.getPaddingBottom()
+            );
+            return insets.consumeSystemWindowInsets();
+        });
 
         return view;
     }

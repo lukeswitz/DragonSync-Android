@@ -65,24 +65,23 @@ public class SettingsFragment extends Fragment {
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_settings, container, false);
+
+        // Apply status bar insets
+        view.setOnApplyWindowInsetsListener((v, insets) -> {
+            v.setPadding(
+                    v.getPaddingLeft(),
+                    insets.getSystemWindowInsetTop() + 6,
+                    v.getPaddingRight(),
+                    v.getPaddingBottom()
+            );
+            return insets.consumeSystemWindowInsets();
+        });
+
         initializeViews(view);
         setupConnectionModes();
         loadCurrentSettings();
         setupListeners();
 
-        // Only force disconnect on first app launch
-        if (appFirstLaunch) {
-            connectionSwitch.setChecked(false);
-            settings.setListening(false);
-            updateConnectionStatusUI(false);
-            appFirstLaunch = false;
-        } else {
-            // Just update UI to match current state
-            connectionSwitch.setChecked(settings.isListening());
-            updateConnectionStatusUI(settings.isListening());
-        }
-
-        updateConnectionStatusUI(settings.isListening());
         return view;
     }
 

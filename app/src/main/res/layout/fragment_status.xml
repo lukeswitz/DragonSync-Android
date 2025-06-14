@@ -199,7 +199,7 @@
                         android:layout_width="@dimen/icon_size"
                         android:layout_height="@dimen/icon_size"
                         android:src="@android:drawable/ic_menu_info_details"
-                        app:tint="@color/accent" />
+                        android:tint="@color/accent" />
 
                     <TextView
                         android:id="@+id/sdr_status_title"

@@ -4,22 +4,14 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginVertical="@dimen/spacing_xs"
-    android:layout_marginHorizontal="@dimen/spacing_xs"
-    app:cardCornerRadius="@dimen/card_corner_radius_small"
-    app:cardElevation="@dimen/card_elevation"
+    android:layout_marginVertical="4dp"
+    android:layout_marginHorizontal="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp"
     app:cardBackgroundColor="@color/surface_dark_elevated"
     app:strokeColor="@color/card_stroke_light"
-    app:strokeWidth="@dimen/card_stroke_width"
-    app:rippleColor="@color/ripple_color">
+    app:strokeWidth="1dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="@dimen/spacing_md">
-
-        <!-- Header Row -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -31,7 +23,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
 
             <!-- Detection Type Icon -->
             <ImageView
@@ -40,17 +33,86 @@
                 android:layout_height="20dp"
                 android:layout_marginEnd="8dp"
                 android:src="@drawable/ic_bluetooth"
-                app:tint="@color/accent" />
+                android:tint="@color/accent" />
 
-            <!-- Drone ID -->
+            <!-- Drone Title -->
             <TextView
-                android:id="@+id/drone_id"
+                android:id="@+id/drone_title"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
+                android:text="Unknown Drone"
                 android:textSize="16sp"
                 android:textStyle="bold"
-                android:text="Drone ID" />
+                android:textColor="@color/on_surface_high" />
+
+            <!-- Status Icons -->
+            <ImageView
+                android:id="@+id/verified_icon"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_check_circle"
+                android:tint="@color/status_green"
+                android:layout_marginEnd="8dp"
+                android:visibility="gone"
+                android:contentDescription="Verified drone" />
+
+            <ImageView
+                android:id="@+id/spoof_warning_icon"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/ic_cancel"
+                android:tint="@color/status_red"
+                android:layout_marginEnd="8dp"
+                android:visibility="gone"
+                android:contentDescription="Spoofed drone" />
+
+            <ImageView
+                android:id="@+id/warning_icon"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@android:drawable/ic_dialog_alert"
+                android:tint="@color/warning_amber"
+                android:visibility="gone"
+                android:contentDescription="Warning" />
+
+        </LinearLayout>
+
+        <!-- Drone ID -->
+        <TextView
+            android:id="@+id/drone_id"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="@color/on_surface_medium"
+            android:layout_marginBottom="4dp"
+            android:fontFamily="monospace" />
+
+        <!-- Drone Type -->
+        <TextView
+            android:id="@+id/drone_type"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"
+            android:textColor="@color/on_surface_medium"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Connection Info -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="12dp">
+
+            <TextView
+                android:id="@+id/mac_address"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="12sp"
+                android:textColor="@color/on_surface_medium"
+                android:fontFamily="monospace" />
 
             <!-- RSSI Container -->
             <com.google.android.material.card.MaterialCardView
@@ -74,32 +136,62 @@
             </com.google.android.material.card.MaterialCardView>
 
         </LinearLayout>
-    </LinearLayout>
 
+        <!-- Description -->
         <TextView
             android:id="@+id/description"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/drone_description_placeholder"
+            android:text="Drone description"
             android:textColor="@color/on_surface_medium"
-            android:textSize="@dimen/text_size_caption"
+            android:textSize="14sp"
             android:maxLines="2"
             android:ellipsize="end"
+            android:layout_marginBottom="8dp"
             android:visibility="gone" />
 
-        <!-- Divider -->
-        <View
+        <!-- MAC Warning Container -->
+        <LinearLayout
+            android:id="@+id/mac_warning_container"
             android:layout_width="match_parent"
-            android:layout_height="@dimen/divider_height"
-            android:background="@color/divider"
-            android:layout_marginVertical="@dimen/spacing_sm"/>
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@color/warning_amber"
+            android:padding="8dp"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone">
 
-        <!-- Data Grid -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="⚠️ MAC Address Randomization Detected"
+                android:textColor="@color/warning_amber"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                android:layout_marginBottom="4dp" />
+
+            <LinearLayout
+                android:id="@+id/mac_list_container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+        </LinearLayout>
+
+        <View
+            android:id="@+id/mac_warning_separator"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider"
+            android:layout_marginVertical="8dp"
+            android:visibility="gone" />
+
+        <!-- Stats Grid -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="@dimen/spacing_sm">
+            android:layout_marginBottom="8dp">
 
             <!-- Position -->
             <LinearLayout
@@ -111,20 +203,19 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/position_label"
-                    android:textSize="@dimen/text_size_micro"
-                    android:textColor="@color/on_surface_medium"/>
+                    android:text="Position"
+                    android:textSize="12sp"
+                    android:textColor="@color/on_surface_medium" />
 
                 <TextView
                     android:id="@+id/position"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/position_placeholder"
-                    android:textColor="@color/data_text"
-                    android:textSize="@dimen/text_size_caption"
-                    android:fontFamily="monospace"
-                    android:maxLines="1"
-                    android:ellipsize="end"/>
+                    android:text="Unknown"
+                    android:textSize="11sp"
+                    android:textColor="@color/on_surface_high"
+                    android:fontFamily="monospace" />
+
             </LinearLayout>
 
             <!-- Altitude -->
@@ -137,19 +228,30 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/altitude_label"
-                    android:textSize="@dimen/text_size_micro"
-                    android:textColor="@color/on_surface_medium"/>
+                    android:text="Altitude"
+                    android:textSize="12sp"
+                    android:textColor="@color/on_surface_medium" />
 
                 <TextView
                     android:id="@+id/altitude"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/altitude_placeholder"
-                    android:textColor="@color/data_text"
-                    android:textSize="@dimen/text_size_caption"
-                    android:fontFamily="monospace"/>
+                    android:text="Unknown"
+                    android:textSize="11sp"
+                    android:textColor="@color/on_surface_high"
+                    android:fontFamily="monospace" />
+
             </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Second Row -->
+        <LinearLayout
+            android:id="@+id/pilot_location_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="8dp">
 
             <!-- Speed -->
             <LinearLayout
@@ -161,20 +263,132 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/speed_label"
-                    android:textSize="@dimen/text_size_micro"
-                    android:textColor="@color/on_surface_medium"/>
+                    android:text="Speed"
+                    android:textSize="12sp"
+                    android:textColor="@color/on_surface_medium" />
 
                 <TextView
                     android:id="@+id/speed"
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/speed_placeholder"
-                    android:textColor="@color/data_text"
-                    android:textSize="@dimen/text_size_caption"
-                    android:fontFamily="monospace"/>
+                    android:text="Unknown"
+                    android:textSize="11sp"
+                    android:textColor="@color/on_surface_high"
+                    android:fontFamily="monospace" />
+
             </LinearLayout>
+
+            <!-- Pilot Location -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Pilot"
+                    android:textSize="12sp"
+                    android:textColor="@color/on_surface_medium" />
+
+                <TextView
+                    android:id="@+id/pilot_location"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Unknown"
+                    android:textSize="11sp"
+                    android:textColor="@color/on_surface_high"
+                    android:fontFamily="monospace" />
+
+            </LinearLayout>
+
         </LinearLayout>
+
+        <!-- Third Row -->
+        <LinearLayout
+            android:id="@+id/manufacturer_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="12dp">
+
+            <!-- Manufacturer -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Manufacturer"
+                    android:textSize="12sp"
+                    android:textColor="@color/on_surface_medium" />
+
+                <TextView
+                    android:id="@+id/manufacturer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Unknown"
+                    android:textSize="11sp"
+                    android:textColor="@color/on_surface_high" />
+
+            </LinearLayout>
+
+            <!-- MAC Address Detail -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="MAC"
+                    android:textSize="12sp"
+                    android:textColor="@color/on_surface_medium" />
+
+                <TextView
+                    android:id="@+id/mac_address_detail"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Unknown"
+                    android:textSize="11sp"
+                    android:textColor="@color/on_surface_high"
+                    android:fontFamily="monospace" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Optional Mini Map Container -->
+        <FrameLayout
+            android:id="@+id/mini_map"
+            android:layout_width="match_parent"
+            android:layout_height="150dp"
+            android:background="@color/surface_dark"
+            android:layout_marginBottom="12dp"
+            android:visibility="gone">
+
+            <com.google.android.gms.maps.MapView
+                android:id="@+id/drone_map"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+        </FrameLayout>
+
+        <!-- Timestamp -->
+        <TextView
+            android:id="@+id/timestamp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Last seen: Unknown"
+            android:textSize="12sp"
+            android:textColor="@color/on_surface_low"
+            android:layout_marginBottom="8dp" />
 
         <!-- Action Buttons -->
         <LinearLayout
@@ -186,31 +400,32 @@
                 android:id="@+id/details_button"
                 android:layout_width="0dp"
                 android:layout_weight="1"
-                android:layout_height="@dimen/button_height_small"
-                android:text="@string/details_button"
-                android:textSize="@dimen/text_size_micro"
-                app:cornerRadius="@dimen/button_corner_radius_small"
+                android:layout_height="36dp"
+                android:text="Details"
+                android:textSize="12sp"
+                app:cornerRadius="6dp"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 app:strokeColor="@color/button_stroke"
-                android:layout_marginEnd="@dimen/spacing_xs"/>
+                android:layout_marginEnd="8dp"/>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/live_map_button"
                 android:layout_width="0dp"
                 android:layout_weight="1"
-                android:layout_height="@dimen/button_height_small"
-                android:text="@string/live_map_button"
-                android:textSize="@dimen/text_size_micro"
-                app:cornerRadius="@dimen/button_corner_radius_small"
+                android:layout_height="36dp"
+                android:text="Live Map"
+                android:textSize="12sp"
+                app:cornerRadius="6dp"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 app:icon="@android:drawable/ic_dialog_map"
-                app:iconSize="@dimen/button_icon_size"
+                app:iconSize="16dp"
                 app:iconGravity="textStart"
-                android:paddingStart="@dimen/button_icon_padding"
                 app:strokeColor="@color/accent"
                 android:textColor="@color/accent"
                 app:iconTint="@color/accent"
-                android:layout_marginStart="@dimen/spacing_xs"/>
+                android:layout_marginStart="8dp"/>
         </LinearLayout>
+
     </LinearLayout>
+
 </com.google.android.material.card.MaterialCardView>

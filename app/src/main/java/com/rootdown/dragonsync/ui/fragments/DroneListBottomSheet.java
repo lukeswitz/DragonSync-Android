@@ -39,9 +39,9 @@ public class DroneListBottomSheet extends BottomSheetDialogFragment implements D
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        RecyclerView recyclerView = view.findViewById(R.id.drone_list);
+        RecyclerView recyclerView = view.findViewById(R.id.drones_list);
         recyclerView.setLayoutManager(new LinearLayoutManager(requireContext()));
-        adapter = new DroneListAdapter(this);
+        adapter = new DroneListAdapter(requireContext(), this);
         recyclerView.setAdapter(adapter);
 
         viewModel.getParsedMessages().observe(getViewLifecycleOwner(),

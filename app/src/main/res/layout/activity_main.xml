@@ -4,98 +4,57 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_dark">
+    android:background="@color/surface_dark">
 
-    <!-- Status Bar Spacer with Gradient -->
-    <View
-        android:id="@+id/status_bar_background"
-        android:layout_width="match_parent"
-        android:layout_height="24dp"
-        android:background="@color/background_dark"
-        app:layout_constraintTop_toTopOf="parent"/>
+    <!-- Header -->
+    <TextView
+        android:id="@+id/header_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginTop="80dp"
+        android:text="DragonSync"
+        android:textColor="@color/white"
+        android:textSize="34sp"
+        android:textStyle="bold"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- App Title Bar -->
-    <LinearLayout
-        android:id="@+id/app_title_bar"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingHorizontal="16dp"
-        android:background="@color/surface_dark"
-        android:elevation="4dp"
-        app:layout_constraintTop_toBottomOf="@id/status_bar_background">
+    <!-- Connection Status Indicator -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/connection_indicator"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="16dp"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="4dp"
+        android:text="@string/status_disconnected"
+        android:textSize="12sp"
+        app:cornerRadius="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/header_title" />
 
-
-        <ImageView
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:src="@mipmap/ic_launcher"
-        app:tint="@color/accent"
-        android:contentDescription="@string/app_name"/>
-
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/app_name"
-            android:textSize="20sp"
-            android:textColor="@color/on_surface_high"
-            android:fontFamily="sans-serif-medium"
-            android:layout_marginStart="12dp"/>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/connection_indicator"
-            android:layout_width="wrap_content"
-            android:layout_height="36dp"
-            android:text="@string/status_disconnected"
-            android:textSize="12sp"
-            android:paddingHorizontal="12dp"
-            app:cornerRadius="18dp"
-            app:icon="@drawable/card_background"
-            app:iconGravity="textStart"
-            app:iconSize="16dp"
-            app:iconTint="@color/connection_status_color"
-            android:textColor="@color/connection_status_color"
-            app:strokeColor="@color/connection_status_color"
-            app:strokeWidth="1dp"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
-    </LinearLayout>
-
-    <!-- Bottom Navigation Background with Shadow -->
+    <!-- Fragment Container -->
     <FrameLayout
         android:id="@+id/fragment_container"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:layout_constraintBottom_toTopOf="@id/bottom_nav_background"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/app_title_bar"
-        app:layout_constraintVertical_bias="1.0" />
+        app:layout_constraintTop_toBottomOf="@id/connection_indicator"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bottom_navigation" />
 
-    <View
-        android:id="@+id/bottom_nav_background"
-        android:layout_width="match_parent"
-        android:layout_height="86dp"
-        android:background="@color/surface_dark"
-        app:layout_constraintBottom_toBottomOf="parent"/>
-
+    <!-- Bottom Navigation -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bottom_navigation"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:background="@color/dark_gray"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:menu="@menu/bottom_nav_menu"
-        app:labelVisibilityMode="labeled"
-        android:background="@android:color/transparent"
-        app:itemIconTint="@color/bottom_nav_icon_color"
-        app:itemTextColor="@color/bottom_nav_text_color"
-        app:itemTextAppearanceActive="@style/TextAppearance.DragonSync.BottomNav.Active"
-        app:itemTextAppearanceInactive="@style/TextAppearance.DragonSync.BottomNav.Inactive"
-        app:itemRippleColor="@color/ripple_color"/>
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:menu="@menu/bottom_nav_menu" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -8,6 +8,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.appcompat.widget.SearchView;
@@ -16,9 +17,9 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.rootdown.dragonsync.R;
 import com.rootdown.dragonsync.ui.adapters.DroneListAdapter;
 import com.rootdown.dragonsync.viewmodels.CoTViewModel;
@@ -33,11 +34,11 @@ public class DroneListFragment extends Fragment implements DroneListAdapter.OnDr
     private CoTViewModel viewModel;
     private DroneListAdapter adapter;
     private RecyclerView recyclerView;
-    private TextView emptyStateView;
+    private LinearLayout emptyStateView;
     private TextView droneCountView;
     private ChipGroup filterChips;
-    private FloatingActionButton clearButton;
-    private FloatingActionButton mapAllButton;
+    private MaterialButton clearButton;
+    private MaterialButton mapAllButton;
 
     private List<CoTMessage> allDrones = new ArrayList<>();
     private List<CoTMessage> filteredDrones = new ArrayList<>();
@@ -54,6 +55,17 @@ public class DroneListFragment extends Fragment implements DroneListAdapter.OnDr
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_drone_list, container, false);
+
+        // Apply status bar insets
+        view.setOnApplyWindowInsetsListener((v, insets) -> {
+            v.setPadding(
+                    v.getPaddingLeft(),
+                    insets.getSystemWindowInsetTop() + 26,
+                    v.getPaddingRight(),
+                    v.getPaddingBottom()
+            );
+            return insets.consumeSystemWindowInsets();
+        });
 
         setupRecyclerView(view);
         setupFilterChips(view);
@@ -102,7 +114,7 @@ public class DroneListFragment extends Fragment implements DroneListAdapter.OnDr
     }
 
     private void setupRecyclerView(View view) {
-        recyclerView = view.findViewById(R.id.drone_list);
+        recyclerView = view.findViewById(R.id.drones_list);
         emptyStateView = view.findViewById(R.id.empty_state);
         droneCountView = view.findViewById(R.id.drone_count);
 
@@ -126,6 +138,9 @@ public class DroneListFragment extends Fragment implements DroneListAdapter.OnDr
     private void setupFilterChips(View view) {
         filterChips = view.findViewById(R.id.filter_chips);
         if (filterChips == null) return;
+
+        // Hide chips by default
+        filterChips.setVisibility(View.GONE);
 
         // Set up click listeners for filter chips
         for (int i = 0; i < filterChips.getChildCount(); i++) {
@@ -151,6 +166,7 @@ public class DroneListFragment extends Fragment implements DroneListAdapter.OnDr
     private void setupButtons(View view) {
         clearButton = view.findViewById(R.id.clear_button);
         mapAllButton = view.findViewById(R.id.map_all_button);
+        MaterialButton filterButton = view.findViewById(R.id.filter_button);
 
         if (clearButton != null) {
             clearButton.setOnClickListener(v -> {
@@ -167,6 +183,17 @@ public class DroneListFragment extends Fragment implements DroneListAdapter.OnDr
                         .replace(R.id.fragment_container, mapFragment)
                         .addToBackStack(null)
                         .commit();
+            });
+        }
+
+        if (filterButton != null) {
+            filterButton.setOnClickListener(v -> {
+                // Toggle chip group visibility
+                if (filterChips.getVisibility() == View.VISIBLE) {
+                    filterChips.setVisibility(View.GONE);
+                } else {
+                    filterChips.setVisibility(View.VISIBLE);
+                }
             });
         }
     }

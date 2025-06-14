@@ -8,7 +8,7 @@ import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import androidx.gridlayout.widget.GridLayout;
+import android.widget.GridLayout;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -35,7 +35,6 @@ public class DashboardFragment extends Fragment {
     private CoTViewModel cotViewModel;
     private StatusViewModel statusViewModel;
 
-    // View references
     private GridLayout systemMetricsGrid;
     private GridLayout droneStatsGrid;
     private GridLayout sdrStatsGrid;
@@ -59,7 +58,20 @@ public class DashboardFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_dashboard, container, false);
+        View view = inflater.inflate(R.layout.fragment_dashboard, container, false);
+
+        // Apply status bar insets with more padding
+        view.setOnApplyWindowInsetsListener((v, insets) -> {
+            v.setPadding(
+                    v.getPaddingLeft(),
+                    insets.getSystemWindowInsetTop() + 60, // top margin
+                    v.getPaddingRight(),
+                    v.getPaddingBottom()
+            );
+            return insets.consumeSystemWindowInsets();
+        });
+
+        return view;
     }
 
     @Override
@@ -68,11 +80,9 @@ public class DashboardFragment extends Fragment {
         initializeViews(view);
         setupObservers();
 
-        // Set up View All Drones button
         MaterialButton viewAllButton = view.findViewById(R.id.view_all_drones);
         if (viewAllButton != null) {
             viewAllButton.setOnClickListener(v -> {
-                // Navigate to Drone List tab
                 if (getActivity() != null) {
                     BottomNavigationView bottomNav = getActivity().findViewById(R.id.bottom_navigation);
                     if (bottomNav != null) {
@@ -90,16 +100,14 @@ public class DashboardFragment extends Fragment {
         sdrStatusChip = view.findViewById(R.id.sdr_status_chip);
         recentDronesList = view.findViewById(R.id.recent_drones_list);
         recentDronesList.setLayoutManager(new LinearLayoutManager(requireContext()));
-        droneListAdapter = new DroneListAdapter(new DroneListAdapter.OnDroneClickListener() {
+        droneListAdapter = new DroneListAdapter(requireContext(), new DroneListAdapter.OnDroneClickListener() {
             @Override
             public void onDroneClick(CoTMessage message) {
-                // Open drone detail view
                 showDroneDetail(message);
             }
 
             @Override
             public void onLiveMapClick(CoTMessage message) {
-                // Open live map view focused on this drone
                 showLiveMap(message);
             }
         });
@@ -108,7 +116,6 @@ public class DashboardFragment extends Fragment {
         warningsList = view.findViewById(R.id.warnings_list);
         warningsList.setLayoutManager(new LinearLayoutManager(requireContext()));
 
-        // Initialize metrics with empty values
         createSystemMetricsGauges();
         createDroneStatsCards();
         createSDRStatsGauges();
@@ -116,24 +123,19 @@ public class DashboardFragment extends Fragment {
 
     private void createSystemMetricsGauges() {
         systemMetricsGrid.removeAllViews();
-
-        // Center content
         systemMetricsGrid.setUseDefaultMargins(true);
         systemMetricsGrid.setAlignmentMode(GridLayout.ALIGN_BOUNDS);
 
-        // CPU usage gauge
         CircularGaugeView cpuGauge = createGauge(requireContext(), "CPU", 0, "%", Color.GREEN);
         GridLayout.LayoutParams cpuParams = new GridLayout.LayoutParams();
         cpuParams.setGravity(Gravity.CENTER);
         systemMetricsGrid.addView(cpuGauge, cpuParams);
 
-        // Memory usage gauge
         CircularGaugeView memGauge = createGauge(requireContext(), "MEM", 0, "%", Color.GREEN);
         GridLayout.LayoutParams memParams = new GridLayout.LayoutParams();
         memParams.setGravity(Gravity.CENTER);
         systemMetricsGrid.addView(memGauge, memParams);
 
-        // Temperature gauge
         CircularGaugeView tempGauge = createGauge(requireContext(), "TEMP", 0, "°C", Color.GREEN);
         GridLayout.LayoutParams tempParams = new GridLayout.LayoutParams();
         tempParams.setGravity(Gravity.CENTER);
@@ -143,12 +145,10 @@ public class DashboardFragment extends Fragment {
     private void createDroneStatsCards() {
         droneStatsGrid.removeAllViews();
 
-        // Create tracker counter card
         View trackedCard = LayoutInflater.from(requireContext()).inflate(R.layout.card_counter, droneStatsGrid, false);
-
         GridLayout.LayoutParams params = new GridLayout.LayoutParams(
-                GridLayout.spec(GridLayout.UNDEFINED, 1f),  // columnSpec
-                GridLayout.spec(GridLayout.UNDEFINED, 1f)   // rowSpec
+                GridLayout.spec(GridLayout.UNDEFINED, 1f),
+                GridLayout.spec(GridLayout.UNDEFINED, 1f)
         );
         params.width = 0;
         params.height = ViewGroup.LayoutParams.WRAP_CONTENT;
@@ -163,12 +163,10 @@ public class DashboardFragment extends Fragment {
 
         droneStatsGrid.addView(trackedCard, params);
 
-        // Create spoofed counter card
         View spoofedCard = LayoutInflater.from(requireContext()).inflate(R.layout.card_counter, droneStatsGrid, false);
-
         GridLayout.LayoutParams spoofedParams = new GridLayout.LayoutParams(
-                GridLayout.spec(GridLayout.UNDEFINED, 1f),  // columnSpec
-                GridLayout.spec(GridLayout.UNDEFINED, 1f)   // rowSpec
+                GridLayout.spec(GridLayout.UNDEFINED, 1f),
+                GridLayout.spec(GridLayout.UNDEFINED, 1f)
         );
         spoofedParams.width = 0;
         spoofedParams.height = ViewGroup.LayoutParams.WRAP_CONTENT;
@@ -183,12 +181,10 @@ public class DashboardFragment extends Fragment {
 
         droneStatsGrid.addView(spoofedCard, spoofedParams);
 
-        // Create nearby counter card
         View nearbyCard = LayoutInflater.from(requireContext()).inflate(R.layout.card_counter, droneStatsGrid, false);
-
         GridLayout.LayoutParams nearbyParams = new GridLayout.LayoutParams(
-                GridLayout.spec(GridLayout.UNDEFINED, 1f),  // columnSpec
-                GridLayout.spec(GridLayout.UNDEFINED, 1f)   // rowSpec
+                GridLayout.spec(GridLayout.UNDEFINED, 1f),
+                GridLayout.spec(GridLayout.UNDEFINED, 1f)
         );
         nearbyParams.width = 0;
         nearbyParams.height = ViewGroup.LayoutParams.WRAP_CONTENT;
@@ -205,10 +201,8 @@ public class DashboardFragment extends Fragment {
     }
 
     private void createSDRStatsGauges() {
-        // Clear existing views
         sdrStatsGrid.removeAllViews();
 
-        // PLUTO temperature gauge
         CircularGaugeView plutoGauge = createGauge(requireContext(), "PLUTO", 0, "°C", Color.GREEN);
         GridLayout.LayoutParams plutoParams = new GridLayout.LayoutParams();
         plutoParams.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, GridLayout.CENTER);
@@ -216,7 +210,6 @@ public class DashboardFragment extends Fragment {
         plutoParams.setGravity(Gravity.CENTER);
         sdrStatsGrid.addView(plutoGauge, plutoParams);
 
-        // ZYNQ temperature gauge
         CircularGaugeView zynqGauge = createGauge(requireContext(), "ZYNQ", 0, "°C", Color.GREEN);
         GridLayout.LayoutParams zynqParams = new GridLayout.LayoutParams();
         zynqParams.columnSpec = GridLayout.spec(GridLayout.UNDEFINED, GridLayout.CENTER);
@@ -224,7 +217,6 @@ public class DashboardFragment extends Fragment {
         zynqParams.setGravity(Gravity.CENTER);
         sdrStatsGrid.addView(zynqGauge, zynqParams);
 
-        // SDR status text
         TextView statusText = new TextView(requireContext());
         statusText.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
         GridLayout.LayoutParams statusParams = new GridLayout.LayoutParams();
@@ -235,28 +227,23 @@ public class DashboardFragment extends Fragment {
     }
 
     private void setupObservers() {
-        // Observe status messages for system metrics
         statusViewModel.getStatusMessages().observe(getViewLifecycleOwner(), messages -> {
             if (!messages.isEmpty()) {
                 updateSystemMetrics(messages.get(messages.size() - 1));
             }
         });
 
-        // Observe drone messages
         cotViewModel.getParsedMessages().observe(getViewLifecycleOwner(), messages -> {
             updateDroneMetrics(messages);
 
-            // Update the drone list - LIMIT TO JUST 2 FOR PREVIEW
             List<CoTMessage> recentMessages = getRecentMessages(messages, 1);
             droneListAdapter.updateMessages(recentMessages);
 
-            // Show/hide empty state
             TextView emptyStateText = getView().findViewById(R.id.no_drones_message);
             if (emptyStateText != null) {
                 emptyStateText.setVisibility(messages.isEmpty() ? View.VISIBLE : View.GONE);
             }
 
-            // Show/hide recycler view based on whether we have drones
             if (recentDronesList != null) {
                 recentDronesList.setVisibility(messages.isEmpty() ? View.GONE : View.VISIBLE);
             }
@@ -266,14 +253,12 @@ public class DashboardFragment extends Fragment {
     private void updateSystemMetrics(StatusMessage status) {
         if (status == null || status.getSystemStats() == null) return;
 
-        // Update CPU gauge
         updateGauge(systemMetricsGrid, 0, status.getSystemStats().getCpuUsage(), getColorForMetric(
                 status.getSystemStats().getCpuUsage(),
                 Constants.CPU_WARNING_THRESHOLD,
                 Constants.CPU_CRITICAL_THRESHOLD
         ));
 
-        // Update Memory gauge
         if (status.getSystemStats().getMemory() != null) {
             double memPercent = ((double)status.getSystemStats().getMemory().getUsed() /
                     status.getSystemStats().getMemory().getTotal()) * 100.0;
@@ -284,14 +269,12 @@ public class DashboardFragment extends Fragment {
             ));
         }
 
-        // Update Temperature gauge
         updateGauge(systemMetricsGrid, 2, status.getSystemStats().getTemperature(), getColorForMetric(
                 status.getSystemStats().getTemperature(),
                 Constants.TEMP_WARNING_THRESHOLD,
                 Constants.TEMP_CRITICAL_THRESHOLD
         ));
 
-        // Update SDR stats if available
         if (status.getAntStats() != null) {
             updateGauge(sdrStatsGrid, 0, status.getAntStats().getPlutoTemp(), getColorForMetric(
                     status.getAntStats().getPlutoTemp(),
@@ -306,15 +289,13 @@ public class DashboardFragment extends Fragment {
             ));
 
         }
-        // Update SDR status chip
+
         if (status.getAntStats() != null) {
-            // SDR is active
             sdrStatusChip.setText("ACTIVE");
             sdrStatusChip.setChipBackgroundColor(ColorStateList.valueOf(getResources().getColor(R.color.status_green_10, null)));
             sdrStatusChip.setChipStrokeColor(ColorStateList.valueOf(getResources().getColor(R.color.status_green, null)));
             sdrStatusChip.setTextColor(getResources().getColor(R.color.status_green, null));
         } else {
-            // SDR is inactive
             sdrStatusChip.setText("INACTIVE");
             sdrStatusChip.setChipBackgroundColor(ColorStateList.valueOf(getResources().getColor(R.color.status_red_10, null)));
             sdrStatusChip.setChipStrokeColor(ColorStateList.valueOf(getResources().getColor(R.color.status_red, null)));
@@ -334,13 +315,11 @@ public class DashboardFragment extends Fragment {
                 spoofedDrones++;
             }
 
-            // Check if drone is nearby based on RSSI
             if (drone.getRssi() != null && drone.getRssi() > Constants.PROXIMITY_THRESHOLD) {
                 nearbyDrones++;
             }
         }
 
-        // Update counter cards with dynamic data
         trackedDronesText.setText(getString(R.string.drone_count_tracked, totalDrones));
         spoofedDronesText.setText(getString(R.string.drone_count_spoofed, spoofedDrones));
         nearbyDronesText.setText(getString(R.string.drone_count_nearby, nearbyDrones));
@@ -369,7 +348,6 @@ public class DashboardFragment extends Fragment {
     }
 
     private void showDroneDetail(CoTMessage message) {
-        // Navigate to drone detail fragment
         DroneDetailFragment detailFragment = DroneDetailFragment.newInstance(message);
         requireActivity().getSupportFragmentManager()
                 .beginTransaction()
@@ -379,7 +357,6 @@ public class DashboardFragment extends Fragment {
     }
 
     private void showLiveMap(CoTMessage message) {
-        // Navigate to live map fragment focused on this drone
         LiveMapFragment mapFragment = LiveMapFragment.newInstance(message);
         requireActivity().getSupportFragmentManager()
                 .beginTransaction()
@@ -388,7 +365,6 @@ public class DashboardFragment extends Fragment {
                 .commit();
     }
 
-    // Utility methods for creating UI components
     private CircularGaugeView createGauge(Context context, String title, double value, String unit, int color) {
         CircularGaugeView gauge = new CircularGaugeView(context);
         gauge.setTitle(title);

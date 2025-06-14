@@ -1,6 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
+    <!-- App level strings -->
     <string name="app_name">DragonSync</string>
+    <string name="dashboard_title">Dashboard</string>
+    <string name="system_status_title">System Status</string>
+    <string name="active_drones_title">Active Drones</string>
+    <string name="sdr_status_title">SDR Status</string>
+    <string name="warnings_title">Warnings &amp; Alerts</string>
+
+    <string name="verified_drone">Verified Drone</string>
+    <string name="spoofed_drone">Spoofed Drone</string>
+    <string name="position_unknown">Position Unknown</string>
+    <string name="altitude_unknown">Altitude Unknown</string>
+    <string name="speed_unknown">Speed Unknown</string>
+    <string name="location_unknown">Location Unknown</string>
+    <string name="manufacturer_unknown">Manufacturer Unknown</string>
+    <string name="mac_label">MAC Address</string>
+    <string name="mac_unknown">MAC Unknown</string>
+    <string name="ssid_header">SSID</string>
+    <string name="bssid_header">BSSID</string>
+    <string name="frequency_header">Frequency</string>
+    <string name="rssi_header">RSSI</string>
+    <string name="capabilities_header">Capabilities</string>
+    <string name="first_seen_header">First Seen</string>
+    <string name="last_seen_header">Last Seen</string>
+    <string name="location_header">Location</string>
+
+    <!-- Dashboard strings -->
+    <string name="no_active_drones">No active drones detected</string>
+    <string name="no_active_warnings">No active warnings</string>
+    <string name="no_drones_message">No drones detected</string>
+
+    <!-- History fragment strings -->
+    <string name="uploaded_networks_title">Detections</string>
+    <string name="clear_database">Clear Database</string>
+    <string name="export_seen">Export</string>
+    <string name="welcome_user">Welcome to DragonSync</string>
+    <string name="device_heartbeats_title">Device Status</string>
+    <string name="no_heartbeats">No device status available</string>
+    <string name="statistics_title">Statistics</string>
+    <string name="unique_networks_placeholder">Unique drones: %d</string>
+    <string name="total_entries_placeholder">Total detections: %d</string>
+
+    <!-- Drone item strings -->
+    <string name="unknown_drone">Unknown Drone</string>
 
     <!-- Section Titles -->
     <string name="system_status">SYSTEM STATUS</string>
@@ -16,6 +60,16 @@
     <string name="connection">CONNECTION</string>
     <string name="preferences">PREFERENCES</string>
     <string name="warning_thresholds">WARNING THRESHOLDS</string>
+
+    <string name="drone_title_placeholder">Detected Drone</string>
+    <string name="drone_id_placeholder">drone-unknown</string>
+    <string name="mac_placeholder">Unknown MAC</string>
+    <string name="pilot_location_label">Pilot Location:</string>
+    <string name="pilot_location_placeholder">Unknown</string>
+    <string name="manufacturer_label">Manufacturer:</string>
+    <string name="manufacturer_placeholder">Unknown</string>
+    <string name="mac_randomization_warning">Device using MAC randomization</string>
+    <string name="last_seen_macs_label">Last seen MACs:</string>
 
     <string name="server_name_placeholder">System Name</string>
     <string name="uptime_placeholder">00:00:00</string>
@@ -192,7 +246,6 @@
     <string name="uptime_format">%1$02d:%2$02d:%3$02d</string>
 
     <!-- Drone List Item Placeholders -->
-    <string name="drone_id_placeholder">Drone ID</string>
     <string name="drone_description_placeholder">Drone Model</string>
     <string name="rssi_placeholder">-- dBm</string>
     <string name="timestamp_placeholder">--:--:--</string>

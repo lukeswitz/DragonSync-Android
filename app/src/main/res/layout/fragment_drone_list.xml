@@ -1,157 +1,185 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.coordinatorlayout.widget.CoordinatorLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background_dark">
+    android:orientation="vertical"
+    android:background="@color/surface_dark">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="16dp">
 
-        <!-- Header section -->
-        <com.google.android.material.card.MaterialCardView
-            android:layout_width="match_parent"
+        <LinearLayout
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_margin="@dimen/spacing_md"
-            app:cardBackgroundColor="@color/surface_dark"
-            app:cardCornerRadius="@dimen/card_corner_radius"
-            app:cardElevation="@dimen/card_elevation">
+            android:layout_weight="1"
+            android:orientation="vertical">
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="@dimen/spacing_md">
+                android:text="Drones"
+                android:textSize="32sp"
+                android:textStyle="bold"
+                android:textColor="@color/on_surface_high" />
 
-                <!-- Title and drone count -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+            <TextView
+                android:id="@+id/drone_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0 detected"
+                android:textSize="14sp"
+                android:textColor="@color/on_surface_medium"
+                android:layout_marginTop="4dp" />
 
-                    <ImageView
-                        android:layout_width="@dimen/icon_size"
-                        android:layout_height="@dimen/icon_size"
-                        android:src="@drawable/ic_drone_accent" />
+        </LinearLayout>
 
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_weight="1"
-                        android:layout_height="wrap_content"
-                        android:text="@string/active_drones"
-                        android:textAppearance="@style/TextAppearance.DragonSync.CardTitle"
-                        android:layout_marginStart="@dimen/spacing_sm"/>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/clear_button"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="80dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="8dp"
+            android:text="Clear"
+            android:textSize="12sp"
+            android:textColor="@color/accent"
+            app:strokeColor="@color/accent"
+            app:cornerRadius="6dp" />
 
-                    <TextView
-                        android:id="@+id/drone_count"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0 Drones"
-                        android:textAppearance="@style/TextAppearance.DragonSync.Mono"
-                        android:textColor="@color/accent"/>
-                </LinearLayout>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/map_all_button"
+            android:layout_width="100dp"
+            android:layout_height="48dp"
+            android:text="Map"
+            android:textSize="12sp"
+            android:textColor="@color/accent"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            app:strokeColor="@color/accent"
+            app:cornerRadius="6dp"
+            app:icon="@android:drawable/ic_dialog_map"
+            app:iconSize="16dp"
+            app:iconTint="@color/accent"
+            android:layout_marginEnd="8dp" />
 
-                <!-- Filter chips -->
-                <HorizontalScrollView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:scrollbars="none"
-                    android:layout_marginTop="@dimen/spacing_sm">
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/filter_button"
+            style="@style/Widget.Material3.Button.IconButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            app:icon="@drawable/ic_filter_list"
+            app:iconTint="@color/accent"
+            app:iconSize="24dp" />
 
-                    <com.google.android.material.chip.ChipGroup
-                        android:id="@+id/filter_chips"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        app:singleSelection="true"
-                        app:selectionRequired="true"
-                        app:singleLine="true">
-
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/filter_all"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/drone_filter_all"
-                            android:tag="all"
-                            style="@style/Widget.MaterialComponents.Chip.Choice"
-                            android:checked="true"/>
-
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/filter_bluetooth"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/drone_filter_bluetooth"
-                            android:tag="bluetooth"
-                            style="@style/Widget.MaterialComponents.Chip.Choice"/>
-
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/filter_wifi"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/drone_filter_wifi"
-                            android:tag="wifi"
-                            style="@style/Widget.MaterialComponents.Chip.Choice"/>
-
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/filter_sdr"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/drone_filter_sdr"
-                            android:tag="sdr"
-                            style="@style/Widget.MaterialComponents.Chip.Choice"/>
-
-                        <com.google.android.material.chip.Chip
-                            android:id="@+id/filter_spoofed"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/drone_filter_spoofed"
-                            android:tag="spoofed"
-                            style="@style/Widget.MaterialComponents.Chip.Choice"/>
-                    </com.google.android.material.chip.ChipGroup>
-                </HorizontalScrollView>
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- Empty state view -->
-        <TextView
-            android:id="@+id/empty_state"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:textColor="@color/on_surface_medium"
-            android:textSize="@dimen/text_size_body"
-            android:gravity="center"
-            android:visibility="gone"/>
-
-        <!-- Drone list -->
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/drone_list"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:clipToPadding="false"
-            android:padding="@dimen/spacing_md"/>
     </LinearLayout>
 
-    <!-- Clear and Map buttons -->
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/clear_button"
-        android:layout_width="wrap_content"
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/filter_chips"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|start"
-        android:layout_margin="@dimen/spacing_lg"
-        android:src="@android:drawable/ic_menu_delete"
-        app:tint="@color/white"
-        app:backgroundTint="@color/red"/>
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="8dp"
+        app:singleSelection="false"
+        app:chipSpacingHorizontal="8dp">
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/map_all_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/spacing_lg"
-        android:src="@android:drawable/ic_dialog_map"
-        app:tint="@color/white"
-        app:backgroundTint="@color/accent"/>
-</androidx.coordinatorlayout.widget.CoordinatorLayout>
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_all"
+            android:tag="all"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="All"
+            android:checkable="true"
+            android:checked="true"
+            style="@style/Widget.MaterialComponents.Chip.Filter" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_bluetooth"
+            android:tag="bluetooth"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Bluetooth"
+            android:checkable="true"
+            style="@style/Widget.MaterialComponents.Chip.Filter"
+            app:chipIcon="@drawable/ic_bluetooth"
+            app:chipIconSize="16dp" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_wifi"
+            android:tag="wifi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="WiFi"
+            android:checkable="true"
+            style="@style/Widget.MaterialComponents.Chip.Filter"
+            app:chipIcon="@drawable/ic_wifi"
+            app:chipIconSize="16dp" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_sdr"
+            android:tag="sdr"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="SDR"
+            android:checkable="true"
+            style="@style/Widget.MaterialComponents.Chip.Filter"
+            app:chipIcon="@drawable/ic_radio_tower"
+            app:chipIconSize="16dp" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_spoofed"
+            android:tag="spoofed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Spoofed"
+            android:checkable="true"
+            style="@style/Widget.MaterialComponents.Chip.Filter"
+            app:chipIcon="@android:drawable/ic_dialog_alert"
+            app:chipIconSize="16dp" />
+
+    </com.google.android.material.chip.ChipGroup>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/drones_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:paddingHorizontal="8dp"
+        android:clipToPadding="false" />
+
+    <LinearLayout
+        android:id="@+id/empty_state"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/ic_drone_accent"
+            android:tint="@color/on_surface_medium"
+            android:layout_marginBottom="16dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No drones detected"
+            android:textSize="18sp"
+            android:textColor="@color/on_surface_medium"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Start scanning to detect nearby drones"
+            android:textSize="14sp"
+            android:textColor="@color/on_surface_low" />
+
+    </LinearLayout>
+
+</LinearLayout>

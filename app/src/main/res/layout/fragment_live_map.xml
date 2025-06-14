@@ -34,7 +34,7 @@
             android:layout_marginBottom="@dimen/spacing_sm"
             app:fabSize="mini"
             app:backgroundTint="@color/surface_dark_elevated"
-            app:tint="@color/on_surface_high"
+            android:tint="@color/on_surface_high"
             android:src="@android:drawable/ic_menu_mylocation"
             android:contentDescription="@string/center_on_location"/>
 
@@ -45,7 +45,7 @@
             android:layout_marginBottom="@dimen/spacing_sm"
             app:fabSize="mini"
             app:backgroundTint="@color/surface_dark_elevated"
-            app:tint="@color/on_surface_high"
+            android:tint="@color/on_surface_high"
             android:src="@android:drawable/ic_menu_mapmode"
             android:contentDescription="@string/change_map_type"/>
 
@@ -55,7 +55,7 @@
             android:layout_height="wrap_content"
             app:fabSize="mini"
             app:backgroundTint="@color/surface_dark_elevated"
-            app:tint="@color/on_surface_high"
+            android:tint="@color/on_surface_high"
             android:src="@android:drawable/menu_frame"
             android:contentDescription="@string/show_all_drones"/>
     </LinearLayout>

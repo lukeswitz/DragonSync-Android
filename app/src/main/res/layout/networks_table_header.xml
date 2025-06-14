@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@color/surface_dark"
+    android:padding="8dp">
+
+    <TextView
+        android:layout_width="120dp"
+        android:layout_height="wrap_content"
+        android:text="@string/ssid_header"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="@color/on_surface_medium"
+        android:padding="4dp" />
+
+    <TextView
+        android:layout_width="140dp"
+        android:layout_height="wrap_content"
+        android:text="@string/bssid_header"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="@color/on_surface_medium"
+        android:padding="4dp" />
+
+    <TextView
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:text="@string/frequency_header"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="@color/on_surface_medium"
+        android:padding="4dp" />
+
+    <TextView
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:text="@string/rssi_header"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="@color/on_surface_medium"
+        android:padding="4dp" />
+
+    <TextView
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:text="@string/capabilities_header"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="@color/on_surface_medium"
+        android:padding="4dp" />
+
+    <TextView
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:text="@string/first_seen_header"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="@color/on_surface_medium"
+        android:padding="4dp" />
+
+    <TextView
+        android:layout_width="100dp"
+        android:layout_height="wrap_content"
+        android:text="@string/last_seen_header"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="@color/on_surface_medium"
+        android:padding="4dp" />
+
+    <TextView
+        android:layout_width="80dp"
+        android:layout_height="wrap_content"
+        android:text="@string/location_header"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:textColor="@color/on_surface_medium"
+        android:padding="4dp" />
+
+</LinearLayout>

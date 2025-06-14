@@ -13,7 +13,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
-import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton;
+import com.google.android.material.button.MaterialButton;
 import com.rootdown.dragonsync.R;
 import com.rootdown.dragonsync.ui.adapters.HistoryAdapter;
 import com.rootdown.dragonsync.utils.DroneStorage;
@@ -24,7 +24,7 @@ import java.util.Comparator;
 
 public class HistoryFragment extends Fragment {
     private RecyclerView historyList;
-    private ExtendedFloatingActionButton exportButton;
+    private MaterialButton exportButton;
     private DroneStorage droneStorage;
     private HistoryAdapter adapter;
 
@@ -39,8 +39,19 @@ public class HistoryFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_history, container, false);
 
-        historyList = view.findViewById(R.id.history_list);
-        exportButton = view.findViewById(R.id.export_button);
+        // Apply status bar insets
+        view.setOnApplyWindowInsetsListener((v, insets) -> {
+            v.setPadding(
+                    v.getPaddingLeft(),
+                    insets.getSystemWindowInsetTop() + 26,
+                    v.getPaddingRight(),
+                    v.getPaddingBottom()
+            );
+            return insets.consumeSystemWindowInsets();
+        });
+
+        historyList = view.findViewById(R.id.networks_table);
+        exportButton = view.findViewById(R.id.export_seen);
 
         setupRecyclerView();
         setupExportButton();
@@ -50,7 +61,6 @@ public class HistoryFragment extends Fragment {
 
     private void setupRecyclerView() {
         adapter = new HistoryAdapter(encounter -> {
-            // Show encounter detail
             showEncounterDetail(encounter);
         });
 
@@ -157,24 +167,16 @@ public class HistoryFragment extends Fragment {
     }
 
     private void updateEncountersList() {
-        // Get encounters from storage and update adapter
         adapter.updateEncounters(new ArrayList<>(droneStorage.getEncounters().values()));
     }
 
     private void showEncounterDetail(DroneEncounter encounter) {
-        // TODO: Implement encounter detail view
     }
 
     private void exportCSV() {
         String csv = droneStorage.exportToCSV();
-        // TODO: Implement file sharing
     }
 
     private void exportKML() {
-        // TODO: Implement KML export
     }
-
-//    private static class HistoryAdapter extends RecyclerView.Adapter<HistoryAdapter.ViewHolder> {
-            // TODO this
-//    }
 }

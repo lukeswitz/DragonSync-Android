@@ -1,23 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.DragonSync" parent="Theme.MaterialComponents.DayNight.NoActionBar">
-        <!-- Primary color - Deep, tech-inspired blue -->
+
         <item name="colorPrimary">#4F5CD9</item>
-        <!-- Dark variant - Almost midnight blue -->
         <item name="colorPrimaryVariant">#000051</item>
-        <!-- Bright accent color for highlights -->
         <item name="colorOnPrimary">#FFFFFF</item>
 
-        <!-- Secondary color - Vibrant, electric teal -->
-        <item name="colorSecondary">#00BCD4</item>
-        <item name="colorSecondaryVariant">#0088A3</item>
-        <item name="colorOnSecondary">#FFFFFF</item>
+        <item name="colorSecondary">#00FF41</item>
+        <item name="colorSecondaryVariant">#00CC00</item>
+        <item name="colorOnSecondary">#000000</item>
 
+        <item name="colorOutline">#00FF41</item>
 
-        <!-- Status bar color -->
+        <!-- Status bar -->
         <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
 
-        <!-- Bottom Navigation specific styling -->
+        <!-- Bottom Navigation -->
         <item name="bottomNavigationStyle">@style/Widget.MaterialComponents.BottomNavigationView.Colored</item>
     </style>
 </resources>
