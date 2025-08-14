@@ -14,6 +14,16 @@
         <item name="cardElevation">@dimen/card_elevation_high</item>
     </style>
 
+    <style name="BottomNavTextActive" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">10sp</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+
+    <style name="BottomNavTextInactive" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">10sp</item>
+        <item name="android:textColor">@color/on_surface_medium</item>
+    </style>
+
     <!-- Text styles -->
     <style name="TextAppearance.DragonSync.CardTitle" parent="TextAppearance.MaterialComponents.Headline6">
         <item name="android:textColor">@color/on_surface_high</item>

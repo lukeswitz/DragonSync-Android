@@ -30,6 +30,7 @@ public class CoTViewModel extends ViewModel {
     private static final String TAG = "CoTViewModel";
     private final Settings settings;
     private final XMLParser xmlParser;
+    private String ssid;
 
     // No-argument constructor
     public CoTViewModel() {
@@ -38,6 +39,13 @@ public class CoTViewModel extends ViewModel {
         settings = null;
     }
 
+    public String getSsid() {
+        return ssid;
+    }
+
+    public void setSsid(String ssid) {
+        this.ssid = ssid;
+    }
     public CoTViewModel(Application application) {
         settings = Settings.getInstance(application);
         xmlParser = new XMLParser();

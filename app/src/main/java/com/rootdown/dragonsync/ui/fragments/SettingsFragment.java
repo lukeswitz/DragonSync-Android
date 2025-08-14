@@ -70,7 +70,7 @@ public class SettingsFragment extends Fragment {
         view.setOnApplyWindowInsetsListener((v, insets) -> {
             v.setPadding(
                     v.getPaddingLeft(),
-                    insets.getSystemWindowInsetTop() + 6,
+                    insets.getSystemWindowInsetTop() + 26,
                     v.getPaddingRight(),
                     v.getPaddingBottom()
             );
@@ -194,33 +194,32 @@ public class SettingsFragment extends Fragment {
 
     private void updateUIForConnectionMode(ConnectionMode mode) {
         if (mode == ConnectionMode.ONBOARD) {
-            // Hide the host input since it's not needed for onboard mode
             hostInputLayout.setVisibility(View.GONE);
 
-            // Create info text with WiFi capabilities
             TextView infoText = new TextView(requireContext());
             infoText.setTag("onboard_info_text");
 
-            String infoMessage = "Uses your device's Bluetooth and WiFi to detect nearby drones without external hardware.\n\n";
+            String infoMessage = "";
 
-            // Check WiFi Aware support
             if (requireContext().getPackageManager().hasSystemFeature(PackageManager.FEATURE_WIFI_AWARE)) {
                 WifiAwareManager wifiAwareManager = (WifiAwareManager) requireContext()
                         .getSystemService(Context.WIFI_AWARE_SERVICE);
                 if (wifiAwareManager != null && wifiAwareManager.isAvailable()) {
-                    infoMessage += "✅ WiFi NaN supported - All WiFi drone broadcasts\n";
+                    infoMessage += "✅ WiFi NaN supported - All WiFi RIDs\n";
                 } else {
-                    infoMessage += "⚠️ WiFi NaN not available - limited to WiFi Beacon detection\n";
+                    infoMessage += "⚠️ WiFi NaN not supported - using Beacon detection\n";
                 }
             } else {
-                infoMessage += "⚠️ WiFi NaN not supported - limited to WiFi Beacon detection\n";
+                infoMessage += "⚠️ WiFi NaN not supported - using Beacon detection\n";
             }
 
             infoMessage += "✅ Bluetooth LE scanning supported";
 
             infoText.setText(infoMessage);
             infoText.setPadding(16, 16, 16, 16);
-            infoText.setTextSize(12);
+            infoText.setTextSize(13);
+            infoText.setTextColor(Color.parseColor("#CCFFFFFF"));
+            infoText.setBackgroundResource(R.drawable.rounded_warning_border);
 
             ViewGroup parent = (ViewGroup) hostInputLayout.getParent();
             for (int i = 0; i < parent.getChildCount(); i++) {
@@ -232,10 +231,8 @@ public class SettingsFragment extends Fragment {
             }
             parent.addView(infoText, parent.indexOfChild(hostInputLayout));
 
-            // Show current connection status
             updateConnectionStatusUI(settings.isListening());
         } else {
-            // Other modes - keep existing code
             hostInputLayout.setVisibility(View.VISIBLE);
             connectionSwitch.setEnabled(true);
 
@@ -248,13 +245,18 @@ public class SettingsFragment extends Fragment {
                 }
             }
 
-            // Update connection status
             updateConnectionStatusUI(connectionSwitch.isChecked(), false);
         }
         connectionSwitch.setVisibility(View.VISIBLE);
     }
 
     private void loadCurrentSettings() {
+
+        if (appFirstLaunch) {
+            settings.setListening(false);
+            appFirstLaunch = false;
+        }
+
         // Connection settings
         updateHostInput();
         connectionSwitch.setChecked(settings.isListening());

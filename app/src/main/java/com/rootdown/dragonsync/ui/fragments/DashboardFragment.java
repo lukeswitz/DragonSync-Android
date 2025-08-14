@@ -27,6 +27,11 @@ import com.rootdown.dragonsync.ui.views.CircularGaugeView;
 import com.rootdown.dragonsync.utils.Constants;
 import com.rootdown.dragonsync.viewmodels.CoTViewModel;
 import com.rootdown.dragonsync.viewmodels.StatusViewModel;
+import com.rootdown.dragonsync.network.RebelDashboardViewModel;
+import com.rootdown.dragonsync.network.RebelHistoryManager;
+import com.rootdown.dragonsync.ui.adapters.HistoryAdapter;
+import com.rootdown.dragonsync.utils.DroneStorage.DroneEncounter;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,10 +45,11 @@ public class DashboardFragment extends Fragment {
     private GridLayout sdrStatsGrid;
     private RecyclerView recentDronesList;
     private RecyclerView warningsList;
-
     private TextView trackedDronesText;
     private TextView spoofedDronesText;
     private TextView nearbyDronesText;
+    private RebelDashboardViewModel RebelViewModel;
+    private HistoryAdapter warningsAdapter;
 
     private DroneListAdapter droneListAdapter;
     com.google.android.material.chip.Chip sdrStatusChip;
@@ -51,9 +57,18 @@ public class DashboardFragment extends Fragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        cotViewModel = new ViewModelProvider(requireActivity()).get(CoTViewModel.class);
+
+        // Init view models
+        cotViewModel   = new ViewModelProvider(requireActivity()).get(CoTViewModel.class);
         statusViewModel = new ViewModelProvider(requireActivity()).get(StatusViewModel.class);
+
+        RebelHistoryManager hm = new RebelHistoryManager(requireContext());
+        RebelViewModel = new ViewModelProvider(
+                requireActivity(),
+                new RebelDashboardViewModelFactory(hm)
+        ).get(RebelDashboardViewModel.class);
     }
+
 
     @Nullable
     @Override
@@ -116,9 +131,24 @@ public class DashboardFragment extends Fragment {
         warningsList = view.findViewById(R.id.warnings_list);
         warningsList.setLayoutManager(new LinearLayoutManager(requireContext()));
 
+        warningsAdapter = new HistoryAdapter(new HistoryAdapter.OnEncounterClickListener() {
+            @Override public void onEncounterClick(DroneEncounter e) { /* not used on dash */ }
+
+            @Override public void onRebelClick(RebelHistoryManager.DroneHistoryEntry b) {
+                showRebelDetail(b);
+            }
+        });
+        warningsList.setAdapter(warningsAdapter);
+
         createSystemMetricsGauges();
         createDroneStatsCards();
         createSDRStatsGauges();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (RebelViewModel != null) RebelViewModel.refreshData();
     }
 
     private void createSystemMetricsGauges() {
@@ -233,6 +263,15 @@ public class DashboardFragment extends Fragment {
             }
         });
 
+        // Rebels
+        RebelViewModel.getRecentRebels().observe(getViewLifecycleOwner(),
+                warningsAdapter::updateRebelEntries);
+
+        RebelViewModel.getActiveRebelCount().observe(getViewLifecycleOwner(),
+                count -> trackedDronesText.setText(
+                        getString(R.string.drone_count_tracked, count)));
+
+
         cotViewModel.getParsedMessages().observe(getViewLifecycleOwner(), messages -> {
             updateDroneMetrics(messages);
 
@@ -249,6 +288,23 @@ public class DashboardFragment extends Fragment {
             }
         });
     }
+
+    // TODO remove reused function
+    private void showRebelDetail(RebelHistoryManager.DroneHistoryEntry RebelEntry) {
+        String RebelTypes = RebelEntry.getRebelDetections().isEmpty() ? "Unknown" :
+                RebelEntry.getRebelDetections().get(0).getType().getDisplayName();
+
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Rebel Detection: " + RebelTypes)
+                .setMessage("Device ID: " + (RebelEntry.getDroneId() != null ? RebelEntry.getDroneId() : "Unknown") + "\n" +
+                        "MAC: " + (RebelEntry.getMac() != null ? RebelEntry.getMac() : "Unknown") + "\n" +
+                        "Timestamp: " + new java.util.Date(RebelEntry.getTimestamp()) + "\n" +
+                        "Confidence: " + RebelEntry.getMaxRebelConfidence() + "\n" +
+                        "Source: " + (RebelEntry.getDetectionSource() != null ? RebelEntry.getDetectionSource() : "Unknown"))
+                .setPositiveButton("OK", null)
+                .show();
+    }
+
 
     private void updateSystemMetrics(StatusMessage status) {
         if (status == null || status.getSystemStats() == null) return;
