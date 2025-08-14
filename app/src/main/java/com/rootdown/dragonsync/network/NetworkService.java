@@ -182,7 +182,7 @@ public class NetworkService extends Service {
         }
 
         // Check if we have a telemetry message (but only if it's not the same as a status message)
-        if (result.cotMessage != null && !result.cotMessage.getUid().startsWith("wardragon")) {
+        if (result.cotMessage != null && result.cotMessage.getUid() != null && !result.cotMessage.getUid().startsWith("wardragon")) {
             Intent telemetryIntent = new Intent("com.rootdown.dragonsync.TELEMETRY");
             telemetryIntent.setPackage(getPackageName());
             telemetryIntent.putExtra("parsed_message", result.cotMessage);

@@ -320,6 +320,55 @@ public class XMLParser {
 
     private ParseResult parseESP32Format(JsonObject json) {
         ParseResult result = new ParseResult();
+
+        // Check if this is an ESP32 status message format
+        if (json.has("serial_number") && json.has("system_stats")) {
+            // This is a status message, not a drone telemetry message
+            StatusMessage statusMessage = new StatusMessage();
+
+            // Set serial number
+            statusMessage.setSerialNumber(json.get("serial_number").getAsString());
+
+            // Parse system stats
+            JsonObject systemStats = json.getAsJsonObject("system_stats");
+            StatusMessage.SystemStats stats = new StatusMessage.SystemStats();
+
+            if (systemStats.has("temperature")) {
+                stats.setTemperature(systemStats.get("temperature").getAsDouble());
+            }
+
+            if (systemStats.has("uptime")) {
+                stats.setUptime(systemStats.get("uptime").getAsDouble());
+            }
+
+            // Parse memory stats
+            if (systemStats.has("memory")) {
+                JsonObject memoryJson = systemStats.getAsJsonObject("memory");
+                StatusMessage.SystemStats.MemoryStats memory = new StatusMessage.SystemStats.MemoryStats();
+
+                if (memoryJson.has("total")) {
+                    memory.setTotal(memoryJson.get("total").getAsLong());
+                }
+                if (memoryJson.has("used")) {
+                    memory.setUsed(memoryJson.get("used").getAsLong());
+                }
+                if (memoryJson.has("available")) {
+                    memory.setFree(memoryJson.get("available").getAsLong());
+                }
+                if (memoryJson.has("percent")) {
+                    memory.setPercent(memoryJson.get("percent").getAsDouble());
+                }
+
+                stats.setMemory(memory);
+            }
+
+            statusMessage.setSystemStats(stats);
+            result.statusMessage = statusMessage;
+
+            return result;
+        }
+
+
         CoTMessage cotMessage = new CoTMessage();
         Map<String, Object> rawData = new HashMap<>();
 
