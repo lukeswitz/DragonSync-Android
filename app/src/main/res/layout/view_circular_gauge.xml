@@ -41,13 +41,15 @@
             android:id="@+id/value"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="?attr/textAppearanceHeadline6"/>
+            android:textAppearance="?attr/textAppearanceHeadline6"
+            android:textColor="@color/data_text"/>
 
         <TextView
             android:id="@+id/unit"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textAppearance="?attr/textAppearanceCaption"/>
+            android:textAppearance="?attr/textAppearanceCaption"
+            android:textColor="@color/on_surface_medium"/>
     </LinearLayout>
 
     <TextView
@@ -55,5 +57,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:textAppearance="?attr/textAppearanceCaption"/>
+        android:textAppearance="?attr/textAppearanceCaption"
+        android:textColor="@color/on_surface_medium"/>
 </LinearLayout>

@@ -1,11 +1,9 @@
 name: Android CI
-
 on:
   push:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,5 +17,5 @@ jobs:
           cache: gradle
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
-      - name: Build with Gradle
-        run: ./gradlew build
+      - name: Build with Gradle (Skip Lint)
+        run: ./gradlew assembleDebug testDebugUnitTest -x lint

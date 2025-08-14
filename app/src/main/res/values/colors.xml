@@ -27,6 +27,10 @@
     <color name="secondary_text">#8E8E93</color>
     <color name="tertiary_text">#636366</color>
 
+    <color name="gauge_label_text">#FFFFFF</color>
+    <color name="gauge_value_text">#8E8E93</color>
+    <color name="sdr_label_text">#FFFFFF</color>
+
     <color name="surface_dark_elevated">#1C1C1E</color>
     <color name="on_surface_high">#FFFFFF</color>
     <color name="on_surface_medium">#8E8E93</color>
