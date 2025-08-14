@@ -91,6 +91,17 @@ public class CoTMessage implements Parcelable {
     private String areaRadius;
     private String areaCeiling;
     private String areaFloor;
+
+    private String ssid;
+
+    public String getSsid() {
+        return ssid;
+    }
+
+    public void setSsid(String ssid) {
+        this.ssid = ssid;
+    }
+
     private String classification;
     private String selfIdType;
     private String selfIdId;

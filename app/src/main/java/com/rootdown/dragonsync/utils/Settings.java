@@ -9,7 +9,9 @@ import com.rootdown.dragonsync.models.ConnectionMode;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class Settings {
     private static Settings instance;
@@ -154,8 +156,6 @@ public class Settings {
         return prefs.getBoolean(Constants.KEY_IS_LISTENING, false);
     }
 
-
-
     public void setListening(boolean listening) {
         editor.putBoolean(Constants.KEY_IS_LISTENING, listening).apply();
     }
@@ -219,5 +219,46 @@ public class Settings {
 
     public boolean isSerialConsoleEnabled() {
         return prefs.getBoolean(Constants.KEY_SERIAL_CONSOLE_ENABLED, false);
+    }
+
+    // Threat Protection
+    public void addBlockedSSID(String ssid, String reason) {
+        Set<String> blocked = getBlockedSSIDs();
+        blocked.add(ssid + "|" + reason + "|" + System.currentTimeMillis());
+        editor.putStringSet("blocked_ssids", blocked).apply();
+    }
+
+    public void addBlockedMAC(String mac, String reason) {
+        Set<String> blocked = getBlockedMACs();
+        blocked.add(mac + "|" + reason + "|" + System.currentTimeMillis());
+        editor.putStringSet("blocked_macs", blocked).apply();
+    }
+
+    public void addQuarantinedDevice(String mac, String reason) {
+        Set<String> quarantined = getQuarantinedDevices();
+        quarantined.add(mac + "|" + reason + "|" + System.currentTimeMillis());
+        editor.putStringSet("quarantined_devices", quarantined).apply();
+    }
+
+    public void addSuspiciousDevice(String mac, String reason) {
+        Set<String> suspicious = getSuspiciousDevices();
+        suspicious.add(mac + "|" + reason + "|" + System.currentTimeMillis());
+        editor.putStringSet("suspicious_devices", suspicious).apply();
+    }
+
+    public Set<String> getBlockedSSIDs() {
+        return new HashSet<>(prefs.getStringSet("blocked_ssids", new HashSet<>()));
+    }
+
+    public Set<String> getBlockedMACs() {
+        return new HashSet<>(prefs.getStringSet("blocked_macs", new HashSet<>()));
+    }
+
+    public Set<String> getQuarantinedDevices() {
+        return new HashSet<>(prefs.getStringSet("quarantined_devices", new HashSet<>()));
+    }
+
+    public Set<String> getSuspiciousDevices() {
+        return new HashSet<>(prefs.getStringSet("suspicious_devices", new HashSet<>()));
     }
 }

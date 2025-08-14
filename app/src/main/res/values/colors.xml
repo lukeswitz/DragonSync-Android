@@ -19,10 +19,11 @@
     <color name="system_blue">#007AFF</color>
     <color name="system_green">#34C759</color>
     <color name="system_red">#FF3B30</color>
+    <color name="critical_red">#FF5252</color>
     <color name="system_orange">#FF9500</color>
     <color name="system_yellow">#FFCC00</color>
     <color name="bottom_nav_color_selector">@color/accent</color>
-
+    <color name="warning_background">#1AFF9800</color>
     <color name="primary_text">#FFFFFF</color>
     <color name="secondary_text">#8E8E93</color>
     <color name="tertiary_text">#636366</color>

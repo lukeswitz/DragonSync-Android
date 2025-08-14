@@ -27,13 +27,14 @@ import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 public class OnboardDetectionService extends Service {
     private static final String TAG = "OnboardDetectionService";
     private static final String CHANNEL_ID = "DragonSyncOnboardDetection";
     private static final int NOTIFICATION_ID = 2;
-
+    private RebelHistoryManager RebelHistoryManager;
     private BluetoothScanner bluetoothScanner;
     private WiFiScanner wifiScanner;
     private Settings settings;
@@ -56,6 +57,7 @@ public class OnboardDetectionService extends Service {
         xmlParser = new XMLParser();
         createNotificationChannel();
 
+        RebelHistoryManager = new RebelHistoryManager(this);
         // Initialize location manager
         locationManager = DeviceLocationManager.getInstance(this);
         locationManager.addListener(location -> {
@@ -96,6 +98,9 @@ public class OnboardDetectionService extends Service {
         } else {
             Log.e(TAG, "WiFi permissions not granted");
         }
+
+        // Initialize hound Rebel history manager
+        RebelHistoryManager = new RebelHistoryManager(this);
     }
 
     @Override
@@ -340,6 +345,27 @@ public class OnboardDetectionService extends Service {
 
                 Log.d(TAG, "  Distance: " + distanceInMeters + "m");
             }
+
+
+            // Process Rebel detection
+            if (RebelHistoryManager != null) {
+                // Run hound Rebel scanning on the message
+                RebelScanner RebelScanner = new RebelScanner();
+                List<RebelScanner.RebelDetection> detections = RebelScanner.scanMessage(message);
+
+                // If Rebels detected, log and handle them
+                if (!detections.isEmpty()) {
+                    Log.w(TAG, "Rebel detections found for " + message.getUid() + ": " + detections.size());
+                    for (RebelScanner.RebelDetection detection : detections) {
+                        Log.w(TAG, "Rebel: " + detection.getType() + " - " + detection.getDetails() +
+                                " (Confidence: " + detection.getConfidence() + ")");
+                    }
+                }
+
+                // Process through history manager (which handles notifications and storage)
+                RebelHistoryManager.processMessage(message);
+            }
+
 
             // Broadcast the enhanced telemetry message
             Intent telemetryIntent = new Intent("com.rootdown.dragonsync.TELEMETRY");

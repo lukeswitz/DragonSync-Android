@@ -1,60 +1,104 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.core.widget.NestedScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/surface_dark">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp"
-        android:layout_marginTop="20dp">
+        android:padding="16dp">
 
         <!-- Connection Section -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardBackgroundColor="@color/surface_dark_elevated"
+            app:strokeColor="@color/card_stroke_light"
+            app:strokeWidth="1dp"
+            app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="20dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Connection"
-                    android:textAppearance="?attr/textAppearanceHeadline6"/>
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/on_surface_high"
+                    android:layout_marginBottom="16dp"/>
 
                 <com.google.android.material.tabs.TabLayout
                     android:id="@+id/connection_mode_tabs"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"/>
+                    android:layout_marginTop="8dp"
+                    android:background="@color/surface_dark"
+                    app:tabTextColor="#CCFFFFFF"
+                    app:tabSelectedTextColor="#2196F3"
+                    app:tabIndicatorColor="#2196F3"
+                    app:tabIndicatorHeight="2dp"
+                    app:tabRippleColor="#402196F3"/>
 
                 <com.google.android.material.textfield.TextInputLayout
                     android:id="@+id/host_input_layout"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+                    android:layout_marginBottom="16dp"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    app:boxStrokeColor="@color/accent"
+                    app:hintTextColor="@color/on_surface_medium">
 
                     <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/host_input"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Host"/>
+                        android:hint="Host"
+                        android:textColor="#CCFFFFFF"
+                        android:textColorHint="@color/on_surface_medium"/>
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/connection_switch"
+                <!-- Connection Status Row -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Connection"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Connection"
+                            android:textColor="@color/on_surface_high"
+                            android:textSize="16sp"/>
+
+                    </LinearLayout>
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/connection_switch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:thumbTint="@color/switch_thumb_selector"
+                        app:trackTint="@color/switch_track_selector"/>
+
+                </LinearLayout>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -62,53 +106,164 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardBackgroundColor="@color/surface_dark_elevated"
+            app:strokeColor="@color/card_stroke_light"
+            app:strokeWidth="1dp"
+            app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="20dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Preferences"
-                    android:textAppearance="?attr/textAppearanceHeadline6"/>
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/on_surface_high"
+                    android:layout_marginBottom="16dp"/>
 
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/notifications_switch"
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Enable Notifications"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
 
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/spoof_detection_switch"
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Enable Notifications"
+                            android:textColor="@color/on_surface_high"
+                            android:textSize="14sp"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Show alerts for detected threats"
+                            android:textColor="@color/on_surface_medium"
+                            android:textSize="12sp"
+                            android:layout_marginTop="2dp"/>
+
+                    </LinearLayout>
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/notifications_switch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:thumbTint="@color/switch_thumb_selector"
+                        app:trackTint="@color/switch_track_selector"/>
+
+                </LinearLayout>
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Spoof Detection"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
 
-                <com.google.android.material.switchmaterial.SwitchMaterial
-                    android:id="@+id/screen_on_switch"
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Spoof Detection"
+                            android:textColor="@color/on_surface_high"
+                            android:textSize="14sp"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Detect spoofed or malicious drones"
+                            android:textColor="@color/on_surface_medium"
+                            android:textSize="12sp"
+                            android:layout_marginTop="2dp"/>
+
+                    </LinearLayout>
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/spoof_detection_switch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:thumbTint="@color/switch_thumb_selector"
+                        app:trackTint="@color/switch_track_selector"/>
+
+                </LinearLayout>
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Keep Screen On"/>
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Keep Screen On"
+                            android:textColor="@color/on_surface_high"
+                            android:textSize="14sp"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Prevent screen from turning off during monitoring"
+                            android:textColor="@color/on_surface_medium"
+                            android:textSize="12sp"
+                            android:layout_marginTop="2dp"/>
+
+                    </LinearLayout>
+
+                    <com.google.android.material.switchmaterial.SwitchMaterial
+                        android:id="@+id/screen_on_switch"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        app:thumbTint="@color/switch_thumb_selector"
+                        app:trackTint="@color/switch_track_selector"/>
+
+                </LinearLayout>
+
+                <!-- Hidden switches with proper styling when visible -->
                 <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/serial_console_switch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Serial Console"
-                    android:visibility="gone" />
+                    android:textColor="@color/on_surface_high"
+                    android:visibility="gone"
+                    app:thumbTint="@color/switch_thumb_selector"
+                    app:trackTint="@color/switch_track_selector"/>
 
                 <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/location_estimation_switch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="Estimate Drone Location"
-                    android:summary="When enabled, estimates drone positions based on signal strength"
-                    android:visibility="gone"/>
+                    android:textColor="@color/on_surface_high"
+                    android:visibility="gone"
+                    app:thumbTint="@color/switch_thumb_selector"
+                    app:trackTint="@color/switch_track_selector"/>
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
@@ -117,26 +272,37 @@
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:visibility="gone">
+            android:visibility="gone"
+            app:cardCornerRadius="12dp"
+            app:cardBackgroundColor="@color/surface_dark_elevated"
+            app:strokeColor="@color/card_stroke_light"
+            app:strokeWidth="1dp"
+            app:cardElevation="0dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="20dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Warning Thresholds"
-                    android:textAppearance="?attr/textAppearanceHeadline6"/>
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/on_surface_high"
+                    android:layout_marginBottom="16dp"/>
 
                 <com.google.android.material.switchmaterial.SwitchMaterial
                     android:id="@+id/system_warnings_switch"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:text="System Warnings"/>
+                    android:text="System Warnings"
+                    android:textColor="@color/on_surface_high"
+                    app:thumbTint="@color/switch_thumb_selector"
+                    app:trackTint="@color/switch_track_selector"/>
 
                 <HorizontalScrollView
                     android:layout_width="match_parent"

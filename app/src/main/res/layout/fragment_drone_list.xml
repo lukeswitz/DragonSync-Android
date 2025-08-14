@@ -14,7 +14,7 @@
         android:padding="16dp">
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:layout_width="132dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical">
@@ -23,18 +23,18 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Drones"
-                android:textSize="32sp"
-                android:textStyle="bold"
-                android:textColor="@color/on_surface_high" />
+                android:textColor="@color/on_surface_high"
+                android:textSize="24sp"
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/drone_count"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
                 android:text="0 detected"
-                android:textSize="14sp"
                 android:textColor="@color/on_surface_medium"
-                android:layout_marginTop="4dp" />
+                android:textSize="14sp" />
 
         </LinearLayout>
 
@@ -45,10 +45,10 @@
             android:layout_height="48dp"
             android:layout_marginEnd="8dp"
             android:text="Clear"
-            android:textSize="12sp"
             android:textColor="@color/accent"
-            app:strokeColor="@color/accent"
-            app:cornerRadius="6dp" />
+            android:textSize="12sp"
+            app:cornerRadius="6dp"
+            app:strokeColor="@color/accent" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/map_all_button"

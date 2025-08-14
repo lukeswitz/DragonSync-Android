@@ -164,16 +164,112 @@
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/view_all_drones"
-                    android:layout_width="300dp"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginHorizontal="32dp"
                     android:layout_marginTop="16dp"
-                    android:text="@string/view_all_drones"
+                    android:text="View All Drones"
                     android:textColor="@color/accent"
                     android:textSize="16sp"
-                    style="@style/Widget.Material3.Button.OutlinedButton"
-                    app:strokeColor="@color/accent"
+
+                    android:textStyle="bold"
+                    app:cornerRadius="24dp"
                     app:icon="@drawable/ic_drone_accent"
+                    app:iconGravity="textStart"
                     app:iconTint="@color/accent"
+                    app:strokeColor="@color/accent"
+                    app:strokeWidth="1dp" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Security Threats Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="12dp"
+            app:cardBackgroundColor="@color/surface_dark_elevated"
+            app:strokeColor="@color/status_red"
+            app:strokeWidth="1dp"
+            app:cardElevation="0dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <!-- Security Threats Header -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="16dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_security_alert"
+                        android:tint="@color/status_red"
+                        android:layout_marginEnd="8dp" />
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Security Threats"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/on_surface_medium" />
+
+                    <TextView
+                        android:id="@+id/Rebels_count"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="0"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/status_red" />
+
+                </LinearLayout>
+
+                <!-- No Threats Message -->
+                <TextView
+                    android:id="@+id/no_threats_message"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="No security threats detected"
+                    android:textColor="@color/on_surface_medium"
+                    android:textAlignment="center"
+                    android:layout_marginVertical="16dp"
+                    android:visibility="visible" />
+
+                <!-- Recent Threats List -->
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/recent_threats_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false"
+                    android:visibility="gone" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/view_all_threats"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:layout_gravity="center"
+                    android:text="View All Threats"
+                    android:textColor="@color/status_red"
+                    android:textSize="16sp"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    app:strokeColor="@color/status_red"
+                    app:icon="@drawable/ic_security_alert"
+                    app:iconTint="@color/status_red"
                     app:iconGravity="textStart" />
 
             </LinearLayout>

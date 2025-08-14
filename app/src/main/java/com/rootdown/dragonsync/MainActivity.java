@@ -29,6 +29,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.rootdown.dragonsync.models.CoTMessage;
 import com.rootdown.dragonsync.models.StatusMessage;
+import com.rootdown.dragonsync.network.RebelHistoryManager;
 import com.rootdown.dragonsync.ui.fragments.DashboardFragment;
 import com.rootdown.dragonsync.ui.fragments.DroneListFragment;
 import com.rootdown.dragonsync.ui.fragments.HistoryFragment;
@@ -51,6 +52,7 @@ public class MainActivity extends FragmentActivity {
     private MaterialButton connectionIndicator;
     private static final int REQUEST_PERMISSIONS_CODE = 1001;
     private SharedPreferences.OnSharedPreferenceChangeListener preferenceChangeListener;
+    private RebelHistoryManager RebelHistoryManager;
 
 
     @Override
@@ -71,6 +73,13 @@ public class MainActivity extends FragmentActivity {
 
         cotViewModel = new ViewModelProvider(this).get(CoTViewModel.class);
         statusViewModel = new ViewModelProvider(this).get(StatusViewModel.class);
+
+        RebelHistoryManager = new RebelHistoryManager(this);
+
+        // Clear listening status
+        if (savedInstanceState == null) {
+            Settings.getInstance(this).setListening(false);
+        }
 
         // Initialize views and navigation
         initializeNavigation(savedInstanceState);
@@ -205,18 +214,19 @@ public class MainActivity extends FragmentActivity {
         }
     }
 
-    private BroadcastReceiver telemetryReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver telemetryReceiver = new BroadcastReceiver() {
         public void onReceive(Context context, Intent intent) {
             if (intent.hasExtra("parsed_message")) {
                 CoTMessage message = intent.getParcelableExtra("parsed_message");
                 if (message != null) {
+                    RebelHistoryManager.processMessage(message);
                     cotViewModel.updateMessage(message);
                 }
             }
         }
     };
 
-    private BroadcastReceiver statusReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver statusReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             if (intent.hasExtra("status_message")) {

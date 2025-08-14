@@ -76,7 +76,7 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
         view.setOnApplyWindowInsetsListener((v, insets) -> {
             v.setPadding(
                     v.getPaddingLeft(),
-                    insets.getSystemWindowInsetTop() + 16,
+                    insets.getSystemWindowInsetTop() + 26,
                     v.getPaddingRight(),
                     v.getPaddingBottom()
             );
@@ -84,6 +84,21 @@ public class StatusFragment extends Fragment implements OnMapReadyCallback {
         });
 
         return view;
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        initializeViews(view);
+
+        mapView = view.findViewById(R.id.map_view);
+        if (mapView != null) {
+            mapView.onCreate(savedInstanceState);
+            mapView.getMapAsync(this);
+        }
+
+        setupObservers();
     }
 
     private void initializeViews(View view) {
